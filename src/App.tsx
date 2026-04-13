@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "@/pages/Login";
-import Dashboard from "@/pages/Dashboard";
+import Slate from "@/pages/Slate";
 import SettingsPage from "@/pages/Settings";
 import Placeholder from "@/pages/Placeholder";
 
@@ -21,9 +21,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/games" element={<ProtectedRoute><Placeholder title="Games" /></ProtectedRoute>} />
-            <Route path="/teams" element={<ProtectedRoute><Placeholder title="Teams" /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><Slate /></ProtectedRoute>} />
+            <Route path="/matchup-lens" element={<ProtectedRoute><Placeholder title="Matchup Lens" /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           </Routes>
         </BrowserRouter>
