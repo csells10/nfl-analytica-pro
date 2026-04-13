@@ -1,40 +1,59 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { CalendarIcon, ChevronRight } from "lucide-react";
+import { CalendarIcon, ChevronRight, Clock, Tv } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { gameDates, getGamesForDate, type SlateGame } from "@/lib/sample-data";
 
 function MatchupCard({ game }: { game: SlateGame }) {
   return (
     <button
-      className="group w-full rounded-lg border border-border bg-card px-5 py-4 text-left transition-colors hover:border-primary/30 hover:bg-secondary/50"
+      className="group relative w-full overflow-hidden rounded-xl border border-border/60 bg-card p-5 text-left transition-all duration-200 hover:border-primary/40 hover:bg-card/80 hover:shadow-lg hover:shadow-primary/5"
       onClick={() => {
         // Future: navigate to matchup lens
       }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          {/* Away */}
-          <span className="w-10 text-sm font-semibold text-foreground">{game.awayTeam}</span>
-          <span className="text-xs text-muted-foreground">@</span>
-          {/* Home */}
-          <span className="w-10 text-sm font-semibold text-foreground">{game.homeTeam}</span>
+      {/* Subtle left accent */}
+      <div className="absolute inset-y-0 left-0 w-[3px] rounded-full bg-primary/20 transition-colors group-hover:bg-primary/60" />
+
+      <div className="flex items-center justify-between pl-3">
+        {/* Teams */}
+        <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-xs font-bold text-foreground">
+              {game.awayTeam}
+            </div>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">at</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-xs font-bold text-foreground">
+              {game.homeTeam}
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span>{game.time}</span>
+        {/* Meta + Arrow */}
+        <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3" />
+              <span className="text-xs">{game.time}</span>
+            </div>
             {game.network && (
-              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-                {game.network}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <Tv className="h-3 w-3" />
+                <span className="rounded-md bg-secondary px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wide text-muted-foreground">
+                  {game.network}
+                </span>
+              </div>
             )}
           </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground/40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
         </div>
       </div>
     </button>
@@ -49,7 +68,6 @@ export default function Slate() {
   const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
   const games = dateStr ? getGamesForDate(dateStr) : [];
 
-  // Highlight dates that have games
   const gameDateSet = new Set(gameDates);
   const modifiers = {
     hasGames: (date: Date) => gameDateSet.has(format(date, "yyyy-MM-dd")),
@@ -58,14 +76,23 @@ export default function Slate() {
     hasGames: "underline decoration-primary decoration-2 underline-offset-4",
   };
 
+  // Group games by time slot
+  const gamesByTime = games.reduce<Record<string, SlateGame[]>>((acc, game) => {
+    if (!acc[game.time]) acc[game.time] = [];
+    acc[game.time].push(game);
+    return acc;
+  }, {});
+
   return (
     <AppShell>
-      <div className="mx-auto max-w-2xl space-y-8 py-4">
+      <div className="mx-auto max-w-2xl space-y-10 py-6">
         {/* Header */}
-        <div className="space-y-1">
-          <h1 className="text-lg font-semibold text-foreground">Game Slate</h1>
+        <div className="space-y-2">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
+            Game Slate
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Select a date to view matchups
+            Pick a date to browse matchups and open detailed analysis.
           </p>
         </div>
 
@@ -75,12 +102,14 @@ export default function Slate() {
             <Button
               variant="outline"
               className={cn(
-                "w-[220px] justify-start text-left font-normal",
+                "h-11 w-[260px] justify-start gap-2.5 rounded-lg border-border/60 text-left font-normal transition-colors hover:border-primary/40",
                 !selectedDate && "text-muted-foreground"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "EEEE, MMM d, yyyy") : "Pick a date"}
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              {selectedDate
+                ? format(selectedDate, "EEEE, MMM d, yyyy")
+                : "Pick a date"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -98,22 +127,34 @@ export default function Slate() {
 
         {/* Games list */}
         {selectedDate && (
-          <div className="space-y-3">
+          <div className="space-y-6">
             {games.length > 0 ? (
               <>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {games.length} game{games.length !== 1 ? "s" : ""} — {format(selectedDate, "EEEE, MMMM d")}
-                </p>
-                <div className="space-y-2">
-                  {games.map((game) => (
-                    <MatchupCard key={game.id} game={game} />
-                  ))}
+                <div className="flex items-center gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    {format(selectedDate, "EEEE, MMMM d")}
+                  </p>
+                  <div className="h-px flex-1 bg-border/40" />
+                  <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                    {games.length} game{games.length !== 1 ? "s" : ""}
+                  </span>
                 </div>
+
+                {Object.entries(gamesByTime).map(([time, timeGames]) => (
+                  <div key={time} className="space-y-2.5">
+                    {timeGames.map((game) => (
+                      <MatchupCard key={game.id} game={game} />
+                    ))}
+                  </div>
+                ))}
               </>
             ) : (
-              <p className="py-12 text-center text-sm text-muted-foreground">
-                No games scheduled for this date.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-20">
+                <CalendarIcon className="h-8 w-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">
+                  No games scheduled for this date.
+                </p>
+              </div>
             )}
           </div>
         )}
