@@ -15,29 +15,34 @@ import { gameDates, getGamesForDate, type SlateGame } from "@/lib/sample-data";
 function MatchupCard({ game }: { game: SlateGame }) {
   return (
     <button
-      className="group w-full rounded-lg border border-border bg-card text-left transition-all duration-150 hover:border-primary/30 hover:shadow-md hover:shadow-black/20"
+      className="group w-full rounded-lg border border-border bg-card text-left transition-all duration-150 hover:border-primary/40 hover:bg-secondary/40"
       onClick={() => {}}
     >
       <div className="flex items-center justify-between px-5 py-4">
         {/* Teams */}
-        <div className="flex items-center gap-4 min-w-0">
-          <span className="inline-flex h-8 w-12 items-center justify-center rounded bg-secondary text-xs font-bold tracking-wide text-foreground">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-8 w-12 items-center justify-center rounded bg-secondary text-xs font-semibold tracking-wide text-foreground">
             {game.awayTeam}
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            @
+          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            at
           </span>
-          <span className="inline-flex h-8 w-12 items-center justify-center rounded bg-secondary text-xs font-bold tracking-wide text-foreground">
+          <span className="inline-flex h-8 w-12 items-center justify-center rounded bg-secondary text-xs font-semibold tracking-wide text-foreground">
             {game.homeTeam}
           </span>
         </div>
 
-        {/* Right side: time, network, action */}
-        <div className="flex items-center gap-6">
+        {/* Meta + action */}
+        <div className="flex items-center gap-5">
           <div className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
             <span>{game.time}</span>
+            {game.week && (
+              <span className="rounded border border-border px-1.5 py-px font-mono text-[10px] font-medium text-muted-foreground">
+                Wk {game.week}
+              </span>
+            )}
             {game.network && (
-              <span className="rounded border border-border bg-muted/50 px-1.5 py-px font-mono text-[10px] font-medium">
+              <span className="rounded border border-border px-1.5 py-px font-mono text-[10px] font-medium text-muted-foreground">
                 {game.network}
               </span>
             )}
@@ -116,7 +121,6 @@ export default function Slate() {
           <>
             {games.length > 0 ? (
               <div className="space-y-6">
-                {/* Section label */}
                 <div className="flex items-baseline justify-between border-b border-border/50 pb-2">
                   <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     {format(selectedDate, "MMMM d, yyyy")}
