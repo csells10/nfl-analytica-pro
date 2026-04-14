@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "@/pages/Login";
 import Slate from "@/pages/Slate";
+import Matchup from "@/pages/Matchup";
 import SettingsPage from "@/pages/Settings";
 import Placeholder from "@/pages/Placeholder";
 
