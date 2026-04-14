@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { CalendarIcon, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CalendarIcon, ChevronRight, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,13 +11,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { gameDates, getGamesForDate, type SlateGame } from "@/lib/sample-data";
+import { useNflSchedule, type NflGame } from "@/lib/nfl-api";
 
-function MatchupCard({ game }: { game: SlateGame }) {
+function MatchupCard({ game }: { game: NflGame }) {
+  const navigate = useNavigate();
+
   return (
     <button
       className="group w-full rounded-lg border border-border bg-card text-left transition-all duration-150 hover:border-primary/40 hover:bg-secondary/40"
-      onClick={() => {}}
+      onClick={() => navigate(`/matchup/${game.id}`)}
     >
       <div className="flex items-center justify-between px-5 py-4">
         {/* Teams */}
@@ -62,16 +65,7 @@ export default function Slate() {
     parseISO("2025-01-05")
   );
 
-  const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
-  const games = dateStr ? getGamesForDate(dateStr) : [];
-
-  const gameDateSet = new Set(gameDates);
-  const modifiers = {
-    hasGames: (date: Date) => gameDateSet.has(format(date, "yyyy-MM-dd")),
-  };
-  const modifiersClassNames = {
-    hasGames: "underline decoration-primary decoration-2 underline-offset-4",
-  };
+  const { data: games, isLoading, isError, error } = useNflSchedule(selectedDate);
 
   return (
     <AppShell>
@@ -107,8 +101,6 @@ export default function Slate() {
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                modifiers={modifiers}
-                modifiersClassNames={modifiersClassNames}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
               />
@@ -116,10 +108,36 @@ export default function Slate() {
           </Popover>
         </div>
 
-        {/* Game list */}
+        {/* Content states */}
         {selectedDate && (
           <>
-            {games.length > 0 ? (
+            {isLoading && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="ml-3 text-sm text-muted-foreground">
+                  Loading schedule…
+                </span>
+              </div>
+            )}
+
+            {isError && (
+              <div className="py-16 text-center">
+                <p className="text-sm text-destructive">
+                  Unable to load the schedule.
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {(error as Error)?.message || "Please try again later."}
+                </p>
+              </div>
+            )}
+
+            {!isLoading && !isError && games && games.length === 0 && (
+              <p className="py-16 text-center text-sm text-muted-foreground">
+                No games scheduled for this date.
+              </p>
+            )}
+
+            {!isLoading && !isError && games && games.length > 0 && (
               <div className="space-y-6">
                 <div className="flex items-baseline justify-between border-b border-border/50 pb-2">
                   <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -136,10 +154,6 @@ export default function Slate() {
                   ))}
                 </div>
               </div>
-            ) : (
-              <p className="py-16 text-center text-sm text-muted-foreground">
-                No games scheduled for this date.
-              </p>
             )}
           </>
         )}
