@@ -2,8 +2,63 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Construction } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  GitCompareArrows,
+  LayoutGrid,
+  Target,
+} from "lucide-react";
 import type { NflGame } from "@/lib/nfl-api";
+
+function Badge({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide ${
+        muted
+          ? "border-border/50 text-muted-foreground/60"
+          : "border-border text-muted-foreground"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function PlaceholderSection({
+  icon: Icon,
+  title,
+  description,
+  rows = 3,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  rows?: number;
+}) {
+  return (
+    <Card className="border-border bg-card">
+      <CardContent className="p-5">
+        <div className="mb-4 flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-secondary">
+            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        </div>
+        <div className="space-y-2.5">
+          {Array.from({ length: rows }).map((_, i) => (
+            <div
+              key={i}
+              className="h-2.5 rounded-full bg-secondary/80"
+              style={{ width: `${70 - i * 12}%` }}
+            />
+          ))}
+        </div>
+        <p className="mt-4 text-[11px] text-muted-foreground/50">{description}</p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Matchup() {
   const { id } = useParams<{ id: string }>();
@@ -11,67 +66,80 @@ export default function Matchup() {
   const location = useLocation();
   const game = (location.state as { game?: NflGame })?.game;
 
+  const showStatus = game?.status && game.status !== "Scheduled";
+
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl py-8">
+      <div className="mx-auto max-w-4xl py-8">
         <Button
           variant="ghost"
           size="sm"
-          className="mb-6 gap-1.5 text-muted-foreground hover:text-foreground"
+          className="mb-8 gap-1.5 text-muted-foreground hover:text-foreground"
           onClick={() => navigate("/")}
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Slate
         </Button>
 
-        {/* Matchup header */}
-        {game ? (
-          <div className="mb-8 space-y-1.5">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              {game.awayTeam}{" "}
-              <span className="text-muted-foreground font-medium">at</span>{" "}
-              {game.homeTeam}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>{game.date}</span>
-              <span className="text-border">·</span>
-              <span>{game.time}</span>
-              {game.week && (
-                <>
-                  <span className="text-border">·</span>
-                  <span className="rounded border border-border px-1.5 py-px font-mono text-[10px] font-medium">
-                    Week {game.week}
-                  </span>
-                </>
-              )}
-              {game.status && game.status !== "Scheduled" && (
-                <>
-                  <span className="text-border">·</span>
-                  <span className="italic text-muted-foreground/70">{game.status}</span>
-                </>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground/50 font-mono">
-              Game {id}
-            </p>
-          </div>
-        ) : (
-          <h1 className="text-lg font-bold tracking-tight text-foreground mb-6">
-            Matchup — Game {id}
-          </h1>
-        )}
+        {/* ── Matchup header ── */}
+        <div className="mb-10">
+          {game ? (
+            <>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-10 w-16 items-center justify-center rounded-lg bg-secondary text-sm font-bold tracking-wide text-foreground">
+                  {game.awayTeam}
+                </span>
+                <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground/60">
+                  at
+                </span>
+                <span className="inline-flex h-10 w-16 items-center justify-center rounded-lg bg-secondary text-sm font-bold tracking-wide text-foreground">
+                  {game.homeTeam}
+                </span>
+              </div>
 
-        <Card className="border-border bg-card">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <Construction className="mb-3 h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Detailed matchup analysis coming next.
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground/70">
-              Team comparisons, key stats, and game context will appear here.
-            </p>
-          </CardContent>
-        </Card>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {game.date} · {game.time}
+                </span>
+                {game.week && <Badge>Week {game.week}</Badge>}
+                {showStatus && <Badge>{game.status}</Badge>}
+                <Badge muted>ID {id}</Badge>
+              </div>
+            </>
+          ) : (
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Game {id}
+            </h1>
+          )}
+        </div>
+
+        {/* ── Analysis grid ── */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PlaceholderSection
+            icon={GitCompareArrows}
+            title="Team Comparison"
+            description="Head-to-head season stats and recent form."
+            rows={4}
+          />
+          <PlaceholderSection
+            icon={LayoutGrid}
+            title="Core Area Scores"
+            description="Offense, defense, and special teams grades."
+            rows={3}
+          />
+          <PlaceholderSection
+            icon={BarChart3}
+            title="Key Stats"
+            description="Yards, turnovers, third-down rate, and red-zone efficiency."
+            rows={4}
+          />
+          <PlaceholderSection
+            icon={Target}
+            title="Betting Lens"
+            description="Spread movement, totals, and value indicators."
+            rows={3}
+          />
+        </div>
       </div>
     </AppShell>
   );
