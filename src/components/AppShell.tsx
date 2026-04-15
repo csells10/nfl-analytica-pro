@@ -12,6 +12,7 @@ const navItems = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
+  const { theme, toggle } = useTheme();
   const location = useLocation();
 
   return (
