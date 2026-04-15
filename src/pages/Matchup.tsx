@@ -11,11 +11,13 @@ import {
 } from "lucide-react";
 import type { NflGame } from "@/lib/nfl-api";
 
-function Badge({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
+function Badge({ children, muted, accent }: { children: React.ReactNode; muted?: boolean; accent?: boolean }) {
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide ${
-        muted
+        accent
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : muted
           ? "border-border/50 text-muted-foreground/60"
           : "border-border text-muted-foreground"
       }`}
@@ -40,8 +42,8 @@ function PlaceholderSection({
     <Card className="border-border bg-card">
       <CardContent className="p-5">
         <div className="mb-4 flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-secondary">
-            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
+            <Icon className="h-3.5 w-3.5 text-primary" />
           </div>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         </div>
@@ -74,7 +76,7 @@ export default function Matchup() {
         <Button
           variant="ghost"
           size="sm"
-          className="mb-8 gap-1.5 text-muted-foreground hover:text-foreground"
+          className="mb-8 gap-1.5 text-muted-foreground hover:text-primary"
           onClick={() => navigate("/")}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -86,13 +88,13 @@ export default function Matchup() {
           {game ? (
             <>
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-16 items-center justify-center rounded-lg bg-secondary text-sm font-bold tracking-wide text-foreground">
+                <span className="inline-flex h-10 w-16 items-center justify-center rounded-lg bg-primary/15 text-sm font-bold tracking-wide text-primary">
                   {game.awayTeam}
                 </span>
                 <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground/60">
                   at
                 </span>
-                <span className="inline-flex h-10 w-16 items-center justify-center rounded-lg bg-secondary text-sm font-bold tracking-wide text-foreground">
+                <span className="inline-flex h-10 w-16 items-center justify-center rounded-lg bg-primary/15 text-sm font-bold tracking-wide text-primary">
                   {game.homeTeam}
                 </span>
               </div>
@@ -101,8 +103,8 @@ export default function Matchup() {
                 <span className="text-sm text-muted-foreground">
                   {game.date} · {game.time}
                 </span>
-                {game.week && <Badge>Week {game.week}</Badge>}
-                {showStatus && <Badge>{game.status}</Badge>}
+                {game.week && <Badge accent>Week {game.week}</Badge>}
+                {showStatus && <Badge accent>{game.status}</Badge>}
                 <Badge muted>ID {id}</Badge>
               </div>
             </>
