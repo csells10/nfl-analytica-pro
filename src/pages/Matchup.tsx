@@ -47,8 +47,8 @@ function PlaceholderSection({
     <Card className="border-border bg-card">
       <CardContent className="p-5">
         <div className="mb-4 flex items-center gap-2.5">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-md bg-${color}/10`}>
-            <Icon className={`h-3.5 w-3.5 text-${color}`} />
+          <div className={`flex h-7 w-7 items-center justify-center rounded-md ${warm ? "bg-accent-warm/10" : "bg-primary/10"}`}>
+            <Icon className={`h-3.5 w-3.5 ${warm ? "text-accent-warm" : "text-primary"}`} />
           </div>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         </div>
