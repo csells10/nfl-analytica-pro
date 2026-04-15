@@ -18,10 +18,10 @@ function MatchupCard({ game }: { game: NflGame }) {
 
   return (
     <button
-      className="group w-full rounded-lg border border-border bg-card text-left transition-all duration-150 hover:border-primary/40 hover:bg-secondary/40"
+      className="group w-full rounded-lg border border-border bg-card text-left transition-all duration-150 hover:border-primary/30 hover:bg-secondary/30"
       onClick={() => navigate(`/matchup/${game.id}`)}
     >
-      <div className="flex items-center justify-between px-5 py-4">
+      <div className="flex items-center justify-between px-5 py-3.5">
         {/* Teams */}
         <div className="flex items-center gap-3">
           <span className="inline-flex h-8 w-12 items-center justify-center rounded bg-secondary text-xs font-semibold tracking-wide text-foreground">
@@ -35,25 +35,24 @@ function MatchupCard({ game }: { game: NflGame }) {
           </span>
         </div>
 
-        {/* Meta + action */}
-        <div className="flex items-center gap-5">
-          <div className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
+        {/* Meta */}
+        <div className="flex items-center gap-4">
+          <div className="hidden items-center gap-2.5 text-xs text-muted-foreground sm:flex">
+            <span>{game.date}</span>
+            <span className="text-border">·</span>
             <span>{game.time}</span>
             {game.week && (
               <span className="rounded border border-border px-1.5 py-px font-mono text-[10px] font-medium text-muted-foreground">
                 Wk {game.week}
               </span>
             )}
-            {game.network && (
-              <span className="rounded border border-border px-1.5 py-px font-mono text-[10px] font-medium text-muted-foreground">
-                {game.network}
+            {game.status && game.status !== "Scheduled" && (
+              <span className="text-[10px] text-muted-foreground/70 italic">
+                {game.status}
               </span>
             )}
           </div>
-          <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors group-hover:text-primary">
-            Open
-            <ChevronRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
-          </span>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-all duration-150 group-hover:text-primary group-hover:translate-x-0.5" />
         </div>
       </div>
     </button>
