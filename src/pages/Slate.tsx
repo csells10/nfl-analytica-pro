@@ -19,7 +19,7 @@ function MatchupCard({ game }: { game: NflGame }) {
   return (
     <button
       className="group w-full rounded-lg border border-border bg-card text-left transition-all duration-150 hover:border-primary/30 hover:bg-secondary/30"
-      onClick={() => navigate(`/matchup/${game.id}`)}
+      onClick={() => navigate(`/matchup/${game.id}`, { state: { game } })}
     >
       <div className="flex items-center justify-between px-5 py-3.5">
         {/* Teams */}
