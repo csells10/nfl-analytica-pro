@@ -11,11 +11,13 @@ import {
 } from "lucide-react";
 import type { NflGame } from "@/lib/nfl-api";
 
-function Badge({ children, muted, accent }: { children: React.ReactNode; muted?: boolean; accent?: boolean }) {
+function Badge({ children, muted, accent, warm }: { children: React.ReactNode; muted?: boolean; accent?: boolean; warm?: boolean }) {
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide ${
-        accent
+        warm
+          ? "border-accent-warm/30 bg-accent-warm/10 text-accent-warm"
+          : accent
           ? "border-primary/30 bg-primary/10 text-primary"
           : muted
           ? "border-border/50 text-muted-foreground/60"
@@ -32,18 +34,21 @@ function PlaceholderSection({
   title,
   description,
   rows = 3,
+  warm,
 }: {
   icon: React.ElementType;
   title: string;
   description: string;
   rows?: number;
+  warm?: boolean;
 }) {
+  const color = warm ? "accent-warm" : "primary";
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-5">
         <div className="mb-4 flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
-            <Icon className="h-3.5 w-3.5 text-primary" />
+          <div className={`flex h-7 w-7 items-center justify-center rounded-md ${warm ? "bg-accent-warm/10" : "bg-primary/10"}`}>
+            <Icon className={`h-3.5 w-3.5 ${warm ? "text-accent-warm" : "text-primary"}`} />
           </div>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         </div>
@@ -103,7 +108,7 @@ export default function Matchup() {
                 <span className="text-sm text-muted-foreground">
                   {game.date} · {game.time}
                 </span>
-                {game.week && <Badge accent>Week {game.week}</Badge>}
+                {game.week && <Badge warm>Week {game.week}</Badge>}
                 {showStatus && <Badge accent>{game.status}</Badge>}
                 <Badge muted>ID {id}</Badge>
               </div>
@@ -140,6 +145,7 @@ export default function Matchup() {
             title="Betting Lens"
             description="Spread movement, totals, and value indicators."
             rows={3}
+            warm
           />
         </div>
       </div>
