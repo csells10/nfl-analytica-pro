@@ -39,6 +39,9 @@
     --input: 220 12% 88%;
     --ring: 168 32% 42%;
 
+    --accent-warm: 40 45% 55%;
+    --accent-warm-foreground: 35 60% 18%;
+
     --chart-up: 168 32% 42%;
     --chart-down: 4 52% 50%;
     --chart-neutral: 220 8% 50%;
@@ -81,6 +84,9 @@
     --border: 215 10% 18%;
     --input: 215 10% 18%;
     --ring: 168 28% 52%;
+
+    --accent-warm: 40 35% 52%;
+    --accent-warm-foreground: 40 50% 92%;
 
     --chart-up: 168 28% 52%;
     --chart-down: 4 52% 50%;
