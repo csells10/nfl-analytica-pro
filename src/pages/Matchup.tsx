@@ -34,18 +34,21 @@ function PlaceholderSection({
   title,
   description,
   rows = 3,
+  warm,
 }: {
   icon: React.ElementType;
   title: string;
   description: string;
   rows?: number;
+  warm?: boolean;
 }) {
+  const color = warm ? "accent-warm" : "primary";
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-5">
         <div className="mb-4 flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
-            <Icon className="h-3.5 w-3.5 text-primary" />
+          <div className={`flex h-7 w-7 items-center justify-center rounded-md bg-${color}/10`}>
+            <Icon className={`h-3.5 w-3.5 text-${color}`} />
           </div>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         </div>
@@ -142,6 +145,7 @@ export default function Matchup() {
             title="Betting Lens"
             description="Spread movement, totals, and value indicators."
             rows={3}
+            warm
           />
         </div>
       </div>
