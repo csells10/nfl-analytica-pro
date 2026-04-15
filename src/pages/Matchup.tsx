@@ -11,11 +11,13 @@ import {
 } from "lucide-react";
 import type { NflGame } from "@/lib/nfl-api";
 
-function Badge({ children, muted, accent }: { children: React.ReactNode; muted?: boolean; accent?: boolean }) {
+function Badge({ children, muted, accent, warm }: { children: React.ReactNode; muted?: boolean; accent?: boolean; warm?: boolean }) {
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide ${
-        accent
+        warm
+          ? "border-accent-warm/30 bg-accent-warm/10 text-accent-warm"
+          : accent
           ? "border-primary/30 bg-primary/10 text-primary"
           : muted
           ? "border-border/50 text-muted-foreground/60"
@@ -103,7 +105,7 @@ export default function Matchup() {
                 <span className="text-sm text-muted-foreground">
                   {game.date} · {game.time}
                 </span>
-                {game.week && <Badge accent>Week {game.week}</Badge>}
+                {game.week && <Badge warm>Week {game.week}</Badge>}
                 {showStatus && <Badge accent>{game.status}</Badge>}
                 <Badge muted>ID {id}</Badge>
               </div>
