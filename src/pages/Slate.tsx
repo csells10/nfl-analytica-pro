@@ -73,10 +73,10 @@ export default function Slate() {
         <div className="mb-10 space-y-5">
           <div>
             <h1 className="text-lg font-bold tracking-tight text-foreground">
-              Game Slate
+              Matchups
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Select a date, then open a matchup to begin analysis.
+              Select a date to explore the schedule.
             </p>
           </div>
 
