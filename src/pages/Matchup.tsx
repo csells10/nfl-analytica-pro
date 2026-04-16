@@ -85,7 +85,7 @@ export default function Matchup() {
           onClick={() => navigate("/")}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Slate
+          Back to games
         </Button>
 
         {/* ── Matchup header ── */}
@@ -112,6 +112,9 @@ export default function Matchup() {
                 {showStatus && <Badge accent>{game.status}</Badge>}
                 <Badge muted>ID {id}</Badge>
               </div>
+              <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
+                Understand the matchup
+              </p>
             </>
           ) : (
             <h1 className="text-xl font-bold tracking-tight text-foreground">

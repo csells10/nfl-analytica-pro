@@ -38,8 +38,8 @@ export default function Login() {
           </div>
           <div className="text-center">
             <h1 className="text-xl font-semibold text-foreground">GameLens</h1>
-            <p className="text-xs text-muted-foreground">Matchup Intelligence</p>
-            <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
+            <p className="text-xs tracking-wide text-muted-foreground">Matchup Intelligence</p>
+            <p className="mt-2 text-sm text-muted-foreground">Sign in to continue</p>
           </div>
         </CardHeader>
         <CardContent>
