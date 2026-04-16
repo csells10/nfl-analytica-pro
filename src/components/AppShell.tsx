@@ -22,7 +22,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-foreground">NFL Analytics</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-sm font-semibold text-foreground">GameLens</span>
+                <span className="hidden text-xs text-muted-foreground sm:inline">Matchup Intelligence</span>
+              </div>
             </Link>
             <nav className="hidden items-center gap-1 md:flex">
               {navItems.map((item) => {
