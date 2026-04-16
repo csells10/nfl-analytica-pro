@@ -43,11 +43,34 @@ function mapBackendGame(game: BackendGame, dateStr: string): NflGame {
 }
 
 async function fetchNflSchedule(dateStr: string): Promise<NflGame[]> {
-  const res = await fetch(`${API_BASE}/games?date=${dateStr}`);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch schedule (${res.status})`);
+  const url = `${API_BASE}/games?date=${dateStr}`;
+  console.log("[nfl-api] GET", url);
+
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    console.error("[nfl-api] Network error (likely CORS or offline):", err);
+    throw new Error(
+      `Network error reaching backend. This is usually a CORS issue on the Cloud Run service. Original: ${(err as Error).message}`
+    );
   }
-  const data: BackendResponse = await res.json();
+
+  const rawBody = await res.text();
+  if (!res.ok) {
+    console.error("[nfl-api] HTTP error", res.status, res.statusText, rawBody);
+    throw new Error(`Backend returned ${res.status} ${res.statusText}: ${rawBody.slice(0, 200)}`);
+  }
+
+  let data: BackendResponse;
+  try {
+    data = JSON.parse(rawBody);
+  } catch (err) {
+    console.error("[nfl-api] Failed to parse JSON. Raw body:", rawBody);
+    throw new Error(`Invalid JSON from backend: ${rawBody.slice(0, 200)}`);
+  }
+
+  console.log("[nfl-api] Received", data.games?.length ?? 0, "games for", data.date);
   return (data.games ?? []).map((g) => mapBackendGame(g, data.date));
 }
 
