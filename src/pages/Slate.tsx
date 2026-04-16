@@ -61,7 +61,7 @@ function MatchupCard({ game }: { game: NflGame }) {
 
 export default function Slate() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    parseISO("2025-01-05")
+    () => new Date()
   );
 
   const { data: games, isLoading, isError, error } = useNflSchedule(selectedDate);
