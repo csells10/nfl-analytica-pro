@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 
+const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
+
 export interface NflGame {
   id: string;
   date: string;
@@ -14,89 +16,39 @@ export interface NflGame {
   status: string;
 }
 
-interface EspnCompetitor {
-  homeAway: "home" | "away";
-  team: {
-    abbreviation: string;
-    displayName: string;
+interface BackendGame {
+  gameID: string;
+  away: string;
+  home: string;
+  gameTime: string;
+  gameStatus: string;
+}
+
+interface BackendResponse {
+  date: string;
+  games: BackendGame[];
+}
+
+function mapBackendGame(game: BackendGame, dateStr: string): NflGame {
+  return {
+    id: game.gameID,
+    date: dateStr,
+    time: game.gameTime,
+    awayTeam: game.away,
+    homeTeam: game.home,
+    awayFullName: game.away,
+    homeFullName: game.home,
+    status: game.gameStatus,
   };
-}
-
-interface EspnBroadcast {
-  names?: string[];
-}
-
-interface EspnCompetition {
-  competitors: EspnCompetitor[];
-  broadcasts?: EspnBroadcast[];
-  startDate: string;
-}
-
-interface EspnEvent {
-  id: string;
-  competitions: EspnCompetition[];
-  status: {
-    type: {
-      shortDetail: string;
-    };
-  };
-}
-
-interface EspnResponse {
-  events: EspnEvent[];
-  week?: {
-    number: number;
-  };
-  season?: {
-    type: number;
-    year: number;
-  };
-}
-
-function parseEspnResponse(data: EspnResponse): NflGame[] {
-  const weekNum = data.week?.number;
-
-  return data.events.map((event) => {
-    const comp = event.competitions[0];
-    const away = comp.competitors.find((c) => c.homeAway === "away")!;
-    const home = comp.competitors.find((c) => c.homeAway === "home")!;
-
-    const gameDate = new Date(comp.startDate);
-    const timeStr = gameDate.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: "America/New_York",
-      timeZoneName: "short",
-    });
-
-    const broadcast = comp.broadcasts?.[0]?.names?.[0] ?? undefined;
-
-    return {
-      id: event.id,
-      date: format(gameDate, "yyyy-MM-dd"),
-      time: timeStr,
-      awayTeam: away.team.abbreviation,
-      homeTeam: home.team.abbreviation,
-      awayFullName: away.team.displayName,
-      homeFullName: home.team.displayName,
-      week: weekNum,
-      network: broadcast,
-      status: event.status.type.shortDetail,
-    };
-  });
 }
 
 async function fetchNflSchedule(dateStr: string): Promise<NflGame[]> {
-  const espnDate = dateStr.replace(/-/g, "");
-  const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${espnDate}`;
-
-  const res = await fetch(url);
+  const res = await fetch(`${API_BASE}/games?date=${dateStr}`);
   if (!res.ok) {
     throw new Error(`Failed to fetch schedule (${res.status})`);
   }
-
-  const data: EspnResponse = await res.json();
-  return parseEspnResponse(data);
+  const data: BackendResponse = await res.json();
+  return (data.games ?? []).map((g) => mapBackendGame(g, data.date));
 }
 
 export function useNflSchedule(date: Date | undefined) {
