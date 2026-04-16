@@ -105,18 +105,6 @@ export default function Slate() {
               />
             </PopoverContent>
           </Popover>
-
-          {selectedDate && !isLoading && !isError && games && (
-            <div className="flex items-baseline gap-2 text-sm">
-              <span className="font-medium text-foreground">
-                Games for {format(selectedDate, "MMM d, yyyy")}
-              </span>
-              <span className="text-muted-foreground/60">·</span>
-              <span className="text-muted-foreground">
-                {games.length} {games.length === 1 ? "matchup" : "matchups"} found
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Content states */}
