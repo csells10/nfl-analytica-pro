@@ -37,8 +37,9 @@ export default function Login() {
             <BarChart3 className="h-6 w-6 text-primary" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-semibold text-foreground">NFL Analytics</h1>
-            <p className="text-sm text-muted-foreground">Sign in to your account</p>
+            <h1 className="text-xl font-semibold text-foreground">GameLens</h1>
+            <p className="text-xs text-muted-foreground">Matchup Intelligence</p>
+            <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
           </div>
         </CardHeader>
         <CardContent>
