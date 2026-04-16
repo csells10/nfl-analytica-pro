@@ -76,7 +76,7 @@ export default function Slate() {
               Matchups
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Select a date to explore the schedule.
+              Pick a date to understand the matchups ahead.
             </p>
           </div>
 
