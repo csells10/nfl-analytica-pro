@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { useNflSchedule, type NflGame } from "@/lib/nfl-api";
 import DateSelectionModal from "@/components/DateSelectionModal";
 
+const ONBOARDING_KEY = "gamelens_date_guide_completed";
+
 function MatchupCard({ game }: { game: NflGame }) {
   const navigate = useNavigate();
 
@@ -64,20 +66,32 @@ export default function Slate() {
   // No date selected initially — the guided overlay nudges the user to pick one,
   // which prevents the schedule API from firing on page load.
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [overlayOpen, setOverlayOpen] = useState(true);
+  const [overlayOpen, setOverlayOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(ONBOARDING_KEY) !== "true";
+  });
 
   const { data: games, isLoading, isError, error } = useNflSchedule(selectedDate);
 
+  const completeOnboarding = () => {
+    try {
+      localStorage.setItem(ONBOARDING_KEY, "true");
+    } catch {
+      /* ignore */
+    }
+    setOverlayOpen(false);
+  };
+
   const handleSelectDate = (date: Date | undefined) => {
     setSelectedDate(date);
-    if (date) setOverlayOpen(false);
+    if (date) completeOnboarding();
   };
 
   return (
     <AppShell>
       <DateSelectionModal
         open={overlayOpen}
-        onDismiss={() => setOverlayOpen(false)}
+        onDismiss={completeOnboarding}
         targetSelector="[data-onboarding='game-date']"
       />
       <div className="mx-auto max-w-2xl py-8">
@@ -92,8 +106,8 @@ export default function Slate() {
             </p>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <div>
+            <label className="block mb-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Game date
             </label>
             <Popover>

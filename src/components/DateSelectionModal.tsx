@@ -79,6 +79,8 @@ export default function DateSelectionModal({
   if (!open) return null;
 
   const PAD = 10;
+  const GAP = 50; // comfortable separation between spotlight and modal
+  const MODAL_WIDTH = 352; // ~22rem
   const spotlight = rect
     ? {
         top: rect.top - PAD,
@@ -88,9 +90,18 @@ export default function DateSelectionModal({
       }
     : null;
 
-  // Modal positioned just below the spotlight, aligned to its left.
-  const modalTop = spotlight ? spotlight.top + spotlight.height + 18 : 120;
-  const modalLeft = spotlight ? spotlight.left : 40;
+  // Modal positioned with comfortable gap below the spotlight.
+  const modalTop = spotlight ? spotlight.top + spotlight.height + GAP : 120;
+  const spotlightCenterX = spotlight ? spotlight.left + spotlight.width / 2 : 0;
+  // Center modal under the spotlight, clamped to viewport.
+  const rawModalLeft = spotlightCenterX - MODAL_WIDTH / 2;
+  const modalLeft = spotlight
+    ? Math.max(16, Math.min(rawModalLeft, window.innerWidth - MODAL_WIDTH - 16))
+    : 40;
+  // Arrow X position relative to modal — tip should align to spotlight center.
+  const arrowLeft = spotlight
+    ? Math.max(20, Math.min(spotlightCenterX - modalLeft, MODAL_WIDTH - 36))
+    : 32;
 
   return (
     <div
@@ -139,12 +150,18 @@ export default function DateSelectionModal({
         )}
         style={{
           top: modalTop,
-          left: Math.max(16, Math.min(modalLeft, window.innerWidth - 360)),
+          left: modalLeft,
         }}
       >
-        {/* Arrow pointing up to the calendar */}
-        <div className="absolute -top-2 left-8 h-4 w-4 rotate-45 border-l border-t border-border/60 bg-card" />
-        <div className="absolute -top-9 left-7 text-primary/80 animate-bounce">
+        {/* Arrow pointing up to the calendar — anchored to spotlight center */}
+        <div
+          className="absolute -top-2 h-4 w-4 rotate-45 border-l border-t border-border/60 bg-card"
+          style={{ left: arrowLeft - 8 }}
+        />
+        <div
+          className="absolute text-primary/80 animate-bounce"
+          style={{ left: arrowLeft - 10, top: -36 }}
+        >
           <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
         </div>
 
