@@ -61,21 +61,25 @@ function MatchupCard({ game }: { game: NflGame }) {
 }
 
 export default function Slate() {
-  // No date selected initially — the modal collects the first date,
+  // No date selected initially — the guided overlay nudges the user to pick one,
   // which prevents the schedule API from firing on page load.
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [modalOpen, setModalOpen] = useState(true);
+  const [overlayOpen, setOverlayOpen] = useState(true);
 
   const { data: games, isLoading, isError, error } = useNflSchedule(selectedDate);
 
-  const handleConfirmDate = (date: Date) => {
+  const handleSelectDate = (date: Date | undefined) => {
     setSelectedDate(date);
-    setModalOpen(false);
+    if (date) setOverlayOpen(false);
   };
 
   return (
     <AppShell>
-      <DateSelectionModal open={modalOpen} onConfirm={handleConfirmDate} />
+      <DateSelectionModal
+        open={overlayOpen}
+        onDismiss={() => setOverlayOpen(false)}
+        targetSelector="[data-onboarding='game-date']"
+      />
       <div className="mx-auto max-w-2xl py-8">
         {/* Header + date picker */}
         <div className="mb-10 space-y-5">
@@ -88,31 +92,37 @@ export default function Slate() {
             </p>
           </div>
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "h-10 w-[260px] justify-start gap-2 rounded-lg font-normal",
-                  !selectedDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                {selectedDate
-                  ? format(selectedDate, "EEEE, MMM d, yyyy")
-                  : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Game date
+            </label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  data-onboarding="game-date"
+                  variant="outline"
+                  className={cn(
+                    "h-10 w-[260px] justify-start gap-2 rounded-lg font-normal relative z-[60]",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  {selectedDate
+                    ? format(selectedDate, "EEEE, MMM d, yyyy")
+                    : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-[70]" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleSelectDate}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         {/* Content states */}
