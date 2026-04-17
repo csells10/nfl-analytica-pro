@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { CalendarIcon, ChevronRight, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useNflSchedule, type NflGame } from "@/lib/nfl-api";
+import DateSelectionModal from "@/components/DateSelectionModal";
 
 function MatchupCard({ game }: { game: NflGame }) {
   const navigate = useNavigate();
@@ -60,14 +61,21 @@ function MatchupCard({ game }: { game: NflGame }) {
 }
 
 export default function Slate() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    () => new Date()
-  );
+  // No date selected initially — the modal collects the first date,
+  // which prevents the schedule API from firing on page load.
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [modalOpen, setModalOpen] = useState(true);
 
   const { data: games, isLoading, isError, error } = useNflSchedule(selectedDate);
 
+  const handleConfirmDate = (date: Date) => {
+    setSelectedDate(date);
+    setModalOpen(false);
+  };
+
   return (
     <AppShell>
+      <DateSelectionModal open={modalOpen} onConfirm={handleConfirmDate} />
       <div className="mx-auto max-w-2xl py-8">
         {/* Header + date picker */}
         <div className="mb-10 space-y-5">
