@@ -822,122 +822,61 @@ export default function Matchup() {
               const [m, s] = t.split(":").map(Number);
               return (m || 0) * 60 + (s || 0);
             };
-            const edge = (av: number, hv: number, tol = 0.5): "away" | "home" | "even" => {
+            const edge = (av: number, hv: number, tol = 0): Advantage => {
               if (Math.abs(av - hv) <= tol) return "even";
               return av > hv ? "away" : "home";
             };
-            const edges = {
-              redZoneTdPct: edge(a.redZoneTdPct, h.redZoneTdPct, 1),
-              thirdDownPct: edge(a.thirdDownPct, h.thirdDownPct, 1),
-              turnoverMargin: edge(a.turnoverMargin, h.turnoverMargin, 0),
-              timeOfPossession: edge(topToSec(a.timeOfPossession), topToSec(h.timeOfPossession), 30),
-            };
-            return (["away", "home"] as const).map((side) => {
-              const m = side === "away" ? a : h;
-              const team = side === "away" ? awayTeam : homeTeam;
-              const valueClass = (e: "away" | "home" | "even") =>
-                e === side
-                  ? "text-foreground font-semibold"
-                  : e === "even"
-                  ? "text-foreground/80"
-                  : "text-foreground/55";
-              const edgeLabel = (e: "away" | "home" | "even") =>
-                e === side ? "Edge" : e === "even" ? "Even" : null;
-              const rowCls = "rounded-md px-2 py-2 transition-colors duration-150 hover:bg-muted/40";
-              return (
-                <Card key={side} className="border-border bg-card">
-                  <CardContent className="p-5">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <TeamLogo team={team} size={24} />
-                        <div>
-                          <p className="text-sm font-semibold text-foreground leading-tight">
-                            {team.shortName}
-                          </p>
-                          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">
-                            {team.location}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-                        Last 5 games
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <div className={rowCls}>
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
-                            Red Zone TD %
-                          </p>
-                          {edgeLabel(edges.redZoneTdPct) && (
-                            <span className="text-[9px] uppercase tracking-[0.12em] text-primary/80">
-                              {edgeLabel(edges.redZoneTdPct)}
-                            </span>
-                          )}
-                        </div>
-                        <p className={`mt-1 font-mono text-lg ${valueClass(edges.redZoneTdPct)}`}>
-                          {formatNum(m.redZoneTdPct, 1)}%
-                        </p>
-                      </div>
-                      <div className={rowCls}>
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
-                            3rd Down %
-                          </p>
-                          {edgeLabel(edges.thirdDownPct) && (
-                            <span className="text-[9px] uppercase tracking-[0.12em] text-primary/80">
-                              {edgeLabel(edges.thirdDownPct)}
-                            </span>
-                          )}
-                        </div>
-                        <p className={`mt-1 font-mono text-lg ${valueClass(edges.thirdDownPct)}`}>
-                          {formatNum(m.thirdDownPct, 1)}%
-                        </p>
-                      </div>
-                      <div className={rowCls}>
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
-                            Turnover Margin
-                          </p>
-                          {edgeLabel(edges.turnoverMargin) && (
-                            <span className="text-[9px] uppercase tracking-[0.12em] text-primary/80">
-                              {edgeLabel(edges.turnoverMargin)}
-                            </span>
-                          )}
-                        </div>
-                        <p className={`mt-1 flex items-center gap-1 font-mono text-lg ${valueClass(edges.turnoverMargin)}`}>
-                          {m.turnoverMargin > 0 ? (
-                            <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                          ) : m.turnoverMargin < 0 ? (
-                            <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-                          ) : (
-                            <Minus className="h-3.5 w-3.5 text-muted-foreground" />
-                          )}
-                          {m.turnoverMargin > 0 ? `+${m.turnoverMargin}` : m.turnoverMargin}
-                        </p>
-                      </div>
-                      <div className={rowCls}>
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
-                            Time of Poss.
-                          </p>
-                          {edgeLabel(edges.timeOfPossession) && (
-                            <span className="text-[9px] uppercase tracking-[0.12em] text-primary/80">
-                              {edgeLabel(edges.timeOfPossession)}
-                            </span>
-                          )}
-                        </div>
-                        <p className={`mt-1 font-mono text-lg ${valueClass(edges.timeOfPossession)}`}>
-                          {m.timeOfPossession}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            });
+            const advRz = edge(a.redZoneTdPct, h.redZoneTdPct, 1);
+            const advThird = edge(a.thirdDownPct, h.thirdDownPct, 1);
+            const advTo = edge(a.turnoverMargin, h.turnoverMargin, 0);
+            const advTop = edge(topToSec(a.timeOfPossession), topToSec(h.timeOfPossession), 30);
+
+            const awayWins = [advRz, advThird, advTo, advTop].filter((e) => e === "away").length;
+            const homeWins = [advRz, advThird, advTo, advTop].filter((e) => e === "home").length;
+            const summary =
+              awayWins > homeWins
+                ? `${awayTeam.location} hold the edge in ${awayWins} of 4 drivers`
+                : homeWins > awayWins
+                ? `${homeTeam.location} hold the edge in ${homeWins} of 4 drivers`
+                : "Drivers split evenly between both teams";
+
+            const fmtTo = (v: number) => (v > 0 ? `+${v}` : `${v}`);
+
+            return (
+              <Card className="border-border bg-card">
+                <CardContent className="p-5 sm:p-6">
+                  <p className="mb-4 text-xs text-muted-foreground/80">{summary}</p>
+                  <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
+                  <div className="space-y-0.5">
+                    <BreakdownRow
+                      label="Red Zone TD %"
+                      awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
+                      homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
+                      advantage={advRz}
+                    />
+                    <BreakdownRow
+                      label="3rd Down %"
+                      awayDisplay={`${formatNum(a.thirdDownPct, 1)}%`}
+                      homeDisplay={`${formatNum(h.thirdDownPct, 1)}%`}
+                      advantage={advThird}
+                    />
+                    <BreakdownRow
+                      label="Turnover Margin"
+                      awayDisplay={fmtTo(a.turnoverMargin)}
+                      homeDisplay={fmtTo(h.turnoverMargin)}
+                      advantage={advTo}
+                    />
+                    <BreakdownRow
+                      label="Time of Poss."
+                      awayDisplay={a.timeOfPossession}
+                      homeDisplay={h.timeOfPossession}
+                      advantage={advTop}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            );
           })()}
-          </div>
         </section>
 
         {/* ══════════════════════════════════════════════════
