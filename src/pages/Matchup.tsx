@@ -683,7 +683,8 @@ export default function Matchup() {
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Swords} title="Offensive Strength" hint="Offense" />
-              <div className="space-y-1">
+              <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
+              <div className="space-y-0.5">
                 <BreakdownRow
                   label="Yds / Play"
                   awayDisplay="5.8"
