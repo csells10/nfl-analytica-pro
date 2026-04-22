@@ -893,7 +893,7 @@ export default function Matchup() {
               </h2>
             </div>
             <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-              Last 5 · most recent left
+              Last 5 Games
             </span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
