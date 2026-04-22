@@ -830,47 +830,55 @@ export default function Matchup() {
             const advTo = edge(a.turnoverMargin, h.turnoverMargin, 0);
             const advTop = edge(topToSec(a.timeOfPossession), topToSec(h.timeOfPossession), 30);
 
-            const awayWins = [advRz, advThird, advTo, advTop].filter((e) => e === "away").length;
-            const homeWins = [advRz, advThird, advTo, advTop].filter((e) => e === "home").length;
-            const summary =
-              awayWins > homeWins
-                ? `${awayTeam.location} hold the edge in ${awayWins} of 4 drivers`
-                : homeWins > awayWins
-                ? `${homeTeam.location} hold the edge in ${homeWins} of 4 drivers`
-                : "Drivers split evenly between both teams";
-
             const fmtTo = (v: number) => (v > 0 ? `+${v}` : `${v}`);
+
+            const rows: { label: string; away: string; home: string; adv: Advantage }[] = [
+              { label: "Red Zone TD %", away: `${formatNum(a.redZoneTdPct, 1)}%`, home: `${formatNum(h.redZoneTdPct, 1)}%`, adv: advRz },
+              { label: "3rd Down %", away: `${formatNum(a.thirdDownPct, 1)}%`, home: `${formatNum(h.thirdDownPct, 1)}%`, adv: advThird },
+              { label: "Turnover Margin", away: fmtTo(a.turnoverMargin), home: fmtTo(h.turnoverMargin), adv: advTo },
+              { label: "Time of Poss.", away: a.timeOfPossession, home: h.timeOfPossession, adv: advTop },
+            ];
+
+            const valueCls = (side: "away" | "home", adv: Advantage) =>
+              adv === side
+                ? "text-foreground font-semibold"
+                : adv === "even"
+                ? "text-foreground/80"
+                : "text-foreground/55";
 
             return (
               <Card className="border-border bg-card">
                 <CardContent className="p-5 sm:p-6">
-                  <p className="mb-4 text-xs text-muted-foreground/80">{summary}</p>
-                  <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
+                  {/* Column headers — anchored left/right */}
+                  <div className="mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border/60 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                    <div className="flex items-center gap-2">
+                      <TeamLogo team={awayTeam} size={18} />
+                      <span className="text-foreground/80">{awayTeam.shortName}</span>
+                    </div>
+                    <span className="px-2 text-center text-muted-foreground/40">vs</span>
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-foreground/80">{homeTeam.shortName}</span>
+                      <TeamLogo team={homeTeam} size={18} />
+                    </div>
+                  </div>
+
                   <div className="space-y-0.5">
-                    <BreakdownRow
-                      label="Red Zone TD %"
-                      awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
-                      homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
-                      advantage={advRz}
-                    />
-                    <BreakdownRow
-                      label="3rd Down %"
-                      awayDisplay={`${formatNum(a.thirdDownPct, 1)}%`}
-                      homeDisplay={`${formatNum(h.thirdDownPct, 1)}%`}
-                      advantage={advThird}
-                    />
-                    <BreakdownRow
-                      label="Turnover Margin"
-                      awayDisplay={fmtTo(a.turnoverMargin)}
-                      homeDisplay={fmtTo(h.turnoverMargin)}
-                      advantage={advTo}
-                    />
-                    <BreakdownRow
-                      label="Time of Poss."
-                      awayDisplay={a.timeOfPossession}
-                      homeDisplay={h.timeOfPossession}
-                      advantage={advTop}
-                    />
+                    {rows.map((r) => (
+                      <div
+                        key={r.label}
+                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-2.5 transition-colors duration-150 hover:bg-muted/30"
+                      >
+                        <span className={`text-left font-mono text-sm tabular-nums ${valueCls("away", r.adv)}`}>
+                          {r.away}
+                        </span>
+                        <span className="px-3 text-center text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+                          {r.label}
+                        </span>
+                        <span className={`text-right font-mono text-sm tabular-nums ${valueCls("home", r.adv)}`}>
+                          {r.home}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
