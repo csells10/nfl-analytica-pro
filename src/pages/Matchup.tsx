@@ -782,18 +782,30 @@ export default function Matchup() {
               </div>
             </CardContent>
           </Card>
-        </div>
+          </div>
+        </section>
 
-        {/* ── Game Drivers ── */}
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
-            Game Drivers
-          </h2>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-            Recent tendencies
-          </span>
-        </div>
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        {/* ══════════════════════════════════════════════════
+            TIER 3 — Game Drivers (supporting)
+            ══════════════════════════════════════════════════ */}
+        <section aria-labelledby="game-drivers" className="mb-10">
+          <div className="mb-3 flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
+                Section 03
+              </p>
+              <h2
+                id="game-drivers"
+                className="mt-0.5 text-sm font-semibold tracking-tight text-foreground/90"
+              >
+                Game Drivers
+              </h2>
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+              Recent tendencies
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
           {(["away", "home"] as const).map((side) => {
             const m = mockMetrics[side];
             const team = side === "away" ? awayTeam : homeTeam;
