@@ -654,16 +654,27 @@ export default function Matchup() {
           </Card>
         </section>
 
-        {/* ── Matchup Breakdown ── */}
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
-            Matchup Breakdown
-          </h2>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-            {awayTeam.shortName} · {homeTeam.shortName}
-          </span>
-        </div>
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        {/* ══════════════════════════════════════════════════
+            TIER 2 — Matchup Breakdown
+            ══════════════════════════════════════════════════ */}
+        <section aria-labelledby="matchup-breakdown" className="mb-10">
+          <div className="mb-4 flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/60">
+                Section 02
+              </p>
+              <h2
+                id="matchup-breakdown"
+                className="mt-0.5 text-base font-semibold tracking-tight text-foreground"
+              >
+                Matchup Breakdown
+              </h2>
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+              {awayTeam.shortName} · {homeTeam.shortName}
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
