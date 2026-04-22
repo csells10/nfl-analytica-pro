@@ -672,7 +672,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <BreakdownRow
                   label="Sack Rate"
                   awayDisplay="7.8%"
@@ -699,7 +699,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Swords} title="Offensive Strength" hint="Offense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <BreakdownRow
                   label="Yds / Play"
                   awayDisplay="5.8"
@@ -726,7 +726,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Shield} title="Defensive Control" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <BreakdownRow
                   label="Yds Allowed / P"
                   awayDisplay="5.1"
@@ -753,7 +753,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Trophy} title="Finishing Ability" hint="Red zone" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <BreakdownRow
                   label="RZ TD %"
                   awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
