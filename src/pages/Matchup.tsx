@@ -566,93 +566,115 @@ export default function Matchup() {
           </div>
         </div>
 
-        {/* ── HERO: Team Comparison ── */}
-        <Card className="mb-6 border-border bg-card">
-          <CardContent className="p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
-                  <Swords className="h-3.5 w-3.5 text-primary" />
+        {/* ══════════════════════════════════════════════════
+            TIER 1 — HERO: Team Comparison
+            ══════════════════════════════════════════════════ */}
+        <section aria-labelledby="team-comparison" className="mb-12">
+          <Card className="border-border/80 bg-gradient-to-b from-card to-card/60 shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_20px_40px_-24px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
+            <CardContent className="p-7 sm:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                    <Swords className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-primary/80">
+                      Hero
+                    </p>
+                    <h2 id="team-comparison" className="text-lg font-semibold leading-tight text-foreground">
+                      Team Comparison
+                    </h2>
+                  </div>
                 </div>
-                <h3 className="text-sm font-semibold text-foreground">Team Comparison</h3>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+                  Season averages
+                </span>
               </div>
-              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-                Season averages
-              </span>
-            </div>
 
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TeamLogo team={awayTeam} size={22} />
-                <span className="text-xs font-semibold text-foreground">{awayTeam.shortName}</span>
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TeamLogo team={awayTeam} size={26} />
+                  <span className="text-sm font-semibold text-foreground">{awayTeam.shortName}</span>
+                </div>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">vs</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground">{homeTeam.shortName}</span>
+                  <TeamLogo team={homeTeam} size={26} />
+                </div>
               </div>
-              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">vs</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-foreground">{homeTeam.shortName}</span>
-                <TeamLogo team={homeTeam} size={22} />
+
+              <div className="space-y-5">
+                <CompareRow
+                  label="Points / Play"
+                  awayValue={a.pointsPerPlay}
+                  homeValue={h.pointsPerPlay}
+                  awayDisplay={formatNum(a.pointsPerPlay)}
+                  homeDisplay={formatNum(h.pointsPerPlay)}
+                  advantage={advPpp}
+                  max={Math.max(a.pointsPerPlay, h.pointsPerPlay)}
+                />
+                <CompareRow
+                  label="Pts Allowed / Play"
+                  awayValue={a.pointsAllowedPerPlay}
+                  homeValue={h.pointsAllowedPerPlay}
+                  awayDisplay={formatNum(a.pointsAllowedPerPlay)}
+                  homeDisplay={formatNum(h.pointsAllowedPerPlay)}
+                  advantage={advPapp}
+                  max={Math.max(a.pointsAllowedPerPlay, h.pointsAllowedPerPlay)}
+                />
+                <CompareRow
+                  label="3rd Down %"
+                  awayValue={a.thirdDownPct}
+                  homeValue={h.thirdDownPct}
+                  awayDisplay={`${formatNum(a.thirdDownPct, 1)}%`}
+                  homeDisplay={`${formatNum(h.thirdDownPct, 1)}%`}
+                  advantage={advThird}
+                  max={Math.max(a.thirdDownPct, h.thirdDownPct)}
+                />
+                <CompareRow
+                  label="Red Zone TD %"
+                  awayValue={a.redZoneTdPct}
+                  homeValue={h.redZoneTdPct}
+                  awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
+                  homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
+                  advantage={advRz}
+                  max={Math.max(a.redZoneTdPct, h.redZoneTdPct)}
+                />
+                <CompareRow
+                  label="Turnover Margin"
+                  awayValue={a.turnoverMargin}
+                  homeValue={h.turnoverMargin}
+                  awayDisplay={a.turnoverMargin > 0 ? `+${a.turnoverMargin}` : `${a.turnoverMargin}`}
+                  homeDisplay={h.turnoverMargin > 0 ? `+${h.turnoverMargin}` : `${h.turnoverMargin}`}
+                  advantage={advTo}
+                  max={Math.max(Math.abs(a.turnoverMargin), Math.abs(h.turnoverMargin))}
+                />
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        </section>
 
-            <div className="space-y-4">
-              <CompareRow
-                label="Points / Play"
-                awayValue={a.pointsPerPlay}
-                homeValue={h.pointsPerPlay}
-                awayDisplay={formatNum(a.pointsPerPlay)}
-                homeDisplay={formatNum(h.pointsPerPlay)}
-                advantage={advPpp}
-                max={Math.max(a.pointsPerPlay, h.pointsPerPlay)}
-              />
-              <CompareRow
-                label="Pts Allowed / Play"
-                awayValue={a.pointsAllowedPerPlay}
-                homeValue={h.pointsAllowedPerPlay}
-                awayDisplay={formatNum(a.pointsAllowedPerPlay)}
-                homeDisplay={formatNum(h.pointsAllowedPerPlay)}
-                advantage={advPapp}
-                max={Math.max(a.pointsAllowedPerPlay, h.pointsAllowedPerPlay)}
-              />
-              <CompareRow
-                label="3rd Down %"
-                awayValue={a.thirdDownPct}
-                homeValue={h.thirdDownPct}
-                awayDisplay={`${formatNum(a.thirdDownPct, 1)}%`}
-                homeDisplay={`${formatNum(h.thirdDownPct, 1)}%`}
-                advantage={advThird}
-                max={Math.max(a.thirdDownPct, h.thirdDownPct)}
-              />
-              <CompareRow
-                label="Red Zone TD %"
-                awayValue={a.redZoneTdPct}
-                homeValue={h.redZoneTdPct}
-                awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
-                homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
-                advantage={advRz}
-                max={Math.max(a.redZoneTdPct, h.redZoneTdPct)}
-              />
-              <CompareRow
-                label="Turnover Margin"
-                awayValue={a.turnoverMargin}
-                homeValue={h.turnoverMargin}
-                awayDisplay={a.turnoverMargin > 0 ? `+${a.turnoverMargin}` : `${a.turnoverMargin}`}
-                homeDisplay={h.turnoverMargin > 0 ? `+${h.turnoverMargin}` : `${h.turnoverMargin}`}
-                advantage={advTo}
-                max={Math.max(Math.abs(a.turnoverMargin), Math.abs(h.turnoverMargin))}
-              />
+        {/* ══════════════════════════════════════════════════
+            TIER 2 — Matchup Breakdown
+            ══════════════════════════════════════════════════ */}
+        <section aria-labelledby="matchup-breakdown" className="mb-10">
+          <div className="mb-4 flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/60">
+                Section 02
+              </p>
+              <h2
+                id="matchup-breakdown"
+                className="mt-0.5 text-base font-semibold tracking-tight text-foreground"
+              >
+                Matchup Breakdown
+              </h2>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* ── Matchup Breakdown ── */}
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
-            Matchup Breakdown
-          </h2>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-            {awayTeam.shortName} · {homeTeam.shortName}
-          </span>
-        </div>
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+              {awayTeam.shortName} · {homeTeam.shortName}
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
@@ -760,18 +782,30 @@ export default function Matchup() {
               </div>
             </CardContent>
           </Card>
-        </div>
+          </div>
+        </section>
 
-        {/* ── Game Drivers ── */}
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
-            Game Drivers
-          </h2>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-            Recent tendencies
-          </span>
-        </div>
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        {/* ══════════════════════════════════════════════════
+            TIER 3 — Game Drivers (supporting)
+            ══════════════════════════════════════════════════ */}
+        <section aria-labelledby="game-drivers" className="mb-10">
+          <div className="mb-3 flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
+                Section 03
+              </p>
+              <h2
+                id="game-drivers"
+                className="mt-0.5 text-sm font-semibold tracking-tight text-foreground/90"
+              >
+                Game Drivers
+              </h2>
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+              Recent tendencies
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
           {(["away", "home"] as const).map((side) => {
             const m = mockMetrics[side];
             const team = side === "away" ? awayTeam : homeTeam;
@@ -833,18 +867,30 @@ export default function Matchup() {
               </Card>
             );
           })}
-        </div>
+          </div>
+        </section>
 
-        {/* ── Recent Form ── */}
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
-            Recent Form
-          </h2>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-            Last 5 · most recent left
-          </span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* ══════════════════════════════════════════════════
+            TIER 4 — Recent Form (context)
+            ══════════════════════════════════════════════════ */}
+        <section aria-labelledby="recent-form">
+          <div className="mb-3 flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
+                Section 04
+              </p>
+              <h2
+                id="recent-form"
+                className="mt-0.5 text-sm font-semibold tracking-tight text-foreground/80"
+              >
+                Recent Form
+              </h2>
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+              Last 5 · most recent left
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
           {(["away", "home"] as const).map((side) => {
             const games = mockRecent[side];
             const team = side === "away" ? awayTeam : homeTeam;
@@ -882,7 +928,8 @@ export default function Matchup() {
               </Card>
             );
           })}
-        </div>
+          </div>
+        </section>
       </div>
     </AppShell>
   );
