@@ -658,24 +658,18 @@ export default function Matchup() {
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
               <div className="space-y-1">
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Sack Rate"
                   awayDisplay="7.8%"
                   homeDisplay="6.4%"
                   advantage="away"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Pressure %"
                   awayDisplay="32.1%"
                   homeDisplay="28.7%"
                   advantage="away"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="INT Rate"
                   awayDisplay="2.4%"
                   homeDisplay="3.1%"
@@ -690,24 +684,18 @@ export default function Matchup() {
               <SectionHeading icon={Swords} title="Offensive Strength" hint="Offense" />
               <div className="space-y-1">
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Yds / Play"
                   awayDisplay="5.8"
                   homeDisplay="5.4"
                   advantage="away"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="EPA / Play"
                   awayDisplay="0.12"
                   homeDisplay="0.08"
                   advantage="away"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Explosive %"
                   awayDisplay="11.2%"
                   homeDisplay="12.6%"
@@ -722,24 +710,18 @@ export default function Matchup() {
               <SectionHeading icon={Shield} title="Defensive Control" hint="Defense" />
               <div className="space-y-1">
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Yds Allowed / P"
                   awayDisplay="5.1"
                   homeDisplay="4.8"
                   advantage="home"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Stop Rate"
                   awayDisplay="58.7%"
                   homeDisplay="61.3%"
                   advantage="home"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Pts Allowed"
                   awayDisplay="20.4"
                   homeDisplay="18.9"
@@ -754,24 +736,18 @@ export default function Matchup() {
               <SectionHeading icon={Trophy} title="Finishing Ability" hint="Red zone" />
               <div className="space-y-1">
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="RZ TD %"
                   awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
                   homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
                   advantage={advRz}
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Goal-to-Go %"
                   awayDisplay="72.1%"
                   homeDisplay="78.4%"
                   advantage="home"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="4th Down %"
                   awayDisplay="54.2%"
                   homeDisplay="48.1%"
