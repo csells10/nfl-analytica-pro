@@ -900,7 +900,6 @@ export default function Matchup() {
           {(["away", "home"] as const).map((side) => {
             const games = mockRecent[side];
             const team = side === "away" ? awayTeam : homeTeam;
-            const wins = games.filter((g) => g.result === "W").length;
             return (
               <Card key={side} className="border-border bg-card">
                 <CardContent className="p-5">
