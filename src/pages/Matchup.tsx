@@ -578,9 +578,6 @@ export default function Matchup() {
                     <Swords className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-primary/80">
-                      Hero
-                    </p>
                     <h2 id="team-comparison" className="text-lg font-semibold leading-tight text-foreground">
                       Team Comparison
                     </h2>
@@ -660,12 +657,9 @@ export default function Matchup() {
         <section aria-labelledby="matchup-breakdown" className="mb-10">
           <div className="mb-4 flex items-end justify-between">
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/60">
-                Section 02
-              </p>
               <h2
                 id="matchup-breakdown"
-                className="mt-0.5 text-base font-semibold tracking-tight text-foreground"
+                className="text-base font-semibold tracking-tight text-foreground"
               >
                 Matchup Breakdown
               </h2>
@@ -791,12 +785,9 @@ export default function Matchup() {
         <section aria-labelledby="game-drivers" className="mb-10">
           <div className="mb-3 flex items-end justify-between">
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
-                Section 03
-              </p>
               <h2
                 id="game-drivers"
-                className="mt-0.5 text-sm font-semibold tracking-tight text-foreground/90"
+                className="text-sm font-semibold tracking-tight text-foreground/90"
               >
                 Game Drivers
               </h2>
@@ -876,12 +867,9 @@ export default function Matchup() {
         <section aria-labelledby="recent-form">
           <div className="mb-3 flex items-end justify-between">
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
-                Section 04
-              </p>
               <h2
                 id="recent-form"
-                className="mt-0.5 text-sm font-semibold tracking-tight text-foreground/80"
+                className="text-sm font-semibold tracking-tight text-foreground/80"
               >
                 Recent Form
               </h2>
