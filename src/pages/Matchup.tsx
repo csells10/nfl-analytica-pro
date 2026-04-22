@@ -241,19 +241,30 @@ function CompareRow({
 }
 
 /**
- * Breakdown row — shows team identity on each side of the metric label.
- *   [Away short] | Metric | [Home short]
+ * Header row for a Matchup Breakdown card — displays the two team names
+ * above the metric rows so the [team | metric | team] grid reads cleanly.
+ */
+function BreakdownHeader({ awayShort, homeShort }: { awayShort: string; homeShort: string }) {
+  return (
+    <div className="mb-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border/60 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+      <span className="text-right text-foreground/80">{awayShort}</span>
+      <span className="px-2 text-center text-muted-foreground/40">vs</span>
+      <span className="text-left text-foreground/80">{homeShort}</span>
+    </div>
+  );
+}
+
+/**
+ * Breakdown row — true head-to-head comparison:
+ *   [Away value] | Metric label | [Home value]
+ * The winning side is highlighted in primary; row gets a subtle hover.
  */
 function BreakdownRow({
-  awayShort,
-  homeShort,
   label,
   awayDisplay,
   homeDisplay,
   advantage,
 }: {
-  awayShort: string;
-  homeShort: string;
   label: string;
   awayDisplay: string;
   homeDisplay: string;
@@ -263,35 +274,43 @@ function BreakdownRow({
   const homeActive = advantage === "home";
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border/40 py-2 text-xs last:border-0">
-      {/* Away side */}
+    <div
+      className="group -mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-md border border-transparent px-2 py-2 text-xs transition-colors duration-150 hover:border-border/60 hover:bg-muted/30"
+    >
+      {/* Away value */}
       <div className="flex items-center justify-end gap-2">
         <span
-          className={`text-[10px] uppercase tracking-[0.12em] ${
-            awayActive ? "text-primary" : "text-muted-foreground/60"
+          className={`font-mono text-sm tabular-nums ${
+            awayActive ? "text-primary" : "text-foreground/80"
           }`}
         >
-          {awayShort}
-        </span>
-        <span className={`w-12 text-right font-mono ${awayActive ? "text-primary" : "text-foreground/80"}`}>
           {awayDisplay}
         </span>
+        <span
+          className={`h-1.5 w-1.5 rounded-full transition-colors ${
+            awayActive ? "bg-primary" : "bg-transparent"
+          }`}
+          aria-hidden
+        />
       </div>
       {/* Metric label */}
-      <span className="px-2 text-center text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+      <span className="px-3 text-center text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
         {label}
       </span>
-      {/* Home side */}
+      {/* Home value */}
       <div className="flex items-center gap-2">
-        <span className={`w-12 font-mono ${homeActive ? "text-primary" : "text-foreground/80"}`}>
-          {homeDisplay}
-        </span>
         <span
-          className={`text-[10px] uppercase tracking-[0.12em] ${
-            homeActive ? "text-primary" : "text-muted-foreground/60"
+          className={`h-1.5 w-1.5 rounded-full transition-colors ${
+            homeActive ? "bg-primary" : "bg-transparent"
+          }`}
+          aria-hidden
+        />
+        <span
+          className={`font-mono text-sm tabular-nums ${
+            homeActive ? "text-primary" : "text-foreground/80"
           }`}
         >
-          {homeShort}
+          {homeDisplay}
         </span>
       </div>
     </div>
@@ -637,26 +656,21 @@ export default function Matchup() {
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
-              <div className="space-y-1">
+              <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
+              <div className="space-y-0.5">
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Sack Rate"
                   awayDisplay="7.8%"
                   homeDisplay="6.4%"
                   advantage="away"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Pressure %"
                   awayDisplay="32.1%"
                   homeDisplay="28.7%"
                   advantage="away"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="INT Rate"
                   awayDisplay="2.4%"
                   homeDisplay="3.1%"
@@ -669,26 +683,21 @@ export default function Matchup() {
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Swords} title="Offensive Strength" hint="Offense" />
-              <div className="space-y-1">
+              <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
+              <div className="space-y-0.5">
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Yds / Play"
                   awayDisplay="5.8"
                   homeDisplay="5.4"
                   advantage="away"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="EPA / Play"
                   awayDisplay="0.12"
                   homeDisplay="0.08"
                   advantage="away"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Explosive %"
                   awayDisplay="11.2%"
                   homeDisplay="12.6%"
@@ -701,26 +710,21 @@ export default function Matchup() {
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Shield} title="Defensive Control" hint="Defense" />
-              <div className="space-y-1">
+              <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
+              <div className="space-y-0.5">
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Yds Allowed / P"
                   awayDisplay="5.1"
                   homeDisplay="4.8"
                   advantage="home"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Stop Rate"
                   awayDisplay="58.7%"
                   homeDisplay="61.3%"
                   advantage="home"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Pts Allowed"
                   awayDisplay="20.4"
                   homeDisplay="18.9"
@@ -733,26 +737,21 @@ export default function Matchup() {
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Trophy} title="Finishing Ability" hint="Red zone" />
-              <div className="space-y-1">
+              <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
+              <div className="space-y-0.5">
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="RZ TD %"
                   awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
                   homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
                   advantage={advRz}
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="Goal-to-Go %"
                   awayDisplay="72.1%"
                   homeDisplay="78.4%"
                   advantage="home"
                 />
                 <BreakdownRow
-                  awayShort={awayTeam.shortName}
-                  homeShort={homeTeam.shortName}
                   label="4th Down %"
                   awayDisplay="54.2%"
                   homeDisplay="48.1%"
