@@ -11,8 +11,10 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  ExternalLink,
 } from "lucide-react";
 import type { NflGame } from "@/lib/nfl-api";
+import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 
 // ─────────────────────────────────────────────────────────────
 // Mock data — replace with real API later
@@ -29,7 +31,7 @@ interface TeamMetrics {
 
 interface RecentGame {
   opponent: string;
-  score: string; // "24-17"
+  score: string;
   result: "W" | "L";
   home: boolean;
 }
@@ -70,6 +72,18 @@ const mockRecent: Record<"away" | "home", RecentGame[]> = {
   ],
 };
 
+// Mock final-score scoring by quarter (used only when status is Final*).
+// Shape is ready to swap with real API data.
+interface FinalScore {
+  away: { q1: number; q2: number; q3: number; q4: number; ot?: number; total: number };
+  home: { q1: number; q2: number; q3: number; q4: number; ot?: number; total: number };
+}
+
+const mockFinalScore: FinalScore = {
+  away: { q1: 7, q2: 10, q3: 3, q4: 7, total: 27 },
+  home: { q1: 3, q2: 7, q3: 10, q4: 4, total: 24 },
+};
+
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
@@ -88,6 +102,21 @@ function compareLower(a: number, b: number): Advantage {
 
 function formatNum(n: number, decimals = 2) {
   return n.toFixed(decimals);
+}
+
+function isFinal(status?: string) {
+  if (!status) return false;
+  return /^final/i.test(status);
+}
+
+function espnGameUrl(gameId?: string) {
+  if (!gameId) return "https://www.espn.com/nfl/scoreboard";
+  // ESPN game IDs in the backend are typically the numeric ESPN eventId,
+  // but our IDs look like "20260104_GB@MIN". Fall back to a search URL.
+  const numeric = gameId.match(/\d{8,}/)?.[0];
+  return numeric
+    ? `https://www.espn.com/nfl/game/_/gameId/${numeric}`
+    : `https://www.espn.com/nfl/scoreboard`;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -122,6 +151,23 @@ function Badge({
   );
 }
 
+function TeamLogo({ team, size = 40 }: { team: TeamMeta; size?: number }) {
+  return (
+    <img
+      src={teamLogoUrl(team.abbr, 500)}
+      alt={`${team.fullName} logo`}
+      width={size}
+      height={size}
+      loading="lazy"
+      className="object-contain"
+      style={{ width: size, height: size }}
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+      }}
+    />
+  );
+}
+
 function SectionHeading({
   icon: Icon,
   title,
@@ -146,10 +192,6 @@ function SectionHeading({
   );
 }
 
-/**
- * Horizontal comparison row — two values diverging from a center axis.
- * The team with the advantage gets the primary color; the other is muted.
- */
 function CompareRow({
   label,
   awayValue,
@@ -157,7 +199,6 @@ function CompareRow({
   awayDisplay,
   homeDisplay,
   advantage,
-  // for bar fill — both values normalized against max
   max,
 }: {
   label: string;
@@ -172,85 +213,87 @@ function CompareRow({
   const homePct = max > 0 ? Math.min(100, (Math.abs(homeValue) / max) * 100) : 0;
 
   const awayBar =
-    advantage === "away"
-      ? "bg-primary"
-      : advantage === "home"
-      ? "bg-secondary"
-      : "bg-muted-foreground/40";
+    advantage === "away" ? "bg-primary" : advantage === "home" ? "bg-secondary" : "bg-muted-foreground/40";
   const homeBar =
-    advantage === "home"
-      ? "bg-primary"
-      : advantage === "away"
-      ? "bg-secondary"
-      : "bg-muted-foreground/40";
+    advantage === "home" ? "bg-primary" : advantage === "away" ? "bg-secondary" : "bg-muted-foreground/40";
 
-  const awayText =
-    advantage === "away" ? "text-primary" : "text-foreground/80";
-  const homeText =
-    advantage === "home" ? "text-primary" : "text-foreground/80";
+  const awayText = advantage === "away" ? "text-primary" : "text-foreground/80";
+  const homeText = advantage === "home" ? "text-primary" : "text-foreground/80";
 
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
-        <span className={`font-mono text-xs normal-case tracking-normal ${awayText}`}>
-          {awayDisplay}
-        </span>
+        <span className={`font-mono text-xs normal-case tracking-normal ${awayText}`}>{awayDisplay}</span>
         <span>{label}</span>
-        <span className={`font-mono text-xs normal-case tracking-normal ${homeText}`}>
-          {homeDisplay}
-        </span>
+        <span className={`font-mono text-xs normal-case tracking-normal ${homeText}`}>{homeDisplay}</span>
       </div>
       <div className="flex items-center gap-1.5">
-        {/* Away bar — fills right→left */}
         <div className="flex h-1.5 flex-1 justify-end overflow-hidden rounded-full bg-secondary/50">
-          <div
-            className={`h-full rounded-full ${awayBar} transition-all`}
-            style={{ width: `${awayPct}%` }}
-          />
+          <div className={`h-full rounded-full ${awayBar} transition-all`} style={{ width: `${awayPct}%` }} />
         </div>
         <div className="h-2.5 w-px bg-border" />
-        {/* Home bar — fills left→right */}
         <div className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-secondary/50">
-          <div
-            className={`h-full rounded-full ${homeBar} transition-all`}
-            style={{ width: `${homePct}%` }}
-          />
+          <div className={`h-full rounded-full ${homeBar} transition-all`} style={{ width: `${homePct}%` }} />
         </div>
       </div>
     </div>
   );
 }
 
-function StatLine({
+/**
+ * Breakdown row — shows team identity on each side of the metric label.
+ *   [Away short] | Metric | [Home short]
+ */
+function BreakdownRow({
+  awayShort,
+  homeShort,
   label,
   awayDisplay,
   homeDisplay,
   advantage,
 }: {
+  awayShort: string;
+  homeShort: string;
   label: string;
   awayDisplay: string;
   homeDisplay: string;
   advantage: Advantage;
 }) {
+  const awayActive = advantage === "away";
+  const homeActive = advantage === "home";
+
   return (
-    <div className="flex items-center justify-between border-b border-border/40 py-2 text-xs last:border-0">
-      <span
-        className={`w-14 font-mono text-right ${
-          advantage === "away" ? "text-primary" : "text-foreground/80"
-        }`}
-      >
-        {awayDisplay}
-      </span>
-      <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border/40 py-2 text-xs last:border-0">
+      {/* Away side */}
+      <div className="flex items-center justify-end gap-2">
+        <span
+          className={`text-[10px] uppercase tracking-[0.12em] ${
+            awayActive ? "text-primary" : "text-muted-foreground/60"
+          }`}
+        >
+          {awayShort}
+        </span>
+        <span className={`w-12 text-right font-mono ${awayActive ? "text-primary" : "text-foreground/80"}`}>
+          {awayDisplay}
+        </span>
+      </div>
+      {/* Metric label */}
+      <span className="px-2 text-center text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
         {label}
       </span>
-      <span
-        className={`w-14 font-mono ${
-          advantage === "home" ? "text-primary" : "text-foreground/80"
-        }`}
-      >
-        {homeDisplay}
-      </span>
+      {/* Home side */}
+      <div className="flex items-center gap-2">
+        <span className={`w-12 font-mono ${homeActive ? "text-primary" : "text-foreground/80"}`}>
+          {homeDisplay}
+        </span>
+        <span
+          className={`text-[10px] uppercase tracking-[0.12em] ${
+            homeActive ? "text-primary" : "text-muted-foreground/60"
+          }`}
+        >
+          {homeShort}
+        </span>
+      </div>
     </div>
   );
 }
@@ -259,13 +302,122 @@ function ResultDot({ result }: { result: "W" | "L" }) {
   return (
     <span
       className={`inline-flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-bold ${
-        result === "W"
-          ? "bg-primary/15 text-primary"
-          : "bg-destructive/15 text-destructive"
+        result === "W" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"
       }`}
     >
       {result}
     </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Final score card
+// ─────────────────────────────────────────────────────────────
+
+function FinalScoreCard({
+  away,
+  home,
+  score,
+  status,
+}: {
+  away: TeamMeta;
+  home: TeamMeta;
+  score: FinalScore;
+  status: string;
+}) {
+  const hasOt = score.away.ot !== undefined || score.home.ot !== undefined;
+  const cols: Array<{ key: string; label: string; awayVal: number; homeVal: number }> = [
+    { key: "q1", label: "Q1", awayVal: score.away.q1, homeVal: score.home.q1 },
+    { key: "q2", label: "Q2", awayVal: score.away.q2, homeVal: score.home.q2 },
+    { key: "q3", label: "Q3", awayVal: score.away.q3, homeVal: score.home.q3 },
+    { key: "q4", label: "Q4", awayVal: score.away.q4, homeVal: score.home.q4 },
+  ];
+  if (hasOt) {
+    cols.push({ key: "ot", label: "OT", awayVal: score.away.ot ?? 0, homeVal: score.home.ot ?? 0 });
+  }
+
+  const awayWon = score.away.total > score.home.total;
+  const homeWon = score.home.total > score.away.total;
+
+  const TeamRow = ({
+    team,
+    perQuarter,
+    total,
+    winner,
+  }: {
+    team: TeamMeta;
+    perQuarter: number[];
+    total: number;
+    winner: boolean;
+  }) => (
+    <div className="grid grid-cols-[1fr_repeat(var(--cols),2.25rem)_3rem] items-center gap-2 py-2" style={{ ["--cols" as any]: cols.length }}>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <TeamLogo team={team} size={28} />
+        <div className="min-w-0">
+          <p className={`truncate text-sm font-semibold ${winner ? "text-foreground" : "text-foreground/80"}`}>
+            {team.location} <span className="text-foreground/90">{team.shortName}</span>
+          </p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">{team.abbr}</p>
+        </div>
+      </div>
+      {perQuarter.map((v, i) => (
+        <span
+          key={i}
+          className="text-center font-mono text-sm tabular-nums text-foreground/80"
+        >
+          {v}
+        </span>
+      ))}
+      <span
+        className={`text-right font-mono text-lg font-semibold tabular-nums ${
+          winner ? "text-primary" : "text-foreground/80"
+        }`}
+      >
+        {total}
+      </span>
+    </div>
+  );
+
+  return (
+    <Card className="mb-6 border-border bg-card">
+      <CardContent className="p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-2 w-2 rounded-full bg-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Final Score</h3>
+          </div>
+          <Badge accent>{status}</Badge>
+        </div>
+
+        {/* Header row with quarter labels */}
+        <div
+          className="mb-1 grid grid-cols-[1fr_repeat(var(--cols),2.25rem)_3rem] items-center gap-2 border-b border-border/40 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60"
+          style={{ ["--cols" as any]: cols.length }}
+        >
+          <span>Team</span>
+          {cols.map((c) => (
+            <span key={c.key} className="text-center">
+              {c.label}
+            </span>
+          ))}
+          <span className="text-right">T</span>
+        </div>
+
+        <TeamRow
+          team={away}
+          perQuarter={cols.map((c) => c.awayVal)}
+          total={score.away.total}
+          winner={awayWon}
+        />
+        <div className="border-b border-border/40" />
+        <TeamRow
+          team={home}
+          perQuarter={cols.map((c) => c.homeVal)}
+          total={score.home.total}
+          winner={homeWon}
+        />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -279,10 +431,11 @@ export default function Matchup() {
   const location = useLocation();
   const game = (location.state as { game?: NflGame })?.game;
 
-  const showStatus = game?.status && game.status !== "Scheduled";
+  const awayTeam = getTeam(game?.awayTeam);
+  const homeTeam = getTeam(game?.homeTeam);
 
-  const awayLabel = game?.awayTeam ?? "AWAY";
-  const homeLabel = game?.homeTeam ?? "HOME";
+  const showStatus = game?.status && game.status !== "Scheduled";
+  const final = isFinal(game?.status);
 
   const a = mockMetrics.away;
   const h = mockMetrics.home;
@@ -294,17 +447,15 @@ export default function Matchup() {
   const advRz = compareHigher(a.redZoneTdPct, h.redZoneTdPct);
   const advTo = compareHigher(a.turnoverMargin, h.turnoverMargin);
 
-  // Insight line — quick heuristic
-  const awayWins =
-    [advPpp, advPapp, advThird, advRz, advTo].filter((x) => x === "away").length;
-  const homeWins =
-    [advPpp, advPapp, advThird, advRz, advTo].filter((x) => x === "home").length;
+  // Insight
+  const awayWins = [advPpp, advPapp, advThird, advRz, advTo].filter((x) => x === "away").length;
+  const homeWins = [advPpp, advPapp, advThird, advRz, advTo].filter((x) => x === "home").length;
   const insight =
     awayWins === homeWins
-      ? `${awayLabel} and ${homeLabel} grade evenly across core efficiency metrics.`
+      ? `${awayTeam.shortName} and ${homeTeam.shortName} grade evenly across core efficiency metrics.`
       : awayWins > homeWins
-      ? `${awayLabel} shows stronger efficiency, while ${homeLabel} holds situational edges.`
-      : `${homeLabel} shows stronger efficiency, while ${awayLabel} creates more disruption.`;
+      ? `${awayTeam.shortName} show stronger efficiency, while ${homeTeam.shortName} hold situational edges.`
+      : `${homeTeam.shortName} show stronger efficiency, while ${awayTeam.shortName} create more disruption.`;
 
   return (
     <AppShell>
@@ -323,36 +474,65 @@ export default function Matchup() {
         <div className="mb-8">
           {game ? (
             <>
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-16 items-center justify-center rounded-lg bg-primary/15 text-sm font-bold tracking-wide text-primary">
-                  {awayLabel}
-                </span>
-                <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground/60">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <TeamLogo team={awayTeam} size={44} />
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                      {awayTeam.abbr} · Away
+                    </p>
+                    <p className="text-base font-semibold text-foreground">{awayTeam.fullName}</p>
+                  </div>
+                </div>
+                <span className="px-1 text-xs font-medium uppercase tracking-widest text-muted-foreground/60">
                   at
                 </span>
-                <span className="inline-flex h-10 w-16 items-center justify-center rounded-lg bg-primary/15 text-sm font-bold tracking-wide text-primary">
-                  {homeLabel}
-                </span>
+                <div className="flex items-center gap-3">
+                  <TeamLogo team={homeTeam} size={44} />
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                      {homeTeam.abbr} · Home
+                    </p>
+                    <p className="text-base font-semibold text-foreground">{homeTeam.fullName}</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 <span className="text-sm text-muted-foreground">
                   {game.date} · {game.time}
                 </span>
                 {game.week && <Badge warm>Week {game.week}</Badge>}
                 {showStatus && <Badge accent>{game.status}</Badge>}
                 <Badge muted>ID {id}</Badge>
+                <a
+                  href={espnGameUrl(id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 transition-colors hover:text-primary"
+                >
+                  View on ESPN
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
               <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
                 Understand the matchup
               </p>
             </>
           ) : (
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              Game {id}
-            </h1>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Game {id}</h1>
           )}
         </div>
+
+        {/* ── Final Score (only when final) ── */}
+        {final && (
+          <FinalScoreCard
+            away={awayTeam}
+            home={homeTeam}
+            score={mockFinalScore}
+            status={game?.status ?? "Final"}
+          />
+        )}
 
         {/* ── Matchup Insight ── */}
         <div className="mb-6 rounded-lg border border-border/60 bg-card/60 px-4 py-3">
@@ -375,19 +555,23 @@ export default function Matchup() {
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
                   <Swords className="h-3.5 w-3.5 text-primary" />
                 </div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  Team Comparison
-                </h3>
+                <h3 className="text-sm font-semibold text-foreground">Team Comparison</h3>
               </div>
               <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
                 Season averages
               </span>
             </div>
 
-            <div className="mb-5 flex items-center justify-between text-xs font-semibold tracking-wide">
-              <span className="text-foreground">{awayLabel}</span>
-              <span className="text-muted-foreground/60">vs</span>
-              <span className="text-foreground">{homeLabel}</span>
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TeamLogo team={awayTeam} size={22} />
+                <span className="text-xs font-semibold text-foreground">{awayTeam.shortName}</span>
+              </div>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">vs</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">{homeTeam.shortName}</span>
+                <TeamLogo team={homeTeam} size={22} />
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -445,15 +629,39 @@ export default function Matchup() {
           <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
             Matchup Breakdown
           </h2>
+          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+            {awayTeam.shortName} · {homeTeam.shortName}
+          </span>
         </div>
         <div className="mb-6 grid gap-4 sm:grid-cols-2">
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
               <div className="space-y-1">
-                <StatLine label="Sack Rate" awayDisplay="7.8%" homeDisplay="6.4%" advantage="away" />
-                <StatLine label="Pressure %" awayDisplay="32.1%" homeDisplay="28.7%" advantage="away" />
-                <StatLine label="INT Rate" awayDisplay="2.4%" homeDisplay="3.1%" advantage="home" />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="Sack Rate"
+                  awayDisplay="7.8%"
+                  homeDisplay="6.4%"
+                  advantage="away"
+                />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="Pressure %"
+                  awayDisplay="32.1%"
+                  homeDisplay="28.7%"
+                  advantage="away"
+                />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="INT Rate"
+                  awayDisplay="2.4%"
+                  homeDisplay="3.1%"
+                  advantage="home"
+                />
               </div>
             </CardContent>
           </Card>
@@ -462,9 +670,30 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Swords} title="Offensive Strength" hint="Offense" />
               <div className="space-y-1">
-                <StatLine label="Yds / Play" awayDisplay="5.8" homeDisplay="5.4" advantage="away" />
-                <StatLine label="EPA / Play" awayDisplay="0.12" homeDisplay="0.08" advantage="away" />
-                <StatLine label="Explosive %" awayDisplay="11.2%" homeDisplay="12.6%" advantage="home" />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="Yds / Play"
+                  awayDisplay="5.8"
+                  homeDisplay="5.4"
+                  advantage="away"
+                />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="EPA / Play"
+                  awayDisplay="0.12"
+                  homeDisplay="0.08"
+                  advantage="away"
+                />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="Explosive %"
+                  awayDisplay="11.2%"
+                  homeDisplay="12.6%"
+                  advantage="home"
+                />
               </div>
             </CardContent>
           </Card>
@@ -473,9 +702,30 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Shield} title="Defensive Control" hint="Defense" />
               <div className="space-y-1">
-                <StatLine label="Yds Allowed / P" awayDisplay="5.1" homeDisplay="4.8" advantage="home" />
-                <StatLine label="Stop Rate" awayDisplay="58.7%" homeDisplay="61.3%" advantage="home" />
-                <StatLine label="Pts Allowed" awayDisplay="20.4" homeDisplay="18.9" advantage="home" />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="Yds Allowed / P"
+                  awayDisplay="5.1"
+                  homeDisplay="4.8"
+                  advantage="home"
+                />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="Stop Rate"
+                  awayDisplay="58.7%"
+                  homeDisplay="61.3%"
+                  advantage="home"
+                />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="Pts Allowed"
+                  awayDisplay="20.4"
+                  homeDisplay="18.9"
+                  advantage="home"
+                />
               </div>
             </CardContent>
           </Card>
@@ -484,14 +734,30 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Trophy} title="Finishing Ability" hint="Red zone" />
               <div className="space-y-1">
-                <StatLine
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
                   label="RZ TD %"
                   awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
                   homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
                   advantage={advRz}
                 />
-                <StatLine label="Goal-to-Go %" awayDisplay="72.1%" homeDisplay="78.4%" advantage="home" />
-                <StatLine label="4th Down %" awayDisplay="54.2%" homeDisplay="48.1%" advantage="away" />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="Goal-to-Go %"
+                  awayDisplay="72.1%"
+                  homeDisplay="78.4%"
+                  advantage="home"
+                />
+                <BreakdownRow
+                  awayShort={awayTeam.shortName}
+                  homeShort={homeTeam.shortName}
+                  label="4th Down %"
+                  awayDisplay="54.2%"
+                  homeDisplay="48.1%"
+                  advantage="away"
+                />
               </div>
             </CardContent>
           </Card>
@@ -509,14 +775,22 @@ export default function Matchup() {
         <div className="mb-6 grid gap-4 sm:grid-cols-2">
           {(["away", "home"] as const).map((side) => {
             const m = mockMetrics[side];
-            const label = side === "away" ? awayLabel : homeLabel;
+            const team = side === "away" ? awayTeam : homeTeam;
             return (
               <Card key={side} className="border-border bg-card">
                 <CardContent className="p-5">
                   <div className="mb-4 flex items-center justify-between">
-                    <span className="inline-flex h-7 min-w-[3.5rem] items-center justify-center rounded-md bg-primary/15 px-2 text-xs font-bold text-primary">
-                      {label}
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <TeamLogo team={team} size={24} />
+                      <div>
+                        <p className="text-sm font-semibold text-foreground leading-tight">
+                          {team.shortName}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">
+                          {team.location}
+                        </p>
+                      </div>
+                    </div>
                     <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
                       Last 5 games
                     </span>
@@ -526,17 +800,13 @@ export default function Matchup() {
                       <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
                         Red Zone TD %
                       </p>
-                      <p className="mt-1 font-mono text-lg text-foreground">
-                        {formatNum(m.redZoneTdPct, 1)}%
-                      </p>
+                      <p className="mt-1 font-mono text-lg text-foreground">{formatNum(m.redZoneTdPct, 1)}%</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
                         3rd Down %
                       </p>
-                      <p className="mt-1 font-mono text-lg text-foreground">
-                        {formatNum(m.thirdDownPct, 1)}%
-                      </p>
+                      <p className="mt-1 font-mono text-lg text-foreground">{formatNum(m.thirdDownPct, 1)}%</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
@@ -557,9 +827,7 @@ export default function Matchup() {
                       <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
                         Time of Poss.
                       </p>
-                      <p className="mt-1 font-mono text-lg text-foreground">
-                        {m.timeOfPossession}
-                      </p>
+                      <p className="mt-1 font-mono text-lg text-foreground">{m.timeOfPossession}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -580,15 +848,18 @@ export default function Matchup() {
         <div className="grid gap-4 sm:grid-cols-2">
           {(["away", "home"] as const).map((side) => {
             const games = mockRecent[side];
-            const label = side === "away" ? awayLabel : homeLabel;
+            const team = side === "away" ? awayTeam : homeTeam;
             const wins = games.filter((g) => g.result === "W").length;
             return (
               <Card key={side} className="border-border bg-card">
                 <CardContent className="p-5">
                   <div className="mb-4 flex items-center justify-between">
-                    <span className="inline-flex h-7 min-w-[3.5rem] items-center justify-center rounded-md bg-primary/15 px-2 text-xs font-bold text-primary">
-                      {label}
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <TeamLogo team={team} size={24} />
+                      <span className="text-sm font-semibold text-foreground">
+                        {team.location} {team.shortName}
+                      </span>
+                    </div>
                     <span className="font-mono text-xs text-muted-foreground">
                       {wins}-{games.length - wins}
                     </span>
@@ -601,16 +872,10 @@ export default function Matchup() {
                       >
                         <div className="flex items-center gap-2.5">
                           <ResultDot result={g.result} />
-                          <span className="text-muted-foreground/70">
-                            {g.home ? "vs" : "@"}
-                          </span>
-                          <span className="font-medium text-foreground">
-                            {g.opponent}
-                          </span>
+                          <span className="text-muted-foreground/70">{g.home ? "vs" : "@"}</span>
+                          <span className="font-medium text-foreground">{getTeam(g.opponent).shortName}</span>
                         </div>
-                        <span className="font-mono text-foreground/80">
-                          {g.score}
-                        </span>
+                        <span className="font-mono text-foreground/80">{g.score}</span>
                       </li>
                     ))}
                   </ul>
