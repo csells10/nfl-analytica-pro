@@ -843,38 +843,44 @@ export default function Matchup() {
               adv === side
                 ? "text-foreground font-semibold"
                 : adv === "even"
-                ? "text-foreground/80"
-                : "text-foreground/55";
+                ? "text-foreground/75"
+                : "text-foreground/45";
 
             return (
               <Card className="border-border bg-card">
                 <CardContent className="p-5 sm:p-6">
                   {/* Column headers — anchored left/right */}
-                  <div className="mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border/60 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                    <div className="flex items-center gap-2">
-                      <TeamLogo team={awayTeam} size={18} />
-                      <span className="text-foreground/80">{awayTeam.shortName}</span>
+                  <div className="mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border/60 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <TeamLogo team={awayTeam} size={20} />
+                      <span className="text-sm font-semibold tracking-tight text-foreground">
+                        {awayTeam.shortName}
+                      </span>
                     </div>
-                    <span className="px-2 text-center text-muted-foreground/40">vs</span>
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-foreground/80">{homeTeam.shortName}</span>
-                      <TeamLogo team={homeTeam} size={18} />
+                    <span className="px-2 text-center text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/50">
+                      vs
+                    </span>
+                    <div className="flex items-center justify-end gap-2.5">
+                      <span className="text-sm font-semibold tracking-tight text-foreground">
+                        {homeTeam.shortName}
+                      </span>
+                      <TeamLogo team={homeTeam} size={20} />
                     </div>
                   </div>
 
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {rows.map((r) => (
                       <div
                         key={r.label}
-                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-2.5 transition-colors duration-150 hover:bg-muted/30"
+                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3.5 transition-colors duration-150 hover:bg-muted/40"
                       >
-                        <span className={`text-left font-mono text-sm tabular-nums ${valueCls("away", r.adv)}`}>
+                        <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away", r.adv)}`}>
                           {r.away}
                         </span>
-                        <span className="px-3 text-center text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+                        <span className="px-3 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85">
                           {r.label}
                         </span>
-                        <span className={`text-right font-mono text-sm tabular-nums ${valueCls("home", r.adv)}`}>
+                        <span className={`text-right font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("home", r.adv)}`}>
                           {r.home}
                         </span>
                       </div>
