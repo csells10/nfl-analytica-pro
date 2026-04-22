@@ -928,7 +928,8 @@ export default function Matchup() {
               </Card>
             );
           })}
-        </div>
+          </div>
+        </section>
       </div>
     </AppShell>
   );
