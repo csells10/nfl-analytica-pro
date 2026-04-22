@@ -566,82 +566,93 @@ export default function Matchup() {
           </div>
         </div>
 
-        {/* ── HERO: Team Comparison ── */}
-        <Card className="mb-6 border-border bg-card">
-          <CardContent className="p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
-                  <Swords className="h-3.5 w-3.5 text-primary" />
+        {/* ══════════════════════════════════════════════════
+            TIER 1 — HERO: Team Comparison
+            ══════════════════════════════════════════════════ */}
+        <section aria-labelledby="team-comparison" className="mb-12">
+          <Card className="border-border/80 bg-gradient-to-b from-card to-card/60 shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_20px_40px_-24px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
+            <CardContent className="p-7 sm:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                    <Swords className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-primary/80">
+                      Hero
+                    </p>
+                    <h2 id="team-comparison" className="text-lg font-semibold leading-tight text-foreground">
+                      Team Comparison
+                    </h2>
+                  </div>
                 </div>
-                <h3 className="text-sm font-semibold text-foreground">Team Comparison</h3>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+                  Season averages
+                </span>
               </div>
-              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-                Season averages
-              </span>
-            </div>
 
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TeamLogo team={awayTeam} size={22} />
-                <span className="text-xs font-semibold text-foreground">{awayTeam.shortName}</span>
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TeamLogo team={awayTeam} size={26} />
+                  <span className="text-sm font-semibold text-foreground">{awayTeam.shortName}</span>
+                </div>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">vs</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground">{homeTeam.shortName}</span>
+                  <TeamLogo team={homeTeam} size={26} />
+                </div>
               </div>
-              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">vs</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-foreground">{homeTeam.shortName}</span>
-                <TeamLogo team={homeTeam} size={22} />
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <CompareRow
-                label="Points / Play"
-                awayValue={a.pointsPerPlay}
-                homeValue={h.pointsPerPlay}
-                awayDisplay={formatNum(a.pointsPerPlay)}
-                homeDisplay={formatNum(h.pointsPerPlay)}
-                advantage={advPpp}
-                max={Math.max(a.pointsPerPlay, h.pointsPerPlay)}
-              />
-              <CompareRow
-                label="Pts Allowed / Play"
-                awayValue={a.pointsAllowedPerPlay}
-                homeValue={h.pointsAllowedPerPlay}
-                awayDisplay={formatNum(a.pointsAllowedPerPlay)}
-                homeDisplay={formatNum(h.pointsAllowedPerPlay)}
-                advantage={advPapp}
-                max={Math.max(a.pointsAllowedPerPlay, h.pointsAllowedPerPlay)}
-              />
-              <CompareRow
-                label="3rd Down %"
-                awayValue={a.thirdDownPct}
-                homeValue={h.thirdDownPct}
-                awayDisplay={`${formatNum(a.thirdDownPct, 1)}%`}
-                homeDisplay={`${formatNum(h.thirdDownPct, 1)}%`}
-                advantage={advThird}
-                max={Math.max(a.thirdDownPct, h.thirdDownPct)}
-              />
-              <CompareRow
-                label="Red Zone TD %"
-                awayValue={a.redZoneTdPct}
-                homeValue={h.redZoneTdPct}
-                awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
-                homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
-                advantage={advRz}
-                max={Math.max(a.redZoneTdPct, h.redZoneTdPct)}
-              />
-              <CompareRow
-                label="Turnover Margin"
-                awayValue={a.turnoverMargin}
-                homeValue={h.turnoverMargin}
-                awayDisplay={a.turnoverMargin > 0 ? `+${a.turnoverMargin}` : `${a.turnoverMargin}`}
-                homeDisplay={h.turnoverMargin > 0 ? `+${h.turnoverMargin}` : `${h.turnoverMargin}`}
-                advantage={advTo}
-                max={Math.max(Math.abs(a.turnoverMargin), Math.abs(h.turnoverMargin))}
-              />
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-5">
+                <CompareRow
+                  label="Points / Play"
+                  awayValue={a.pointsPerPlay}
+                  homeValue={h.pointsPerPlay}
+                  awayDisplay={formatNum(a.pointsPerPlay)}
+                  homeDisplay={formatNum(h.pointsPerPlay)}
+                  advantage={advPpp}
+                  max={Math.max(a.pointsPerPlay, h.pointsPerPlay)}
+                />
+                <CompareRow
+                  label="Pts Allowed / Play"
+                  awayValue={a.pointsAllowedPerPlay}
+                  homeValue={h.pointsAllowedPerPlay}
+                  awayDisplay={formatNum(a.pointsAllowedPerPlay)}
+                  homeDisplay={formatNum(h.pointsAllowedPerPlay)}
+                  advantage={advPapp}
+                  max={Math.max(a.pointsAllowedPerPlay, h.pointsAllowedPerPlay)}
+                />
+                <CompareRow
+                  label="3rd Down %"
+                  awayValue={a.thirdDownPct}
+                  homeValue={h.thirdDownPct}
+                  awayDisplay={`${formatNum(a.thirdDownPct, 1)}%`}
+                  homeDisplay={`${formatNum(h.thirdDownPct, 1)}%`}
+                  advantage={advThird}
+                  max={Math.max(a.thirdDownPct, h.thirdDownPct)}
+                />
+                <CompareRow
+                  label="Red Zone TD %"
+                  awayValue={a.redZoneTdPct}
+                  homeValue={h.redZoneTdPct}
+                  awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
+                  homeDisplay={`${formatNum(h.redZoneTdPct, 1)}%`}
+                  advantage={advRz}
+                  max={Math.max(a.redZoneTdPct, h.redZoneTdPct)}
+                />
+                <CompareRow
+                  label="Turnover Margin"
+                  awayValue={a.turnoverMargin}
+                  homeValue={h.turnoverMargin}
+                  awayDisplay={a.turnoverMargin > 0 ? `+${a.turnoverMargin}` : `${a.turnoverMargin}`}
+                  homeDisplay={h.turnoverMargin > 0 ? `+${h.turnoverMargin}` : `${h.turnoverMargin}`}
+                  advantage={advTo}
+                  max={Math.max(Math.abs(a.turnoverMargin), Math.abs(h.turnoverMargin))}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
         {/* ── Matchup Breakdown ── */}
         <div className="mb-2 flex items-center justify-between">
