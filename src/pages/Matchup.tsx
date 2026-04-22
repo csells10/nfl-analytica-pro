@@ -246,10 +246,16 @@ function CompareRow({
  */
 function BreakdownHeader({ awayShort, homeShort }: { awayShort: string; homeShort: string }) {
   return (
-    <div className="mb-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border/60 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-      <span className="text-right text-foreground/80">{awayShort}</span>
-      <span className="px-2 text-center text-muted-foreground/40">vs</span>
-      <span className="text-left text-foreground/80">{homeShort}</span>
+    <div className="mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border/60 pb-2">
+      <span className="text-left text-xs font-semibold tracking-tight text-foreground">
+        {awayShort}
+      </span>
+      <span className="px-2 text-center text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/50">
+        vs
+      </span>
+      <span className="text-right text-xs font-semibold tracking-tight text-foreground">
+        {homeShort}
+      </span>
     </div>
   );
 }
@@ -257,7 +263,7 @@ function BreakdownHeader({ awayShort, homeShort }: { awayShort: string; homeShor
 /**
  * Breakdown row — true head-to-head comparison:
  *   [Away value] | Metric label | [Home value]
- * The winning side is highlighted in primary; row gets a subtle hover.
+ * The winning side is highlighted; weaker side is dimmed. Subtle hover.
  */
 function BreakdownRow({
   label,
@@ -270,49 +276,24 @@ function BreakdownRow({
   homeDisplay: string;
   advantage: Advantage;
 }) {
-  const awayActive = advantage === "away";
-  const homeActive = advantage === "home";
+  const valueCls = (side: "away" | "home") =>
+    advantage === side
+      ? "text-foreground font-semibold"
+      : advantage === "even"
+      ? "text-foreground/75"
+      : "text-foreground/45";
 
   return (
-    <div
-      className="group -mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-md border border-transparent px-2 py-2 text-xs transition-colors duration-150 hover:border-border/60 hover:bg-muted/30"
-    >
-      {/* Away value */}
-      <div className="flex items-center justify-end gap-2">
-        <span
-          className={`font-mono text-sm tabular-nums ${
-            awayActive ? "text-primary" : "text-foreground/80"
-          }`}
-        >
-          {awayDisplay}
-        </span>
-        <span
-          className={`h-1.5 w-1.5 rounded-full transition-colors ${
-            awayActive ? "bg-primary" : "bg-transparent"
-          }`}
-          aria-hidden
-        />
-      </div>
-      {/* Metric label */}
-      <span className="px-3 text-center text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-2.5 transition-colors duration-150 hover:bg-muted/40">
+      <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
+        {awayDisplay}
+      </span>
+      <span className="px-3 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85">
         {label}
       </span>
-      {/* Home value */}
-      <div className="flex items-center gap-2">
-        <span
-          className={`h-1.5 w-1.5 rounded-full transition-colors ${
-            homeActive ? "bg-primary" : "bg-transparent"
-          }`}
-          aria-hidden
-        />
-        <span
-          className={`font-mono text-sm tabular-nums ${
-            homeActive ? "text-primary" : "text-foreground/80"
-          }`}
-        >
-          {homeDisplay}
-        </span>
-      </div>
+      <span className={`text-right font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("home")}`}>
+        {homeDisplay}
+      </span>
     </div>
   );
 }
