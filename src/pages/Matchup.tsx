@@ -814,7 +814,6 @@ export default function Matchup() {
               Recent tendencies
             </span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
           {(() => {
             const a = mockMetrics.away;
             const h = mockMetrics.home;
