@@ -737,7 +737,8 @@ export default function Matchup() {
           <Card className="border-border bg-card">
             <CardContent className="p-5">
               <SectionHeading icon={Trophy} title="Finishing Ability" hint="Red zone" />
-              <div className="space-y-1">
+              <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
+              <div className="space-y-0.5">
                 <BreakdownRow
                   label="RZ TD %"
                   awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
