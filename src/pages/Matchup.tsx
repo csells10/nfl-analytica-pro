@@ -867,18 +867,30 @@ export default function Matchup() {
               </Card>
             );
           })}
-        </div>
+          </div>
+        </section>
 
-        {/* ── Recent Form ── */}
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
-            Recent Form
-          </h2>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-            Last 5 · most recent left
-          </span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* ══════════════════════════════════════════════════
+            TIER 4 — Recent Form (context)
+            ══════════════════════════════════════════════════ */}
+        <section aria-labelledby="recent-form">
+          <div className="mb-3 flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
+                Section 04
+              </p>
+              <h2
+                id="recent-form"
+                className="mt-0.5 text-sm font-semibold tracking-tight text-foreground/80"
+              >
+                Recent Form
+              </h2>
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+              Last 5 · most recent left
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
           {(["away", "home"] as const).map((side) => {
             const games = mockRecent[side];
             const team = side === "away" ? awayTeam : homeTeam;
