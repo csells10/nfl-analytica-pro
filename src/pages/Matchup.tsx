@@ -912,21 +912,23 @@ export default function Matchup() {
                       </span>
                     </div>
                     <span className="font-mono text-xs text-muted-foreground">
-                      {wins}-{games.length - wins}
+                      Last 5: {wins}–{games.length - wins}
                     </span>
                   </div>
-                  <ul className="space-y-1">
+                  <ul className="space-y-0.5">
                     {games.map((g, i) => (
                       <li
                         key={i}
-                        className="flex items-center justify-between border-b border-border/40 py-2 text-xs last:border-0"
+                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-colors duration-150 hover:bg-muted/40"
                       >
                         <div className="flex items-center gap-2.5">
                           <ResultDot result={g.result} />
                           <span className="text-muted-foreground/70">{g.home ? "vs" : "@"}</span>
                           <span className="font-medium text-foreground">{getTeam(g.opponent).shortName}</span>
                         </div>
-                        <span className="font-mono text-foreground/80">{g.score}</span>
+                        <span className="font-mono text-foreground/75 transition-colors duration-150 group-hover:text-foreground">
+                          {g.score}
+                        </span>
                       </li>
                     ))}
                   </ul>
