@@ -358,6 +358,10 @@ function FinalScoreCard({
   const awayWon = score.away.total > score.home.total;
   const homeWon = score.home.total > score.away.total;
 
+  const gridStyle = { ["--cols" as any]: cols.length } as React.CSSProperties;
+  const gridClass =
+    "grid grid-cols-[1fr_repeat(var(--cols),2.5rem)_4rem] items-center gap-x-2";
+
   const TeamRow = ({
     team,
     perQuarter,
@@ -369,27 +373,38 @@ function FinalScoreCard({
     total: number;
     winner: boolean;
   }) => (
-    <div className="grid grid-cols-[1fr_repeat(var(--cols),2.25rem)_3rem] items-center gap-2 py-2" style={{ ["--cols" as any]: cols.length }}>
-      <div className="flex items-center gap-2.5 min-w-0">
+    <div
+      className={`${gridClass} group rounded-md px-2 py-2.5 transition-colors hover:bg-muted/30`}
+      style={gridStyle}
+    >
+      <div className="flex min-w-0 items-center gap-2.5">
         <TeamLogo team={team} size={28} />
         <div className="min-w-0">
-          <p className={`truncate text-sm font-semibold ${winner ? "text-foreground" : "text-foreground/80"}`}>
+          <p
+            className={`truncate text-sm font-semibold ${
+              winner ? "text-foreground" : "text-foreground/75"
+            }`}
+          >
             {team.location} <span className="text-foreground/90">{team.shortName}</span>
           </p>
-          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">{team.abbr}</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">
+            {team.abbr}
+          </p>
         </div>
       </div>
       {perQuarter.map((v, i) => (
         <span
           key={i}
-          className="text-center font-mono text-sm tabular-nums text-foreground/80"
+          className="text-center font-mono text-sm tabular-nums text-foreground/70"
         >
           {v}
         </span>
       ))}
       <span
-        className={`text-right font-mono text-lg font-semibold tabular-nums ${
-          winner ? "text-primary" : "text-foreground/80"
+        className={`text-right font-mono tabular-nums ${
+          winner
+            ? "text-2xl font-bold text-foreground"
+            : "text-2xl font-semibold text-foreground/55"
         }`}
       >
         {total}
@@ -400,18 +415,20 @@ function FinalScoreCard({
   return (
     <Card className="mb-6 border-border bg-card">
       <CardContent className="p-5">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-2 w-2 rounded-full bg-primary" />
             <h3 className="text-sm font-semibold text-foreground">Final Score</h3>
           </div>
-          <Badge accent>{status}</Badge>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/90">
+            {status}
+          </span>
         </div>
 
         {/* Header row with quarter labels */}
         <div
-          className="mb-1 grid grid-cols-[1fr_repeat(var(--cols),2.25rem)_3rem] items-center gap-2 border-b border-border/40 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60"
-          style={{ ["--cols" as any]: cols.length }}
+          className={`${gridClass} border-b border-border/50 px-2 pb-2 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60`}
+          style={gridStyle}
         >
           <span>Team</span>
           {cols.map((c) => (
@@ -419,22 +436,23 @@ function FinalScoreCard({
               {c.label}
             </span>
           ))}
-          <span className="text-right">T</span>
+          <span className="text-right">Total</span>
         </div>
 
-        <TeamRow
-          team={away}
-          perQuarter={cols.map((c) => c.awayVal)}
-          total={score.away.total}
-          winner={awayWon}
-        />
-        <div className="border-b border-border/40" />
-        <TeamRow
-          team={home}
-          perQuarter={cols.map((c) => c.homeVal)}
-          total={score.home.total}
-          winner={homeWon}
-        />
+        <div className="divide-y divide-border/30">
+          <TeamRow
+            team={away}
+            perQuarter={cols.map((c) => c.awayVal)}
+            total={score.away.total}
+            winner={awayWon}
+          />
+          <TeamRow
+            team={home}
+            perQuarter={cols.map((c) => c.homeVal)}
+            total={score.home.total}
+            winner={homeWon}
+          />
+        </div>
       </CardContent>
     </Card>
   );
