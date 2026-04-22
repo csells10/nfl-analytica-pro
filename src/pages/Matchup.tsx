@@ -904,15 +904,10 @@ export default function Matchup() {
             return (
               <Card key={side} className="border-border bg-card">
                 <CardContent className="p-5">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <TeamLogo team={team} size={24} />
-                      <span className="text-sm font-semibold text-foreground">
-                        {team.location} {team.shortName}
-                      </span>
-                    </div>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      Last 5: {wins}–{games.length - wins}
+                  <div className="mb-4 flex items-center gap-2.5">
+                    <TeamLogo team={team} size={24} />
+                    <span className="text-sm font-semibold text-foreground">
+                      {team.location} {team.shortName}
                     </span>
                   </div>
                   <ul className="space-y-0.5">
