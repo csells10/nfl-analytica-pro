@@ -670,7 +670,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <BreakdownRow
                   label="Sack Rate"
                   awayDisplay="7.8%"
