@@ -626,7 +626,7 @@ export default function Matchup() {
                             strokeWidth={2}
                             aria-hidden="true"
                           />
-                          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/85">
+                          <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-foreground/80">
                             {row.label}
                           </p>
                         </div>
