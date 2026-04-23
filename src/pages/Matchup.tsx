@@ -626,7 +626,7 @@ export default function Matchup() {
                             strokeWidth={2}
                             aria-hidden="true"
                           />
-                          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/85">
+                          <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-foreground/80">
                             {row.label}
                           </p>
                         </div>
@@ -641,10 +641,10 @@ export default function Matchup() {
                           {[1, 2, 3, 4].map((i) => (
                             <span
                               key={i}
-                              className={`h-0.5 w-5 rounded-full transition-colors ${
+                              className={`h-[3px] w-5 rounded-full transition-colors ${
                                 i <= steps
-                                  ? "bg-accent-cool/70"
-                                  : "bg-muted-foreground/15"
+                                  ? "bg-accent-cool/90"
+                                  : "bg-muted-foreground/25 dark:bg-muted-foreground/20"
                               }`}
                             />
                           ))}
