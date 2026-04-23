@@ -91,6 +91,9 @@
     --accent-warm: 40 35% 52%;
     --accent-warm-foreground: 40 50% 92%;
 
+    --accent-cool: 210 35% 64%;
+    --accent-cool-foreground: 215 18% 9%;
+
     --chart-up: 168 28% 52%;
     --chart-down: 4 52% 50%;
     --chart-neutral: 210 10% 50%;
