@@ -206,7 +206,7 @@ export default function Slate() {
 
                 <div className="space-y-2">
                   {games.map((game) => (
-                    <MatchupCard key={game.id} game={game} />
+                    <MatchupCard key={game.id} game={game} dateParam={dateParam} />
                   ))}
                 </div>
               </div>
