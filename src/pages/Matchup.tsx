@@ -676,10 +676,19 @@ export default function Matchup() {
         {(() => {
           type Level = "Low" | "Moderate" | "Elevated" | "High";
           const LEVEL_STEPS: Record<Level, number> = {
-            Low: 1,
-            Moderate: 2,
-            Elevated: 3,
-            High: 4,
+            Low: 1, Moderate: 2, Elevated: 3, High: 4,
+          };
+          const LEVEL_COLOR: Record<Level, string> = {
+            Low: "text-level-low",
+            Moderate: "text-level-moderate",
+            Elevated: "text-level-elevated",
+            High: "text-level-high",
+          };
+          const LEVEL_BAR: Record<Level, string> = {
+            Low: "bg-level-low/70",
+            Moderate: "bg-level-moderate/80",
+            Elevated: "bg-level-elevated/85",
+            High: "bg-level-high/85",
           };
           const signals: {
             label: string;
@@ -738,7 +747,7 @@ export default function Matchup() {
                             {s.label}
                           </p>
                         </div>
-                        <p className="mt-1.5 text-xl font-semibold leading-tight tracking-tight text-foreground/90 transition-colors duration-150 group-hover:text-foreground">
+                        <p className={`mt-1.5 text-xl font-semibold leading-tight tracking-tight transition-colors duration-150 ${LEVEL_COLOR[s.level]}`}>
                           {s.level}
                         </p>
                         <div
@@ -751,7 +760,7 @@ export default function Matchup() {
                               key={i}
                               className={`h-[3px] w-5 rounded-full transition-colors ${
                                 i <= steps
-                                  ? "bg-accent-cool/90"
+                                  ? LEVEL_BAR[s.level]
                                   : "bg-muted-foreground/25 dark:bg-muted-foreground/20"
                               }`}
                             />
