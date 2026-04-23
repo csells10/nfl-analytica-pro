@@ -182,7 +182,7 @@ function SectionHeading({
       <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
         <Icon className="h-3.5 w-3.5 text-primary" />
       </div>
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
       {hint && (
         <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
           {hint}
