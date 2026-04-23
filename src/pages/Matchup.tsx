@@ -601,7 +601,7 @@ export default function Matchup() {
             },
           ];
           return (
-            <Card className="mb-6 border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
+            <Card className="mb-6 border-border bg-card">
               <CardContent className="p-5">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-sm font-semibold tracking-tight text-foreground">
@@ -618,11 +618,11 @@ export default function Matchup() {
                     return (
                       <div
                         key={row.label}
-                        className="group border-l-2 border-accent-cool/30 pl-3 transition-[border-color,border-width,padding] duration-150 hover:border-l-[3px] hover:border-accent-cool/80 hover:pl-[11px] dark:border-accent-cool/25 dark:hover:border-accent-cool/80"
+                        className="group border-l-2 border-border pl-3 transition-[border-color,border-width,padding] duration-150 hover:border-l-[3px] hover:border-muted-foreground/50 hover:pl-[11px]"
                       >
                         <div className="flex items-center gap-1.5">
                           <Icon
-                            className="h-3.5 w-3.5 text-accent-cool/70 transition-colors duration-150 group-hover:text-accent-cool"
+                            className="h-3.5 w-3.5 text-muted-foreground/70 transition-colors duration-150 group-hover:text-foreground/80"
                             strokeWidth={2}
                             aria-hidden="true"
                           />
@@ -643,8 +643,8 @@ export default function Matchup() {
                               key={i}
                               className={`h-[3px] w-5 rounded-full transition-colors ${
                                 i <= steps
-                                  ? "bg-accent-cool/90"
-                                  : "bg-muted-foreground/25 dark:bg-muted-foreground/20"
+                                  ? "bg-muted-foreground/60 dark:bg-muted-foreground/55"
+                                  : "bg-muted-foreground/20 dark:bg-muted-foreground/15"
                               }`}
                             />
                           ))}
