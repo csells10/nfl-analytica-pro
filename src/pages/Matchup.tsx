@@ -282,7 +282,7 @@ function BreakdownRow({
       : "text-foreground/45";
 
   return (
-    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-colors duration-150 hover:bg-accent-cool/10">
+    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-colors duration-150 hover:bg-muted/60 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.18)] dark:hover:bg-muted/50 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.22)]">
       <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
         {awayDisplay}
       </span>
