@@ -179,7 +179,7 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2.5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-cool/10 ring-1 ring-inset ring-accent-cool/15">
+      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-cool/15 ring-1 ring-inset ring-accent-cool/25 dark:bg-accent-cool/12 dark:ring-accent-cool/20">
         <Icon className="h-3.5 w-3.5 text-accent-cool" />
       </div>
       <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
