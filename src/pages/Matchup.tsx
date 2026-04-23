@@ -463,15 +463,6 @@ export default function Matchup() {
   const advRz = compareHigher(a.redZoneTdPct, h.redZoneTdPct);
   const advTo = compareHigher(a.turnoverMargin, h.turnoverMargin);
 
-  // Insight
-  const awayWins = [advPpp, advPapp, advThird, advRz, advTo].filter((x) => x === "away").length;
-  const homeWins = [advPpp, advPapp, advThird, advRz, advTo].filter((x) => x === "home").length;
-  const insight =
-    awayWins === homeWins
-      ? `${awayTeam.shortName} and ${homeTeam.shortName} grade evenly across core efficiency metrics.`
-      : awayWins > homeWins
-      ? `${awayTeam.shortName} show stronger efficiency, while ${homeTeam.shortName} hold situational edges.`
-      : `${homeTeam.shortName} show stronger efficiency, while ${awayTeam.shortName} create more disruption.`;
 
   return (
     <AppShell>
