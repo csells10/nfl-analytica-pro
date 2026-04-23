@@ -673,7 +673,7 @@ export default function Matchup() {
             </span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
