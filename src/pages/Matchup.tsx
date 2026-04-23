@@ -182,7 +182,7 @@ function SectionHeading({
       <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
         <Icon className="h-3.5 w-3.5 text-primary" />
       </div>
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
       {hint && (
         <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
           {hint}
@@ -246,14 +246,12 @@ function CompareRow({
  */
 function BreakdownHeader({ awayShort, homeShort }: { awayShort: string; homeShort: string }) {
   return (
-    <div className="mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border/60 pb-2">
-      <span className="text-left text-xs font-semibold tracking-tight text-foreground">
+    <div className="mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border/60 pb-2.5">
+      <span className="text-left text-[13px] font-semibold tracking-tight text-foreground">
         {awayShort}
       </span>
-      <span className="px-2 text-center text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/50">
-        vs
-      </span>
-      <span className="text-right text-xs font-semibold tracking-tight text-foreground">
+      <span className="px-3" aria-hidden="true" />
+      <span className="text-right text-[13px] font-semibold tracking-tight text-foreground">
         {homeShort}
       </span>
     </div>
@@ -284,11 +282,11 @@ function BreakdownRow({
       : "text-foreground/45";
 
   return (
-    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-2.5 transition-colors duration-150 hover:bg-muted/40">
+    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-colors duration-150 hover:bg-muted/40">
       <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
         {awayDisplay}
       </span>
-      <span className="px-3 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85">
+      <span className="px-3 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </span>
       <span className={`text-right font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("home")}`}>
@@ -672,7 +670,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <BreakdownRow
                   label="Sack Rate"
                   awayDisplay="7.8%"
@@ -699,7 +697,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Swords} title="Offensive Strength" hint="Offense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <BreakdownRow
                   label="Yds / Play"
                   awayDisplay="5.8"
@@ -726,7 +724,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Shield} title="Defensive Control" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <BreakdownRow
                   label="Yds Allowed / P"
                   awayDisplay="5.1"
@@ -753,7 +751,7 @@ export default function Matchup() {
             <CardContent className="p-5">
               <SectionHeading icon={Trophy} title="Finishing Ability" hint="Red zone" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <BreakdownRow
                   label="RZ TD %"
                   awayDisplay={`${formatNum(a.redZoneTdPct, 1)}%`}
