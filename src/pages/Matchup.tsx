@@ -12,6 +12,12 @@ import {
   TrendingDown,
   Minus,
   ExternalLink,
+  Flame,
+  Wind,
+  Scale,
+  AlertTriangle,
+  Activity,
+  type LucideIcon,
 } from "lucide-react";
 import type { NflGame } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
@@ -550,31 +556,48 @@ export default function Matchup() {
 
         {/* ── Game Profile ── */}
         {(() => {
-          const profile: { label: string; value: string; tilt: string }[] = [
+          type SignalLevel = "Low" | "Moderate" | "Elevated" | "High";
+          const LEVEL_STEPS: Record<SignalLevel, number> = {
+            Low: 1,
+            Moderate: 2,
+            Elevated: 3,
+            High: 4,
+          };
+          const profile: {
+            label: string;
+            value: SignalLevel;
+            tilt: string;
+            icon: LucideIcon;
+          }[] = [
             {
               label: "Pressure",
               value: "Elevated",
               tilt: `${homeTeam.shortName} pressure advantage vs ${awayTeam.shortName} pass game`,
+              icon: Flame,
             },
             {
               label: "Pass Environment",
-              value: "Active",
+              value: "Elevated",
               tilt: `${awayTeam.shortName} likely pushed into passing volume`,
+              icon: Wind,
             },
             {
               label: "Control Path",
-              value: "Balanced",
+              value: "Moderate",
               tilt: "No clear control edge",
+              icon: Scale,
             },
             {
               label: "Turnover Environment",
-              value: "Likely Forced",
+              value: "Elevated",
               tilt: `${awayTeam.shortName} carry higher turnover risk`,
+              icon: AlertTriangle,
             },
             {
               label: "Volatility",
               value: "Moderate",
               tilt: "Moderate swing potential, no strong lean",
+              icon: Activity,
             },
           ];
           return (
@@ -589,23 +612,50 @@ export default function Matchup() {
                   </span>
                 </div>
                 <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
-                  {profile.map((row) => (
-                    <div
-                      key={row.label}
-                      className="border-l border-accent-cool/30 pl-3 transition-colors duration-150 hover:border-accent-cool/60 dark:border-accent-cool/25 dark:hover:border-accent-cool/60"
-                    >
-                      <p className="text-xl font-semibold leading-tight tracking-tight text-foreground">
-                        {row.value}
-                      </p>
-                      <p className="mt-1 text-[11px] font-normal text-muted-foreground/70">
-                        {row.label}
-                      </p>
-                      <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground/55">
-                        <span className="font-medium text-muted-foreground/75">Tilt:</span>{" "}
-                        {row.tilt}
-                      </p>
-                    </div>
-                  ))}
+                  {profile.map((row) => {
+                    const Icon = row.icon;
+                    const steps = LEVEL_STEPS[row.value];
+                    return (
+                      <div
+                        key={row.label}
+                        className="border-l border-accent-cool/30 pl-3 transition-colors duration-150 hover:border-accent-cool/60 dark:border-accent-cool/25 dark:hover:border-accent-cool/60"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Icon
+                            className="h-3.5 w-3.5 text-accent-cool/80"
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          />
+                          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/85">
+                            {row.label}
+                          </p>
+                        </div>
+                        <p className="mt-1.5 text-xl font-semibold leading-tight tracking-tight text-foreground">
+                          {row.value}
+                        </p>
+                        <div
+                          className="mt-2 flex gap-1"
+                          role="img"
+                          aria-label={`${row.value} (${steps} of 4)`}
+                        >
+                          {[1, 2, 3, 4].map((i) => (
+                            <span
+                              key={i}
+                              className={`h-0.5 w-5 rounded-full transition-colors ${
+                                i <= steps
+                                  ? "bg-accent-cool/70"
+                                  : "bg-muted-foreground/15"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="mt-2 text-[11px] leading-snug text-muted-foreground/55">
+                          <span className="font-medium text-muted-foreground/75">Tilt:</span>{" "}
+                          {row.tilt}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
