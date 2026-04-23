@@ -557,18 +557,45 @@ export default function Matchup() {
           />
         )}
 
-        {/* ── Matchup Insight ── */}
-        <div className="mb-6 rounded-lg border border-border/60 bg-card/60 px-4 py-3">
-          <div className="flex items-start gap-3">
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/70">
-                Matchup Insight
-              </p>
-              <p className="mt-1 text-sm text-foreground/90">{insight}</p>
-            </div>
-          </div>
-        </div>
+        {/* ── Game Profile ── */}
+        {(() => {
+          const profile: { label: string; value: string }[] = [
+            { label: "Pressure", value: "Elevated" },
+            { label: "Pass Environment", value: "Active" },
+            { label: "Control Path", value: "Balanced" },
+            { label: "Turnover Environment", value: "Likely Forced" },
+            { label: "Volatility", value: "Moderate" },
+          ];
+          return (
+            <Card className="mb-6 border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
+              <CardContent className="p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                    Game Profile
+                  </h3>
+                  <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+                    Signals
+                  </span>
+                </div>
+                <div className="divide-y divide-border/40">
+                  {profile.map((row) => (
+                    <div
+                      key={row.label}
+                      className="-mx-2 flex items-center justify-between rounded-md px-2 py-2.5 transition-all duration-150 hover:bg-muted/40 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.12)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]"
+                    >
+                      <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-accent-cool/90">
+                        {row.label}
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums text-foreground">
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* ══════════════════════════════════════════════════
             TIER 1 — HERO: Team Comparison
