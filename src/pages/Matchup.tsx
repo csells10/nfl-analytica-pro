@@ -480,7 +480,14 @@ export default function Matchup() {
           variant="ghost"
           size="sm"
           className="mb-8 gap-1.5 text-muted-foreground hover:text-primary"
-          onClick={() => navigate("/")}
+          onClick={() => {
+            // Preserve the date filter the user came from so returning to the
+            // games list restores their previous context.
+            const search = new URLSearchParams(location.search);
+            const stateDate = (location.state as { fromDate?: string } | null)?.fromDate;
+            const date = search.get("date") || stateDate;
+            navigate(date ? `/?date=${date}` : "/");
+          }}
         >
           <ArrowLeft className="h-4 w-4" />
           Back to games
