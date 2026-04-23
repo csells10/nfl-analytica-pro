@@ -905,7 +905,7 @@ export default function Matchup() {
                     {games.map((g, i) => (
                       <li
                         key={i}
-                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-colors duration-150 hover:bg-muted/40"
+                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-colors duration-150 hover:bg-accent-cool/10"
                       >
                         <div className="flex items-center gap-2.5">
                           <ResultDot result={g.result} />
