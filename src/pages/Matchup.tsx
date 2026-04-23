@@ -179,7 +179,7 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2.5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-cool/15 ring-1 ring-inset ring-accent-cool/25 dark:bg-accent-cool/12 dark:ring-accent-cool/20">
+      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-cool/20 ring-1 ring-inset ring-accent-cool/35 dark:bg-accent-cool/15 dark:ring-accent-cool/30">
         <Icon className="h-3.5 w-3.5 text-accent-cool" />
       </div>
       <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
@@ -282,7 +282,7 @@ function BreakdownRow({
       : "text-foreground/45";
 
   return (
-    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-colors duration-150 hover:bg-muted/60 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.18)] dark:hover:bg-muted/50 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.22)]">
+    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-all duration-150 hover:bg-muted/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.22)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]">
       <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
         {awayDisplay}
       </span>
@@ -673,7 +673,7 @@ export default function Matchup() {
             </span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
             <CardContent className="p-5">
               <SectionHeading icon={Zap} title="Disruption Risk" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
@@ -700,7 +700,7 @@ export default function Matchup() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
             <CardContent className="p-5">
               <SectionHeading icon={Swords} title="Offensive Strength" hint="Offense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
@@ -727,7 +727,7 @@ export default function Matchup() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
             <CardContent className="p-5">
               <SectionHeading icon={Shield} title="Defensive Control" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
@@ -754,7 +754,7 @@ export default function Matchup() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
             <CardContent className="p-5">
               <SectionHeading icon={Trophy} title="Finishing Ability" hint="Red zone" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
@@ -858,7 +858,7 @@ export default function Matchup() {
                     {rows.map((r) => (
                       <div
                         key={r.label}
-                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3.5 transition-colors duration-150 hover:bg-muted/60 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.18)] dark:hover:bg-muted/50 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.22)]"
+                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3.5 transition-all duration-150 hover:bg-muted/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.22)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]"
                       >
                         <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away", r.adv)}`}>
                           {r.away}
@@ -912,7 +912,7 @@ export default function Matchup() {
                     {games.map((g, i) => (
                       <li
                         key={i}
-                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-colors duration-150 hover:bg-muted/60 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.18)] dark:hover:bg-muted/50 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.22)]"
+                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-all duration-150 hover:bg-muted/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.22)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]"
                       >
                         <div className="flex items-center gap-2.5">
                           <ResultDot result={g.result} />
