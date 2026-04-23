@@ -851,7 +851,7 @@ export default function Matchup() {
                     {rows.map((r) => (
                       <div
                         key={r.label}
-                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3.5 transition-colors duration-150 hover:bg-muted/40"
+                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3.5 transition-colors duration-150 hover:bg-accent-cool/10"
                       >
                         <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away", r.adv)}`}>
                           {r.away}
