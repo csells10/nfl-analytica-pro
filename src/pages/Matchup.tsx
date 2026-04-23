@@ -715,7 +715,11 @@ export default function Matchup() {
               icon: Activity,
             },
           ];
-          const lean = "Interception environment present — lean toward unders & defensive props";
+          // Derive target team from existing tilts: turnover signal favors home defense (pressure tilt)
+          const targetTeam = homeTeam;
+          const opposingTeam = awayTeam;
+          const leanHeadline = `${targetTeam.shortName} defense — interception environment favors ${targetTeam.shortName} vs ${opposingTeam.shortName}`;
+          const leanDetail = `Look toward ${targetTeam.shortName} defensive props (INTs, sacks) and ${opposingTeam.shortName} QB risk indicators`;
           const confidence: "Low" | "Medium" | "High" = "Medium";
           return (
             <Card className="mb-6 border-border bg-card border-t-[3px] border-t-accent-cool shadow-[0_0_0_1px_hsl(var(--accent-cool)/0.08)] dark:border-t-accent-cool">
@@ -773,16 +777,21 @@ export default function Matchup() {
                     );
                   })}
                 </div>
-                <div className="mt-5 flex flex-col gap-2 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                      Lean
+                <div className="mt-5 flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex flex-1 items-baseline gap-2">
+                    <span className="mt-0.5 shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                      Target
                     </span>
-                    <p className="text-sm font-medium leading-snug text-foreground">
-                      {lean}
-                    </p>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-semibold leading-snug text-foreground">
+                        {leanHeadline}
+                      </p>
+                      <p className="text-[12px] leading-snug text-muted-foreground/75">
+                        {leanDetail}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2 sm:pt-0.5">
                     <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                       Confidence
                     </span>
