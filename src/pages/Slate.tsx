@@ -16,13 +16,17 @@ import DateSelectionModal from "@/components/DateSelectionModal";
 
 const ONBOARDING_KEY = "gamelens_date_guide_completed";
 
-function MatchupCard({ game }: { game: NflGame }) {
+function MatchupCard({ game, dateParam }: { game: NflGame; dateParam?: string }) {
   const navigate = useNavigate();
 
   return (
     <button
       className="group w-full rounded-lg border border-border bg-card text-left transition-all duration-150 hover:border-primary/30 hover:bg-secondary/30"
-      onClick={() => navigate(`/matchup/${game.id}`, { state: { game } })}
+      onClick={() =>
+        navigate(`/matchup/${game.id}${dateParam ? `?date=${dateParam}` : ""}`, {
+          state: { game, fromDate: dateParam },
+        })
+      }
     >
       <div className="flex items-center justify-between px-5 py-3.5">
         {/* Teams */}
