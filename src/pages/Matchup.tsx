@@ -640,7 +640,7 @@ export default function Matchup() {
                             {row.label}
                           </p>
                         </div>
-                        <p className="mt-1.5 text-xl font-semibold leading-tight tracking-tight text-foreground/90 transition-colors duration-150 group-hover:text-foreground">
+                        <p className={`mt-1.5 text-xl font-semibold leading-tight tracking-tight transition-colors duration-150 ${LEVEL_COLOR[row.value]}`}>
                           {row.value}
                         </p>
                         <div
@@ -653,7 +653,7 @@ export default function Matchup() {
                               key={i}
                               className={`h-[3px] w-5 rounded-full transition-colors ${
                                 i <= steps
-                                  ? "bg-muted-foreground/60 dark:bg-muted-foreground/55"
+                                  ? LEVEL_BAR[row.value]
                                   : "bg-muted-foreground/20 dark:bg-muted-foreground/15"
                               }`}
                             />
