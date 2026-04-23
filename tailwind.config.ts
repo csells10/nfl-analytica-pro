@@ -64,6 +64,12 @@ export default {
           down: "hsl(var(--chart-down))",
           neutral: "hsl(var(--chart-neutral))",
         },
+        level: {
+          high: "hsl(var(--level-high))",
+          elevated: "hsl(var(--level-elevated))",
+          moderate: "hsl(var(--level-moderate))",
+          low: "hsl(var(--level-low))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
