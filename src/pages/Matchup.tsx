@@ -600,6 +600,10 @@ export default function Matchup() {
                       <p className="mt-1 text-[11px] font-normal text-muted-foreground/70">
                         {row.label}
                       </p>
+                      <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground/55">
+                        <span className="font-medium text-muted-foreground/75">Tilt:</span>{" "}
+                        {row.tilt}
+                      </p>
                     </div>
                   ))}
                 </div>
