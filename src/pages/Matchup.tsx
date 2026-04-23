@@ -572,12 +572,7 @@ export default function Matchup() {
             Elevated: "bg-level-elevated/85",
             High: "bg-level-high/85",
           };
-          const LEVEL_STEPS: Record<SignalLevel, number> = {
-            Low: 1,
-            Moderate: 2,
-            Elevated: 3,
-            High: 4,
-          };
+          
           const profile: {
             label: string;
             value: SignalLevel;
