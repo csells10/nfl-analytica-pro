@@ -179,8 +179,8 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2.5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
-        <Icon className="h-3.5 w-3.5 text-primary" />
+      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-cool/10 ring-1 ring-inset ring-accent-cool/15">
+        <Icon className="h-3.5 w-3.5 text-accent-cool" />
       </div>
       <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
       {hint && (
@@ -282,7 +282,7 @@ function BreakdownRow({
       : "text-foreground/45";
 
   return (
-    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-colors duration-150 hover:bg-muted/40">
+    <div className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-colors duration-150 hover:bg-accent-cool/10">
       <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
         {awayDisplay}
       </span>
@@ -851,7 +851,7 @@ export default function Matchup() {
                     {rows.map((r) => (
                       <div
                         key={r.label}
-                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3.5 transition-colors duration-150 hover:bg-muted/40"
+                        className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3.5 transition-colors duration-150 hover:bg-accent-cool/10"
                       >
                         <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away", r.adv)}`}>
                           {r.away}
@@ -905,7 +905,7 @@ export default function Matchup() {
                     {games.map((g, i) => (
                       <li
                         key={i}
-                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-colors duration-150 hover:bg-muted/40"
+                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-colors duration-150 hover:bg-accent-cool/10"
                       >
                         <div className="flex items-center gap-2.5">
                           <ResultDot result={g.result} />
