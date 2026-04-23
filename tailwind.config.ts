@@ -55,6 +55,10 @@ export default {
           DEFAULT: "hsl(var(--accent-warm))",
           foreground: "hsl(var(--accent-warm-foreground))",
         },
+        "accent-cool": {
+          DEFAULT: "hsl(var(--accent-cool))",
+          foreground: "hsl(var(--accent-cool-foreground))",
+        },
         chart: {
           up: "hsl(var(--chart-up))",
           down: "hsl(var(--chart-down))",
