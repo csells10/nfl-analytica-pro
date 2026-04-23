@@ -568,16 +568,16 @@ export default function Matchup() {
                     Signals
                   </span>
                 </div>
-                <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
                   {profile.map((row) => (
                     <div
                       key={row.label}
-                      className="group rounded-md border-l-2 border-l-accent-cool/40 bg-muted/15 px-4 py-3 transition-all duration-150 hover:border-l-accent-cool/70 hover:bg-muted/35 dark:border-l-accent-cool/35 dark:hover:border-l-accent-cool/70"
+                      className="border-l border-accent-cool/30 pl-3 transition-colors duration-150 hover:border-accent-cool/60 dark:border-accent-cool/25 dark:hover:border-accent-cool/60"
                     >
                       <p className="text-xl font-semibold leading-tight tracking-tight text-foreground">
                         {row.value}
                       </p>
-                      <p className="mt-1.5 text-[11px] font-normal text-muted-foreground/70">
+                      <p className="mt-1 text-[11px] font-normal text-muted-foreground/70">
                         {row.label}
                       </p>
                     </div>
