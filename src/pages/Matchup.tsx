@@ -662,6 +662,121 @@ export default function Matchup() {
           );
         })()}
 
+        {/* ── Matchup Lean ── */}
+        {(() => {
+          type Level = "Low" | "Moderate" | "Elevated" | "High";
+          const LEVEL_STEPS: Record<Level, number> = {
+            Low: 1,
+            Moderate: 2,
+            Elevated: 3,
+            High: 4,
+          };
+          const signals: {
+            label: string;
+            level: Level;
+            note: string;
+            icon: LucideIcon;
+          }[] = [
+            {
+              label: "Turnover Signal",
+              level: "Elevated",
+              note: `Pressure + forced turnover environment favors ${homeTeam.shortName} defense`,
+              icon: AlertTriangle,
+            },
+            {
+              label: "Game Script Signal",
+              level: "Moderate",
+              note: `${awayTeam.shortName} likely trailing, pushed into pass volume`,
+              icon: Wind,
+            },
+            {
+              label: "Volatility Signal",
+              level: "Moderate",
+              note: "Balanced control path limits blowout risk",
+              icon: Activity,
+            },
+          ];
+          const lean = "Interception environment present — lean toward unders & defensive props";
+          const confidence: "Low" | "Medium" | "High" = "Medium";
+          return (
+            <Card className="mb-6 border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
+              <CardContent className="p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                    Matchup Lean
+                  </h3>
+                  <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+                    Decision Support
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-3">
+                  {signals.map((s) => {
+                    const Icon = s.icon;
+                    const steps = LEVEL_STEPS[s.level];
+                    return (
+                      <div
+                        key={s.label}
+                        className="group border-l-2 border-accent-cool/30 pl-3 transition-[border-color,border-width,padding] duration-150 hover:border-l-[3px] hover:border-accent-cool/80 hover:pl-[11px] dark:border-accent-cool/25 dark:hover:border-accent-cool/80"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Icon
+                            className="h-3.5 w-3.5 text-accent-cool/70 transition-colors duration-150 group-hover:text-accent-cool"
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          />
+                          <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-foreground/80">
+                            {s.label}
+                          </p>
+                        </div>
+                        <p className="mt-1.5 text-xl font-semibold leading-tight tracking-tight text-foreground/90 transition-colors duration-150 group-hover:text-foreground">
+                          {s.level}
+                        </p>
+                        <div
+                          className="mt-2 flex gap-1"
+                          role="img"
+                          aria-label={`${s.level} (${steps} of 4)`}
+                        >
+                          {[1, 2, 3, 4].map((i) => (
+                            <span
+                              key={i}
+                              className={`h-[3px] w-5 rounded-full transition-colors ${
+                                i <= steps
+                                  ? "bg-accent-cool/90"
+                                  : "bg-muted-foreground/25 dark:bg-muted-foreground/20"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="mt-2 text-[11px] leading-snug text-muted-foreground/65">
+                          {s.note}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-5 flex flex-col gap-2 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                      Lean
+                    </span>
+                    <p className="text-sm font-medium leading-snug text-foreground">
+                      {lean}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                      Confidence
+                    </span>
+                    <span className="rounded-full border border-accent-cool/40 bg-accent-cool/10 px-2 py-0.5 text-[11px] font-semibold text-foreground">
+                      {confidence}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* ══════════════════════════════════════════════════
             TIER 1 — HERO: Team Comparison
             ══════════════════════════════════════════════════ */}
