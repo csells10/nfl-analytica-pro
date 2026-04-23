@@ -618,11 +618,11 @@ export default function Matchup() {
                     return (
                       <div
                         key={row.label}
-                        className="border-l border-accent-cool/30 pl-3 transition-colors duration-150 hover:border-accent-cool/60 dark:border-accent-cool/25 dark:hover:border-accent-cool/60"
+                        className="group border-l-2 border-accent-cool/30 pl-3 transition-[border-color,border-width,padding] duration-150 hover:border-l-[3px] hover:border-accent-cool/80 hover:pl-[11px] dark:border-accent-cool/25 dark:hover:border-accent-cool/80"
                       >
                         <div className="flex items-center gap-1.5">
                           <Icon
-                            className="h-3.5 w-3.5 text-accent-cool/80"
+                            className="h-3.5 w-3.5 text-accent-cool/70 transition-colors duration-150 group-hover:text-accent-cool"
                             strokeWidth={2}
                             aria-hidden="true"
                           />
@@ -630,7 +630,7 @@ export default function Matchup() {
                             {row.label}
                           </p>
                         </div>
-                        <p className="mt-1.5 text-xl font-semibold leading-tight tracking-tight text-foreground">
+                        <p className="mt-1.5 text-xl font-semibold leading-tight tracking-tight text-foreground/90 transition-colors duration-150 group-hover:text-foreground">
                           {row.value}
                         </p>
                         <div
