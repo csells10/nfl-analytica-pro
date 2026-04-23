@@ -727,7 +727,7 @@ export default function Matchup() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
             <CardContent className="p-5">
               <SectionHeading icon={Shield} title="Defensive Control" hint="Defense" />
               <BreakdownHeader awayShort={awayTeam.shortName} homeShort={homeTeam.shortName} />
