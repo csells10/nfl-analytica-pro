@@ -699,7 +699,7 @@ export default function Matchup() {
           const lean = "Interception environment present — lean toward unders & defensive props";
           const confidence: "Low" | "Medium" | "High" = "Medium";
           return (
-            <Card className="mb-6 border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
+            <Card className="mb-6 border-border bg-card border-t-[3px] border-t-accent-cool shadow-[0_0_0_1px_hsl(var(--accent-cool)/0.08)] dark:border-t-accent-cool">
               <CardContent className="p-5">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-sm font-semibold tracking-tight text-foreground">
