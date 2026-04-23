@@ -550,12 +550,32 @@ export default function Matchup() {
 
         {/* ── Game Profile ── */}
         {(() => {
-          const profile: { label: string; value: string }[] = [
-            { label: "Pressure", value: "Elevated" },
-            { label: "Pass Environment", value: "Active" },
-            { label: "Control Path", value: "Balanced" },
-            { label: "Turnover Environment", value: "Likely Forced" },
-            { label: "Volatility", value: "Moderate" },
+          const profile: { label: string; value: string; tilt: string }[] = [
+            {
+              label: "Pressure",
+              value: "Elevated",
+              tilt: `${homeTeam.shortName} pressure advantage vs ${awayTeam.shortName} pass game`,
+            },
+            {
+              label: "Pass Environment",
+              value: "Active",
+              tilt: `${awayTeam.shortName} likely pushed into passing volume`,
+            },
+            {
+              label: "Control Path",
+              value: "Balanced",
+              tilt: "No clear control edge",
+            },
+            {
+              label: "Turnover Environment",
+              value: "Likely Forced",
+              tilt: `${awayTeam.shortName} carry higher turnover risk`,
+            },
+            {
+              label: "Volatility",
+              value: "Moderate",
+              tilt: "Moderate swing potential, no strong lean",
+            },
           ];
           return (
             <Card className="mb-6 border-border bg-card border-t-2 border-t-accent-cool/45 dark:border-t-accent-cool/40">
@@ -579,6 +599,10 @@ export default function Matchup() {
                       </p>
                       <p className="mt-1 text-[11px] font-normal text-muted-foreground/70">
                         {row.label}
+                      </p>
+                      <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground/55">
+                        <span className="font-medium text-muted-foreground/75">Tilt:</span>{" "}
+                        {row.tilt}
                       </p>
                     </div>
                   ))}
