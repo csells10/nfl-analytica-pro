@@ -49,6 +49,11 @@
     --chart-down: 4 52% 50%;
     --chart-neutral: 220 8% 50%;
 
+    --level-high: 14 55% 48%;
+    --level-elevated: 35 60% 42%;
+    --level-moderate: 200 40% 42%;
+    --level-low: 220 8% 46%;
+
     --sidebar-background: 220 16% 93%;
     --sidebar-foreground: 220 10% 36%;
     --sidebar-primary: 168 32% 42%;
@@ -97,6 +102,11 @@
     --chart-up: 168 28% 52%;
     --chart-down: 4 52% 50%;
     --chart-neutral: 210 10% 50%;
+
+    --level-high: 14 55% 62%;
+    --level-elevated: 38 55% 62%;
+    --level-moderate: 200 40% 62%;
+    --level-low: 212 10% 60%;
 
     --sidebar-background: 215 18% 7%;
     --sidebar-foreground: 210 10% 68%;
