@@ -912,7 +912,7 @@ export default function Matchup() {
                     {games.map((g, i) => (
                       <li
                         key={i}
-                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-all duration-150 hover:bg-muted/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.22)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]"
+                        className="group flex items-center justify-between rounded-md px-2 py-2 text-xs transition-all duration-150 hover:bg-muted/40 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.12)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]"
                       >
                         <div className="flex items-center gap-2.5">
                           <ResultDot result={g.result} />
