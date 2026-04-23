@@ -12,6 +12,12 @@ import {
   TrendingDown,
   Minus,
   ExternalLink,
+  Flame,
+  Wind,
+  Scale,
+  AlertTriangle,
+  Activity,
+  type LucideIcon,
 } from "lucide-react";
 import type { NflGame } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
