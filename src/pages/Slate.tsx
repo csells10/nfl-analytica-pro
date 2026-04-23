@@ -67,15 +67,31 @@ function MatchupCard({ game, dateParam }: { game: NflGame; dateParam?: string })
 }
 
 export default function Slate() {
-  // No date selected initially — the guided overlay nudges the user to pick one,
-  // which prevents the schedule API from firing on page load.
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initialize selected date from `?date=YYYY-MM-DD` URL param so deep links
+  // and back-navigation from the Matchup page restore the previous filter.
+  const initialDate = useMemo(() => {
+    const raw = searchParams.get("date");
+    if (!raw) return undefined;
+    // Parse as local date to avoid timezone drift (YYYY-MM-DD).
+    const [y, m, d] = raw.split("-").map(Number);
+    if (!y || !m || !d) return undefined;
+    const parsed = new Date(y, m - 1, d);
+    return isNaN(parsed.getTime()) ? undefined : parsed;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate);
   const [overlayOpen, setOverlayOpen] = useState(() => {
     if (typeof window === "undefined") return false;
+    if (initialDate) return false;
     return localStorage.getItem(ONBOARDING_KEY) !== "true";
   });
 
   const { data: games, isLoading, isError, error } = useNflSchedule(selectedDate);
+
+  const dateParam = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
 
   const completeOnboarding = () => {
     try {
@@ -88,7 +104,12 @@ export default function Slate() {
 
   const handleSelectDate = (date: Date | undefined) => {
     setSelectedDate(date);
-    if (date) completeOnboarding();
+    if (date) {
+      setSearchParams({ date: format(date, "yyyy-MM-dd") }, { replace: true });
+      completeOnboarding();
+    } else {
+      setSearchParams({}, { replace: true });
+    }
   };
 
   return (
