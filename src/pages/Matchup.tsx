@@ -310,7 +310,8 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
   const awayTeam = teamFromApi(header.away_team);
   const homeTeam = teamFromApi(header.home_team);
   const showStatus = header.game_status && header.game_status !== "Scheduled";
-  const final = isFinal(header.game_status);
+  // Render final score whenever the API returns it — trust the backend.
+  const hasFinalScore = !!final_score;
 
   return (
     <>
