@@ -74,6 +74,86 @@ async function fetchNflSchedule(dateStr: string): Promise<NflGame[]> {
   return (data.games ?? []).map((g) => mapBackendGame(g, data.date));
 }
 
+// ─────────────────────────────────────────────────────────────
+// Game details (matchup page)
+// ─────────────────────────────────────────────────────────────
+
+export interface ApiTeam {
+  id: string;
+  name: string;
+  abbreviation: string;
+  logo: string;
+}
+
+export interface ApiQuarterScore {
+  q1: number; q2: number; q3: number; q4: number; ot?: number; total: number;
+}
+
+export interface GameDetails {
+  header: {
+    game_id: string;
+    game_date: string;
+    game_time: string;
+    game_status: string;
+    season: string;
+    season_type: string;
+    game_week: string;
+    away_team: ApiTeam;
+    home_team: ApiTeam;
+    espn_link: string;
+  };
+  final_score: { away: ApiQuarterScore; home: ApiQuarterScore } | null;
+  game_profile: Array<{ category: string; level: string; tilt: string }> | null;
+  matchup_lean: {
+    target_team: string;
+    lean_summary: string;
+    focus_summary: string;
+    confidence: string;
+  } | null;
+  team_comparison: Array<{
+    label: string;
+    away: number;
+    home: number;
+    better: "away" | "home" | "even" | string;
+  }> | null;
+}
+
+async function fetchGameDetails(gameId: string): Promise<GameDetails> {
+  const url = `${API_BASE}/game/${encodeURIComponent(gameId)}`;
+  console.log("[nfl-api] GET", url);
+
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    console.error("[nfl-api] Network error:", err);
+    throw new Error(`Network error reaching backend: ${(err as Error).message}`);
+  }
+
+  const rawBody = await res.text();
+  if (!res.ok) {
+    console.error("[nfl-api] HTTP error", res.status, rawBody);
+    throw new Error(`Backend returned ${res.status}: ${rawBody.slice(0, 200)}`);
+  }
+
+  try {
+    return JSON.parse(rawBody) as GameDetails;
+  } catch (err) {
+    console.error("[nfl-api] Failed to parse JSON:", rawBody);
+    throw new Error(`Invalid JSON from backend: ${rawBody.slice(0, 200)}`);
+  }
+}
+
+export function useGameDetails(gameId: string | undefined) {
+  return useQuery({
+    queryKey: ["nfl-game", gameId],
+    queryFn: () => fetchGameDetails(gameId!),
+    enabled: !!gameId,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+}
+
 export function useNflSchedule(date: Date | undefined) {
   const dateStr = date ? format(date, "yyyy-MM-dd") : "";
 
