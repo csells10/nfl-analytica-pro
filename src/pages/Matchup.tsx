@@ -442,29 +442,35 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
               </span>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex flex-1 items-baseline gap-2">
-                <span className="mt-0.5 shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                  Target
-                </span>
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-semibold leading-snug text-foreground">
-                    {matchup_lean.target_team}
-                    {matchup_lean.lean_summary ? ` — ${matchup_lean.lean_summary}` : ""}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex-1 space-y-2">
+                {matchup_lean.target_team && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                      Target
+                    </span>
+                    <span className="inline-flex items-center rounded-md border border-accent-cool/50 bg-accent-cool/15 px-2.5 py-1 text-sm font-bold tracking-tight text-foreground shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.15)]">
+                      {matchup_lean.target_team}
+                    </span>
+                  </div>
+                )}
+                {matchup_lean.lean_summary && (
+                  <p className="text-base font-semibold leading-snug text-foreground">
+                    {matchup_lean.lean_summary}
                   </p>
-                  {matchup_lean.focus_summary && (
-                    <p className="text-[12px] leading-snug text-muted-foreground/75">
-                      {matchup_lean.focus_summary}
-                    </p>
-                  )}
-                </div>
+                )}
+                {matchup_lean.focus_summary && (
+                  <p className="text-[13px] leading-snug text-muted-foreground/80">
+                    {matchup_lean.focus_summary}
+                  </p>
+                )}
               </div>
               {matchup_lean.confidence && (
                 <div className="flex shrink-0 items-center gap-2 sm:pt-0.5">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                     Confidence
                   </span>
-                  <span className="rounded-full border border-accent-cool/40 bg-accent-cool/10 px-2 py-0.5 text-[11px] font-semibold text-foreground">
+                  <span className="rounded-full border border-accent-cool/40 bg-accent-cool/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
                     {matchup_lean.confidence}
                   </span>
                 </div>
