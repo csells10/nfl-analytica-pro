@@ -363,7 +363,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       </div>
 
       {/* ── Final Score ── */}
-      {final && final_score && (
+      {hasFinalScore && final_score && (
         <FinalScoreCard
           away={awayTeam}
           home={homeTeam}
