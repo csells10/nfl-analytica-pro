@@ -347,8 +347,7 @@ function ModelTrustCard({
   const Icon = tone.Icon;
   const LearningIcon = tone.learningIcon;
 
-  // ── Edge Score: combines team_comparison wins + game_profile signal weighting,
-  //    bucketed to whichever side the model targeted vs. the other team.
+  // ── Matchup Advantage: combines team_comparison wins + game_profile signal weighting.
   const predicted = outcome.predicted_team ?? lean?.target_team ?? null;
   const actual = outcome.actual_winner ?? null;
 
@@ -366,16 +365,37 @@ function ModelTrustCard({
   const awayPts = compWins.away;
   const homePts = compWins.home;
   const maxPts = Math.max(awayPts, homePts, 1);
+  const totalMetrics = (teamComparison ?? []).length;
+  const decidedMetrics = awayPts + homePts;
+  const winnerPts = Math.max(awayPts, homePts);
+  const winnerSide: "away" | "home" | null =
+    awayPts === homePts ? null : awayPts > homePts ? "away" : "home";
+  const winnerTeam = winnerSide === "away" ? awayTeam : winnerSide === "home" ? homeTeam : null;
 
-  // Reasons (Why the model picked this) — top-2 metrics where the model
-  // target (predicted) likely won. We don't know side mapping reliably, so
-  // surface the strongest comparison gaps + top game profile signal.
+  // Edge strength bucketing — based on metric win differential
+  const winDiff = Math.abs(awayPts - homePts);
+  const edgeStrength: "Strong" | "Moderate" | "Low" =
+    winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
+
+  // Signal counts by level for the friendly summary
+  const elevatedCount = (gameProfile ?? []).filter((r) => r.level === "Elevated" || r.level === "High").length;
+  const moderateCount = (gameProfile ?? []).filter((r) => r.level === "Moderate").length;
+
+  // Resolve a readable team name from a side ("away" | "home")
+  const sideToTeam = (side: string): TeamMeta | null => {
+    if (side === "away") return awayTeam;
+    if (side === "home") return homeTeam;
+    return null;
+  };
+
+  // Reasons (Why the model picked this) — top metric edges + top signal
   const topComparisons = (teamComparison ?? [])
     .filter((r) => r.better === "away" || r.better === "home")
     .slice(0, 2);
   const topProfile = (gameProfile ?? [])
     .slice()
     .sort((a, b) => (LEVEL_STEPS[b.level] ?? 0) - (LEVEL_STEPS[a.level] ?? 0))[0];
+  const topProfileTeam = topProfile ? (winnerTeam ?? null) : null;
 
   const tier = classifyConfidence(lean?.confidence);
   const confStyle = CONFIDENCE_STYLE[tier];
