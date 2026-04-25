@@ -643,7 +643,7 @@ function PredictionPill({
   );
 }
 
-function AdvantagePill({
+function AdvantageChip({
   team,
   value,
   leading,
@@ -655,19 +655,20 @@ function AdvantagePill({
   const tip = leading
     ? "This team had more matchup factors in its favor."
     : "This team had fewer matchup factors in its favor.";
-  const styles = leading
-    ? "border-accent-cool/50 bg-accent-cool/10 hover:border-accent-cool/70 hover:bg-accent-cool/15 hover:-translate-y-px hover:shadow-[0_2px_10px_-4px_hsl(var(--accent-cool)/0.45)]"
-    : "border-border/60 bg-muted/20 hover:border-border hover:bg-muted/30 hover:-translate-y-px";
-  const valueColor = leading ? "text-foreground" : "text-foreground/80";
+  const wrapStyles = leading
+    ? "bg-accent-cool/8 ring-1 ring-inset ring-accent-cool/25"
+    : "bg-muted/25 ring-1 ring-inset ring-border/40";
+  const labelColor = leading ? "text-muted-foreground/85" : "text-muted-foreground/60";
+  const valueColor = leading ? "text-foreground" : "text-foreground/65";
   return (
     <InfoTip label={tip}>
       <div
-        className={`flex min-w-0 cursor-help flex-col items-start gap-1 rounded-lg border px-3 py-2.5 transition-all duration-150 ${styles}`}
+        className={`inline-flex cursor-help items-baseline gap-2 rounded-md px-2.5 py-1 transition-colors duration-150 ${wrapStyles}`}
       >
-        <span className="truncate text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground/80">
+        <span className={`text-[11px] font-medium tracking-tight ${labelColor}`}>
           {team.shortName}
         </span>
-        <span className={`font-mono text-lg font-bold leading-none tabular-nums ${valueColor}`}>
+        <span className={`font-mono text-[13px] font-semibold leading-none tabular-nums ${valueColor}`}>
           {value}
         </span>
       </div>
