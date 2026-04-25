@@ -662,36 +662,6 @@ function PredictionPill({
   );
 }
 
-function EdgeBar({
-  label,
-  value,
-  max,
-  tooltip,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  tooltip?: string;
-}) {
-  const pct = Math.max(6, Math.round((value / max) * 100));
-  const inner = (
-    <div className={`flex items-center gap-3 ${tooltip ? "cursor-help" : ""}`}>
-      <span className="w-32 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-        {label}
-      </span>
-      <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted/50">
-        <div
-          className="h-full rounded-full bg-accent-cool/70"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="w-6 text-right font-mono text-[11px] tabular-nums text-foreground/85">
-        {value}
-      </span>
-    </div>
-  );
-  return tooltip ? <InfoTip label={tooltip}>{inner}</InfoTip> : inner;
-}
 
 function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
   return (
