@@ -570,6 +570,9 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         </Card>
       )}
 
+      {/* ── Model Outcome ── */}
+      {details.model_outcome && <ModelOutcomeCard outcome={details.model_outcome} />}
+
       {/* ── Team Comparison ── */}
       {team_comparison && team_comparison.length > 0 && (
         <Card className="mb-10 border-border/80 bg-gradient-to-b from-card to-card/60 shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_20px_40px_-24px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
