@@ -305,28 +305,30 @@ function ModelOutcomeCard({
   return (
     <Card className={`mb-6 border-border bg-card border-t-[3px] ${tone.topBorder}`}>
       <CardContent className="p-5">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-4 flex items-baseline gap-2">
           <h3 className="text-sm font-semibold tracking-tight text-foreground">Prediction Result</h3>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/40">
             Result Check
           </span>
         </div>
 
-        <div className="flex flex-col items-center text-center">
+        <div className="mx-auto flex w-full flex-col items-center text-center">
           <div
-            className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring}`}
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring}`}
           >
-            <Icon className={`h-[18px] w-[18px] ${tone.text}`} strokeWidth={2.5} aria-hidden="true" />
-            <span className={`text-lg font-bold tracking-tight ${tone.text}`}>{result}</span>
+            <Icon className={`h-[18px] w-[18px] ${tone.text}`} strokeWidth={2.75} aria-hidden="true" />
+            <span className={`text-lg font-bold leading-none tracking-tight ${tone.text}`}>
+              {result}
+            </span>
           </div>
 
-          <p className="mt-2.5 text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">
             {tone.label}
           </p>
 
           {!isNoPick && (
             <>
-              <div className="mt-4 h-px w-16 bg-border/70" />
+              <div className="mt-4 h-[1.5px] w-20 rounded-full bg-border" />
               <div className="mt-4 flex items-center gap-4 text-[12px]">
                 <span>
                   <span className="font-medium text-muted-foreground/70">Predicted:</span>{" "}
