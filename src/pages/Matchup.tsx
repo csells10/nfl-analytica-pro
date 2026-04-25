@@ -376,9 +376,49 @@ function ModelTrustCard({
   const edgeStrength: "Strong" | "Moderate" | "Low" =
     winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
 
-  // Signal counts by level for the friendly summary
-  const elevatedCount = (gameProfile ?? []).filter((r) => r.level === "Elevated" || r.level === "High").length;
-  const moderateCount = (gameProfile ?? []).filter((r) => r.level === "Moderate").length;
+  // Signal alignment — does each game_profile signal favor the predicted team?
+  const predictedTeamMeta: TeamMeta | null =
+    predicted && awayTeam.shortName && predicted.toLowerCase().includes(awayTeam.shortName.toLowerCase())
+      ? awayTeam
+      : predicted && homeTeam.shortName && predicted.toLowerCase().includes(homeTeam.shortName.toLowerCase())
+      ? homeTeam
+      : predicted && awayTeam.abbreviation && predicted.toUpperCase().includes(awayTeam.abbreviation.toUpperCase())
+      ? awayTeam
+      : predicted && homeTeam.abbreviation && predicted.toUpperCase().includes(homeTeam.abbreviation.toUpperCase())
+      ? homeTeam
+      : null;
+  const opponentTeamMeta: TeamMeta | null =
+    predictedTeamMeta === awayTeam ? homeTeam : predictedTeamMeta === homeTeam ? awayTeam : null;
+
+  const teamMatchesTilt = (team: TeamMeta | null, tilt: string): boolean => {
+    if (!team || !tilt) return false;
+    const t = tilt.toLowerCase();
+    return (
+      (!!team.shortName && t.includes(team.shortName.toLowerCase())) ||
+      (!!team.name && t.includes(team.name.toLowerCase())) ||
+      (!!team.abbreviation && t.includes(team.abbreviation.toLowerCase()))
+    );
+  };
+
+  type SignalAlignment = { category: string; aligns: "yes" | "no" | "neutral" };
+  const signalAlignments: SignalAlignment[] = (gameProfile ?? []).map((row) => {
+    const favorsPredicted = teamMatchesTilt(predictedTeamMeta, row.tilt ?? "");
+    const favorsOpponent = teamMatchesTilt(opponentTeamMeta, row.tilt ?? "");
+    return {
+      category: row.category,
+      aligns: favorsPredicted ? "yes" : favorsOpponent ? "no" : "neutral",
+    };
+  });
+  const decidedAlignments = signalAlignments.filter((s) => s.aligns !== "neutral");
+  const alignedCount = decidedAlignments.filter((s) => s.aligns === "yes").length;
+  const alignmentSummary: "Strong" | "Mixed" | "Weak" | null =
+    decidedAlignments.length === 0
+      ? null
+      : alignedCount === decidedAlignments.length
+      ? "Strong"
+      : alignedCount === 0
+      ? "Weak"
+      : "Mixed";
 
   // Resolve a readable team name from a side ("away" | "home")
   const sideToTeam = (side: string): TeamMeta | null => {
