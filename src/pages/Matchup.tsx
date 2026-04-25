@@ -275,9 +275,9 @@ function ModelOutcomeCard({
         Icon: Check,
         topBorder: "border-t-success",
         text: "text-success",
-        chipBg: "bg-success/10",
-        chipBorder: "border-success/40",
-        ring: "ring-success/20",
+        chipBg: "bg-success/20 dark:bg-success/25",
+        chipBorder: "border-success/55",
+        ring: "ring-success/25",
         label: "Model prediction matched game result",
       }
     : isIncorrect
@@ -285,16 +285,16 @@ function ModelOutcomeCard({
         Icon: X,
         topBorder: "border-t-destructive",
         text: "text-destructive",
-        chipBg: "bg-destructive/10",
-        chipBorder: "border-destructive/40",
-        ring: "ring-destructive/20",
+        chipBg: "bg-destructive/20 dark:bg-destructive/25",
+        chipBorder: "border-destructive/55",
+        ring: "ring-destructive/25",
         label: "Model prediction missed game result",
       }
     : {
         Icon: Minus,
         topBorder: "border-t-muted-foreground/40",
         text: "text-muted-foreground",
-        chipBg: "bg-muted/40",
+        chipBg: "bg-muted/50",
         chipBorder: "border-border",
         ring: "ring-border",
         label: "No model pick for this matchup",
