@@ -555,16 +555,28 @@ function ModelTrustCard({
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-1.5 text-[12px] text-muted-foreground/80">
               <div className="flex justify-between">
-                <span>Edge Strength</span>
+                <InfoTip label="Overall strength of the matchup advantage.">
+                  <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                    Edge Strength
+                  </span>
+                </InfoTip>
                 <span className="font-semibold text-foreground/90">{edgeStrength}</span>
               </div>
               <div className="flex justify-between">
-                <span>Signals Detected</span>
+                <InfoTip label="How many key signals were identified in this matchup.">
+                  <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                    Signals Detected
+                  </span>
+                </InfoTip>
                 <span className="font-mono tabular-nums text-foreground/90">{gameProfile?.length ?? 0}</span>
               </div>
               {(elevatedCount > 0 || moderateCount > 0) && (
                 <div className="flex justify-between">
-                  <span>Strong Signals</span>
+                  <InfoTip label="Higher-impact signals like pressure or scoring efficiency.">
+                    <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                      Strong Signals
+                    </span>
+                  </InfoTip>
                   <span className="text-foreground/90">
                     {elevatedCount} Elevated · {moderateCount} Moderate
                   </span>
@@ -572,7 +584,11 @@ function ModelTrustCard({
               )}
               {totalMetrics > 0 && (
                 <div className="flex justify-between">
-                  <span>Metric Edges</span>
+                  <InfoTip label="Number of statistical categories where one team performed better.">
+                    <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                      Metric Edges
+                    </span>
+                  </InfoTip>
                   <span className="font-mono tabular-nums text-foreground/90">
                     {decidedMetrics} of {totalMetrics}
                   </span>
