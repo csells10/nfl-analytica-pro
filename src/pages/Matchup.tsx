@@ -529,19 +529,17 @@ function ModelTrustCard({
           </div>
         )}
 
-        {/* 4. Matchup Advantage — compact pill cards */}
+        {/* 4. Matchup Advantage — lightweight stat chips */}
         {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
-          <div className="mt-5">
-            <div className="mx-auto w-full max-w-[640px] px-2">
-              <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
-                <p className="mb-2.5 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                  Matchup Advantage
-                </p>
-              </InfoTip>
-              <div className="grid grid-cols-2 gap-4">
-                <AdvantagePill team={awayTeam} value={awayPts} leading={awayPts > homePts} />
-                <AdvantagePill team={homeTeam} value={homePts} leading={homePts > awayPts} />
-              </div>
+          <div className="mt-4">
+            <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+              <p className="mb-2 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60 underline decoration-dotted decoration-muted-foreground/25 underline-offset-4">
+                Matchup Advantage
+              </p>
+            </InfoTip>
+            <div className="flex items-center gap-6">
+              <AdvantageChip team={awayTeam} value={awayPts} leading={awayPts > homePts} />
+              <AdvantageChip team={homeTeam} value={homePts} leading={homePts > awayPts} />
             </div>
           </div>
         )}
@@ -645,7 +643,7 @@ function PredictionPill({
   );
 }
 
-function AdvantagePill({
+function AdvantageChip({
   team,
   value,
   leading,
@@ -657,19 +655,20 @@ function AdvantagePill({
   const tip = leading
     ? "This team had more matchup factors in its favor."
     : "This team had fewer matchup factors in its favor.";
-  const styles = leading
-    ? "border-accent-cool/50 bg-accent-cool/10 hover:border-accent-cool/70 hover:bg-accent-cool/15 hover:-translate-y-px hover:shadow-[0_2px_10px_-4px_hsl(var(--accent-cool)/0.45)]"
-    : "border-border/60 bg-muted/20 hover:border-border hover:bg-muted/30 hover:-translate-y-px";
-  const valueColor = leading ? "text-foreground" : "text-foreground/80";
+  const wrapStyles = leading
+    ? "bg-accent-cool/8 ring-1 ring-inset ring-accent-cool/25"
+    : "bg-muted/25 ring-1 ring-inset ring-border/40";
+  const labelColor = leading ? "text-muted-foreground/85" : "text-muted-foreground/60";
+  const valueColor = leading ? "text-foreground" : "text-foreground/65";
   return (
     <InfoTip label={tip}>
       <div
-        className={`flex min-w-0 cursor-help flex-col items-start gap-1 rounded-lg border px-3 py-2.5 transition-all duration-150 ${styles}`}
+        className={`inline-flex cursor-help items-baseline gap-2 rounded-md px-2.5 py-1 transition-colors duration-150 ${wrapStyles}`}
       >
-        <span className="truncate text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground/80">
+        <span className={`text-[11px] font-medium tracking-tight ${labelColor}`}>
           {team.shortName}
         </span>
-        <span className={`font-mono text-lg font-bold leading-none tabular-nums ${valueColor}`}>
+        <span className={`font-mono text-[13px] font-semibold leading-none tabular-nums ${valueColor}`}>
           {value}
         </span>
       </div>
