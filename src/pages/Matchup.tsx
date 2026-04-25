@@ -502,13 +502,17 @@ function ModelTrustCard({
               {topComparisons.map((r) => {
                 const team = sideToTeam(r.better);
                 const teamName = team?.shortName ?? "Team";
+                const tip = formatStatGap(r.away, r.home);
+                const row = (
+                  <span className={tip ? "cursor-help" : undefined}>
+                    <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
+                    <span className="text-foreground">{r.label.toLowerCase()}</span>
+                  </span>
+                );
                 return (
                   <li key={r.label} className="flex gap-2">
                     <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
-                    <span>
-                      <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
-                      <span className="text-foreground">{r.label.toLowerCase()}</span>
-                    </span>
+                    {tip ? <InfoTip label={tip}>{row}</InfoTip> : row}
                   </li>
                 );
               })}
