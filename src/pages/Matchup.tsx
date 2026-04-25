@@ -366,8 +366,6 @@ function ModelTrustCard({
   const awayPts = compWins.away;
   const homePts = compWins.home;
   
-  const totalMetrics = (teamComparison ?? []).length;
-  const decidedMetrics = awayPts + homePts;
   const winnerPts = Math.max(awayPts, homePts);
   const winnerSide: "away" | "home" | null =
     awayPts === homePts ? null : awayPts > homePts ? "away" : "home";
