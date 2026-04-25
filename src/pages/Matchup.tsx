@@ -813,7 +813,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       )}
 
       {/* ── Model Outcome ── */}
-      {details.model_outcome && <ModelOutcomeCard outcome={details.model_outcome} />}
+      {details.model_outcome && (
+        <ModelTrustCard
+          outcome={details.model_outcome}
+          lean={matchup_lean}
+          teamComparison={team_comparison}
+          gameProfile={game_profile}
+        />
+      )}
 
       {/* ── Team Comparison ── */}
       {team_comparison && team_comparison.length > 0 && (
