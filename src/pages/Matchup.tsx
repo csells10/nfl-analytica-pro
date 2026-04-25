@@ -287,11 +287,15 @@ function ModelTrustCard({
   lean,
   teamComparison,
   gameProfile,
+  awayTeam,
+  homeTeam,
 }: {
   outcome: NonNullable<GameDetails["model_outcome"]>;
   lean: GameDetails["matchup_lean"];
   teamComparison: GameDetails["team_comparison"];
   gameProfile: GameDetails["game_profile"];
+  awayTeam: TeamMeta;
+  homeTeam: TeamMeta;
 }) {
   const result = outcome.result;
   const isCorrect = /correct/i.test(result) && !/incorrect/i.test(result);
@@ -343,8 +347,7 @@ function ModelTrustCard({
   const Icon = tone.Icon;
   const LearningIcon = tone.learningIcon;
 
-  // ── Edge Score: combines team_comparison wins + game_profile signal weighting,
-  //    bucketed to whichever side the model targeted vs. the other team.
+  // ── Matchup Advantage: combines team_comparison wins + game_profile signal weighting.
   const predicted = outcome.predicted_team ?? lean?.target_team ?? null;
   const actual = outcome.actual_winner ?? null;
 
@@ -362,16 +365,37 @@ function ModelTrustCard({
   const awayPts = compWins.away;
   const homePts = compWins.home;
   const maxPts = Math.max(awayPts, homePts, 1);
+  const totalMetrics = (teamComparison ?? []).length;
+  const decidedMetrics = awayPts + homePts;
+  const winnerPts = Math.max(awayPts, homePts);
+  const winnerSide: "away" | "home" | null =
+    awayPts === homePts ? null : awayPts > homePts ? "away" : "home";
+  const winnerTeam = winnerSide === "away" ? awayTeam : winnerSide === "home" ? homeTeam : null;
 
-  // Reasons (Why the model picked this) — top-2 metrics where the model
-  // target (predicted) likely won. We don't know side mapping reliably, so
-  // surface the strongest comparison gaps + top game profile signal.
+  // Edge strength bucketing — based on metric win differential
+  const winDiff = Math.abs(awayPts - homePts);
+  const edgeStrength: "Strong" | "Moderate" | "Low" =
+    winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
+
+  // Signal counts by level for the friendly summary
+  const elevatedCount = (gameProfile ?? []).filter((r) => r.level === "Elevated" || r.level === "High").length;
+  const moderateCount = (gameProfile ?? []).filter((r) => r.level === "Moderate").length;
+
+  // Resolve a readable team name from a side ("away" | "home")
+  const sideToTeam = (side: string): TeamMeta | null => {
+    if (side === "away") return awayTeam;
+    if (side === "home") return homeTeam;
+    return null;
+  };
+
+  // Reasons (Why the model picked this) — top metric edges + top signal
   const topComparisons = (teamComparison ?? [])
     .filter((r) => r.better === "away" || r.better === "home")
     .slice(0, 2);
   const topProfile = (gameProfile ?? [])
     .slice()
     .sort((a, b) => (LEVEL_STEPS[b.level] ?? 0) - (LEVEL_STEPS[a.level] ?? 0))[0];
+  const topProfileTeam = topProfile ? (winnerTeam ?? null) : null;
 
   const tier = classifyConfidence(lean?.confidence);
   const confStyle = CONFIDENCE_STYLE[tier];
@@ -435,20 +459,20 @@ function ModelTrustCard({
           </div>
         )}
 
-        {/* 4. Edge Score */}
+        {/* 4. Matchup Advantage */}
         {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
           <div className="mt-6">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                Edge Score
+                Matchup Advantage
               </span>
               <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/50">
-                Metric wins · {signalScore} signal pts
+                Relative matchup strength
               </span>
             </div>
             <div className="space-y-2">
-              <EdgeBar label={teamComparison[0] ? "Away" : "—"} value={awayPts} max={maxPts} />
-              <EdgeBar label="Home" value={homePts} max={maxPts} />
+              <EdgeBar label={`${awayTeam.abbr} Advantage`} value={awayPts} max={maxPts} />
+              <EdgeBar label={`${homeTeam.abbr} Advantage`} value={homePts} max={maxPts} />
             </div>
           </div>
         )}
@@ -460,21 +484,31 @@ function ModelTrustCard({
               Why the model picked this
             </p>
             <ul className="space-y-1.5 text-[12.5px] leading-snug text-foreground/85">
-              {topComparisons.map((r) => (
-                <li key={r.label} className="flex gap-2">
-                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
-                  <span>
-                    Edge in <span className="font-semibold text-foreground">{r.label}</span>
-                  </span>
-                </li>
-              ))}
+              {topComparisons.map((r) => {
+                const team = sideToTeam(r.better);
+                const teamName = team?.shortName ?? "Team";
+                return (
+                  <li key={r.label} className="flex gap-2">
+                    <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                    <span>
+                      <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
+                      <span className="text-foreground">{r.label.toLowerCase()}</span>
+                    </span>
+                  </li>
+                );
+              })}
               {topProfile && (
                 <li className="flex gap-2">
                   <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
                   <span>
-                    <span className="font-semibold text-foreground">{topProfile.level}</span>{" "}
-                    {topProfile.category.toLowerCase()} environment
-                    {topProfile.tilt ? ` — ${topProfile.tilt.toLowerCase()}` : ""}
+                    {topProfileTeam ? (
+                      <>
+                        <span className="font-semibold text-foreground">{topProfileTeam.shortName}</span>{" "}
+                        had the stronger {topProfile.category.toLowerCase()} profile
+                      </>
+                    ) : (
+                      <>Stronger {topProfile.category.toLowerCase()} profile detected</>
+                    )}
                   </span>
                 </li>
               )}
@@ -490,35 +524,51 @@ function ModelTrustCard({
           </span>
         </div>
 
-        {/* Optional: Model Details */}
+        {/* Optional: How strong was the edge? */}
         {(teamComparison?.length || gameProfile?.length) && (
           <Collapsible className="mt-5 border-t border-border/60 pt-3">
             <CollapsibleTrigger className="group flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <Info className="h-3 w-3" strokeWidth={2.25} />
-                Model Details
+                How strong was the edge?
               </span>
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-1.5 text-[12px] text-muted-foreground/80">
               <div className="flex justify-between">
-                <span>Metric win differential</span>
-                <span className="font-mono tabular-nums text-foreground/90">
-                  {awayPts} – {homePts}
-                </span>
+                <span>Edge Strength</span>
+                <span className="font-semibold text-foreground/90">{edgeStrength}</span>
               </div>
               <div className="flex justify-between">
-                <span>Signals used</span>
+                <span>Signals Detected</span>
                 <span className="font-mono tabular-nums text-foreground/90">{gameProfile?.length ?? 0}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Total signal weight</span>
-                <span className="font-mono tabular-nums text-foreground/90">{signalScore}</span>
-              </div>
+              {(elevatedCount > 0 || moderateCount > 0) && (
+                <div className="flex justify-between">
+                  <span>Strong Signals</span>
+                  <span className="text-foreground/90">
+                    {elevatedCount} Elevated · {moderateCount} Moderate
+                  </span>
+                </div>
+              )}
+              {totalMetrics > 0 && (
+                <div className="flex justify-between">
+                  <span>Metric Edges</span>
+                  <span className="font-mono tabular-nums text-foreground/90">
+                    {decidedMetrics} of {totalMetrics}
+                  </span>
+                </div>
+              )}
+              {winnerTeam && winnerPts > 0 && (
+                <div className="flex justify-between">
+                  <span>Leaning Toward</span>
+                  <span className="font-semibold text-foreground/90">{winnerTeam.shortName}</span>
+                </div>
+              )}
               {lean?.confidence_context && (
                 <div className="flex justify-between">
                   <span>Early-season adjustment</span>
-                  <span className="font-mono tabular-nums text-foreground/90">Applied</span>
+                  <span className="text-foreground/90">Applied</span>
                 </div>
               )}
             </CollapsibleContent>
@@ -558,7 +608,7 @@ function EdgeBar({ label, value, max }: { label: string; value: number; max: num
   const pct = Math.max(6, Math.round((value / max) * 100));
   return (
     <div className="flex items-center gap-3">
-      <span className="w-12 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+      <span className="w-32 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
         {label}
       </span>
       <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted/50">
@@ -567,8 +617,8 @@ function EdgeBar({ label, value, max }: { label: string; value: number; max: num
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-10 text-right font-mono text-[11px] tabular-nums text-foreground/85">
-        {value} pt{value === 1 ? "" : "s"}
+      <span className="w-6 text-right font-mono text-[11px] tabular-nums text-foreground/85">
+        {value}
       </span>
     </div>
   );
@@ -808,6 +858,8 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           lean={matchup_lean}
           teamComparison={team_comparison}
           gameProfile={game_profile}
+          awayTeam={awayTeam}
+          homeTeam={homeTeam}
         />
       )}
 
