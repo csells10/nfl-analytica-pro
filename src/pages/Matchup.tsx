@@ -444,12 +444,14 @@ function ModelTrustCard({
               <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                 Confidence
               </span>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${confStyle.bg} ${confStyle.border} ${confStyle.text}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${confStyle.dot}`} />
-                {lean.confidence}
-              </span>
+              <InfoTip label={confidenceTooltip(lean.confidence)}>
+                <span
+                  className={`inline-flex cursor-help items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${confStyle.bg} ${confStyle.border} ${confStyle.text}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${confStyle.dot}`} />
+                  {lean.confidence}
+                </span>
+              </InfoTip>
             </div>
             {lean.confidence_context && (
               <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-snug text-accent-warm">
