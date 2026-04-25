@@ -466,16 +466,28 @@ function ModelTrustCard({
         {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
           <div className="mt-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                Matchup Advantage
-              </span>
+              <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+                <span className="cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                  Matchup Advantage
+                </span>
+              </InfoTip>
               <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/50">
                 Relative matchup strength
               </span>
             </div>
             <div className="space-y-2">
-              <EdgeBar label={`${awayTeam.abbr} Advantage`} value={awayPts} max={maxPts} />
-              <EdgeBar label={`${homeTeam.abbr} Advantage`} value={homePts} max={maxPts} />
+              <EdgeBar
+                label={`${awayTeam.abbr} Advantage`}
+                value={awayPts}
+                max={maxPts}
+                tooltip={`Number of matchup factors that favored the ${awayTeam.shortName}.`}
+              />
+              <EdgeBar
+                label={`${homeTeam.abbr} Advantage`}
+                value={homePts}
+                max={maxPts}
+                tooltip={`Number of matchup factors that favored the ${homeTeam.shortName}.`}
+              />
             </div>
           </div>
         )}
