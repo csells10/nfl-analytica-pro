@@ -403,125 +403,58 @@ function ModelTrustCard({
 
   return (
     <Card className={`mb-6 border-border bg-card border-t-[3px] ${tone.topBorder}`}>
-      <CardContent className="p-5">
+      <CardContent className="p-4">
         {/* Header */}
-        <div className="mb-5 flex items-baseline gap-2">
+        <div className="mb-3 flex items-baseline gap-2">
           <ShieldCheck className="h-4 w-4 self-center text-muted-foreground/70" strokeWidth={2} />
           <h3 className="text-sm font-semibold tracking-tight text-foreground">Model Trust &amp; Outcome</h3>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/40">
-            Should I trust this model?
-          </span>
         </div>
 
-        {/* 1. Result Badge */}
-        <div className="mx-auto flex w-full flex-col items-center text-center">
+        {/* 1. Result + Confidence (inline) */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <div
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring} ${tone.glow}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring} ${tone.glow}`}
           >
-            <Icon className={`h-[18px] w-[18px] ${tone.text}`} strokeWidth={2.75} aria-hidden="true" />
-            <span className={`text-lg font-bold leading-none tracking-tight ${tone.text}`}>{result}</span>
+            <Icon className={`h-4 w-4 ${tone.text}`} strokeWidth={2.75} aria-hidden="true" />
+            <span className={`text-sm font-bold leading-none tracking-tight ${tone.text}`}>{result}</span>
           </div>
-          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">
-            {tone.label}
-          </p>
+          {lean?.confidence && (
+            <InfoTip label={confidenceTooltip(lean.confidence)}>
+              <span
+                className={`inline-flex cursor-help items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${confStyle.bg} ${confStyle.border} ${confStyle.text}`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${confStyle.dot}`} />
+                {lean.confidence} Confidence
+              </span>
+            </InfoTip>
+          )}
         </div>
 
-        {/* 2. Prediction Summary */}
+        {/* 2. Predicted vs Actual (compact) */}
         {!isNoPick && (predicted || actual) && (
-          <div className="mt-5 flex items-stretch justify-center gap-3">
-            <PredictionPill label="Predicted" team={predicted} match={isCorrect ? "match" : "miss"} />
-            <span className="self-center text-[10px] uppercase tracking-[0.14em] text-muted-foreground/50">
-              vs
-            </span>
-            <PredictionPill label="Actual" team={actual} match={isCorrect ? "match" : "neutral"} />
+          <div className="mt-2 flex items-center justify-center gap-2 text-[12.5px] text-muted-foreground">
+            <span className="text-muted-foreground/70">Predicted</span>
+            <span className="font-semibold text-foreground">{predicted ?? "—"}</span>
+            <span className="text-muted-foreground/50">vs</span>
+            <span className="text-muted-foreground/70">Actual</span>
+            <span className="font-semibold text-foreground">{actual ?? "—"}</span>
           </div>
         )}
 
-        {/* 3. Confidence Block */}
-        {lean?.confidence && (
-          <div className="mt-6 rounded-md border border-border/70 bg-muted/20 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                Confidence
-              </span>
-              <InfoTip label={confidenceTooltip(lean.confidence)}>
-                <span
-                  className={`inline-flex cursor-help items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${confStyle.bg} ${confStyle.border} ${confStyle.text}`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${confStyle.dot}`} />
-                  {lean.confidence}
-                </span>
-              </InfoTip>
-            </div>
-            {lean.confidence_context && (
-              <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-snug text-accent-warm">
-                <AlertTriangle className="mt-[1px] h-3 w-3 shrink-0" strokeWidth={2.25} />
-                <span>{lean.confidence_context}</span>
-              </p>
-            )}
-          </div>
+        {lean?.confidence_context && (
+          <p className="mt-2 flex items-start justify-center gap-1.5 text-center text-[11px] leading-snug text-accent-warm">
+            <AlertTriangle className="mt-[1px] h-3 w-3 shrink-0" strokeWidth={2.25} />
+            <span>{lean.confidence_context}</span>
+          </p>
         )}
 
-        {/* 4. Matchup Advantage */}
-        {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
-          <div className="mt-6">
-            <div className="mb-2 flex items-center justify-between">
-              <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
-                <span className="cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                  Matchup Advantage
-                </span>
-              </InfoTip>
-              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/50">
-                Relative matchup strength
-              </span>
-            </div>
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 rounded-md border border-border/40 bg-muted/10 px-4 py-3">
-              {/* Away */}
-              <InfoTip label={`Number of matchup factors that favored the ${awayTeam.shortName}.`}>
-                <div className="flex cursor-help flex-col items-start gap-1 text-left">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 whitespace-nowrap">
-                    {awayTeam.shortName} Advantage
-                  </span>
-                  <span className="font-mono text-xl font-semibold tabular-nums leading-none text-foreground">
-                    {awayPts}
-                  </span>
-                </div>
-              </InfoTip>
-
-              {/* Center proportion bar */}
-              <div className="flex h-2 w-16 overflow-hidden rounded-full bg-muted/50" aria-hidden>
-                <div
-                  className="h-full bg-accent-cool/70"
-                  style={{ width: `${(awayPts / Math.max(1, awayPts + homePts)) * 100}%` }}
-                />
-                <div
-                  className="h-full bg-accent-cool/30"
-                  style={{ width: `${(homePts / Math.max(1, awayPts + homePts)) * 100}%` }}
-                />
-              </div>
-
-              {/* Home */}
-              <InfoTip label={`Number of matchup factors that favored the ${homeTeam.shortName}.`}>
-                <div className="flex cursor-help flex-col items-end gap-1 text-right">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 whitespace-nowrap">
-                    {homeTeam.shortName} Advantage
-                  </span>
-                  <span className="font-mono text-xl font-semibold tabular-nums leading-none text-foreground">
-                    {homePts}
-                  </span>
-                </div>
-              </InfoTip>
-            </div>
-          </div>
-        )}
-
-        {/* 5. Why the model picked this */}
+        {/* 3. Why the model picked this — primary insight */}
         {(topComparisons.length > 0 || topProfile) && (
-          <div className="mt-6">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+          <div className="mt-4">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
               Why the model picked this
             </p>
-            <ul className="space-y-1.5 text-[12.5px] leading-snug text-foreground/85">
+            <ul className="space-y-1 text-[12px] leading-tight text-foreground/85">
               {topComparisons.map((r) => {
                 const team = sideToTeam(r.better);
                 const teamName = team?.shortName ?? "Team";
@@ -534,14 +467,14 @@ function ModelTrustCard({
                 );
                 return (
                   <li key={r.label} className="flex gap-2">
-                    <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                    <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
                     {tip ? <InfoTip label={tip}>{row}</InfoTip> : row}
                   </li>
                 );
               })}
               {topProfile && (
                 <li className="flex gap-2">
-                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                  <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
                   <span>
                     {topProfileTeam ? (
                       <>
@@ -558,17 +491,35 @@ function ModelTrustCard({
           </div>
         )}
 
-        {/* 6. Model Learning Tag */}
-        <div className="mt-6 flex justify-center">
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium ${tone.learningBg}`}>
+        {/* 4. Matchup Advantage — lightweight score comparison */}
+        {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
+          <div className="mt-4">
+            <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+              <p className="mb-1 cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4 inline-block">
+                Matchup Advantage
+              </p>
+            </InfoTip>
+            <div className="flex items-baseline gap-2 text-[13px] text-foreground/85">
+              <span className="font-semibold text-foreground">{awayTeam.shortName}</span>
+              <span className="font-mono text-base font-semibold tabular-nums text-foreground">{awayPts}</span>
+              <span className="text-muted-foreground/50">–</span>
+              <span className="font-mono text-base font-semibold tabular-nums text-foreground">{homePts}</span>
+              <span className="font-semibold text-foreground">{homeTeam.shortName}</span>
+            </div>
+          </div>
+        )}
+
+        {/* 5. Model Learning Tag */}
+        <div className="mt-4 flex justify-center">
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-medium ${tone.learningBg}`}>
             <LearningIcon className="h-3 w-3" strokeWidth={2.5} />
             {tone.learningTag}
           </span>
         </div>
 
-        {/* Optional: How strong was the edge? */}
+        {/* 6. Edge details — collapsed by default */}
         {(teamComparison?.length || gameProfile?.length) && (
-          <Collapsible className="mt-5 border-t border-border/60 pt-3">
+          <Collapsible className="mt-3 border-t border-border/60 pt-2">
             <CollapsibleTrigger className="group flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <Info className="h-3 w-3" strokeWidth={2.25} />
@@ -576,7 +527,7 @@ function ModelTrustCard({
               </span>
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3 space-y-1.5 text-[12px] text-muted-foreground/80">
+            <CollapsibleContent className="mt-2 space-y-1 text-[12px] text-muted-foreground/80">
               <div className="flex justify-between">
                 <InfoTip label="Overall strength of the matchup advantage.">
                   <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
@@ -593,18 +544,6 @@ function ModelTrustCard({
                 </InfoTip>
                 <span className="font-mono tabular-nums text-foreground/90">{gameProfile?.length ?? 0}</span>
               </div>
-              {(elevatedCount > 0 || moderateCount > 0) && (
-                <div className="flex justify-between">
-                  <InfoTip label="Higher-impact signals like pressure or scoring efficiency.">
-                    <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                      Strong Signals
-                    </span>
-                  </InfoTip>
-                  <span className="text-foreground/90">
-                    {elevatedCount} Elevated · {moderateCount} Moderate
-                  </span>
-                </div>
-              )}
               {totalMetrics > 0 && (
                 <div className="flex justify-between">
                   <InfoTip label="Number of statistical categories where one team performed better.">
@@ -615,18 +554,6 @@ function ModelTrustCard({
                   <span className="font-mono tabular-nums text-foreground/90">
                     {decidedMetrics} of {totalMetrics}
                   </span>
-                </div>
-              )}
-              {winnerTeam && winnerPts > 0 && (
-                <div className="flex justify-between">
-                  <span>Leaning Toward</span>
-                  <span className="font-semibold text-foreground/90">{winnerTeam.shortName}</span>
-                </div>
-              )}
-              {lean?.confidence_context && (
-                <div className="flex justify-between">
-                  <span>Early-season adjustment</span>
-                  <span className="text-foreground/90">Applied</span>
                 </div>
               )}
             </CollapsibleContent>
