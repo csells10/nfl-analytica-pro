@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ArrowLeft,
   ExternalLink,
@@ -443,12 +444,14 @@ function ModelTrustCard({
               <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                 Confidence
               </span>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${confStyle.bg} ${confStyle.border} ${confStyle.text}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${confStyle.dot}`} />
-                {lean.confidence}
-              </span>
+              <InfoTip label={confidenceTooltip(lean.confidence)}>
+                <span
+                  className={`inline-flex cursor-help items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${confStyle.bg} ${confStyle.border} ${confStyle.text}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${confStyle.dot}`} />
+                  {lean.confidence}
+                </span>
+              </InfoTip>
             </div>
             {lean.confidence_context && (
               <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-snug text-accent-warm">
@@ -463,16 +466,28 @@ function ModelTrustCard({
         {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
           <div className="mt-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                Matchup Advantage
-              </span>
+              <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+                <span className="cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                  Matchup Advantage
+                </span>
+              </InfoTip>
               <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/50">
                 Relative matchup strength
               </span>
             </div>
             <div className="space-y-2">
-              <EdgeBar label={`${awayTeam.abbr} Advantage`} value={awayPts} max={maxPts} />
-              <EdgeBar label={`${homeTeam.abbr} Advantage`} value={homePts} max={maxPts} />
+              <EdgeBar
+                label={`${awayTeam.abbr} Advantage`}
+                value={awayPts}
+                max={maxPts}
+                tooltip={`Number of matchup factors that favored the ${awayTeam.shortName}.`}
+              />
+              <EdgeBar
+                label={`${homeTeam.abbr} Advantage`}
+                value={homePts}
+                max={maxPts}
+                tooltip={`Number of matchup factors that favored the ${homeTeam.shortName}.`}
+              />
             </div>
           </div>
         )}
@@ -487,13 +502,17 @@ function ModelTrustCard({
               {topComparisons.map((r) => {
                 const team = sideToTeam(r.better);
                 const teamName = team?.shortName ?? "Team";
+                const tip = formatStatGap(r.away, r.home);
+                const row = (
+                  <span className={tip ? "cursor-help" : undefined}>
+                    <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
+                    <span className="text-foreground">{r.label.toLowerCase()}</span>
+                  </span>
+                );
                 return (
                   <li key={r.label} className="flex gap-2">
                     <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
-                    <span>
-                      <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
-                      <span className="text-foreground">{r.label.toLowerCase()}</span>
-                    </span>
+                    {tip ? <InfoTip label={tip}>{row}</InfoTip> : row}
                   </li>
                 );
               })}
@@ -536,16 +555,28 @@ function ModelTrustCard({
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-1.5 text-[12px] text-muted-foreground/80">
               <div className="flex justify-between">
-                <span>Edge Strength</span>
+                <InfoTip label="Overall strength of the matchup advantage.">
+                  <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                    Edge Strength
+                  </span>
+                </InfoTip>
                 <span className="font-semibold text-foreground/90">{edgeStrength}</span>
               </div>
               <div className="flex justify-between">
-                <span>Signals Detected</span>
+                <InfoTip label="How many key signals were identified in this matchup.">
+                  <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                    Signals Detected
+                  </span>
+                </InfoTip>
                 <span className="font-mono tabular-nums text-foreground/90">{gameProfile?.length ?? 0}</span>
               </div>
               {(elevatedCount > 0 || moderateCount > 0) && (
                 <div className="flex justify-between">
-                  <span>Strong Signals</span>
+                  <InfoTip label="Higher-impact signals like pressure or scoring efficiency.">
+                    <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                      Strong Signals
+                    </span>
+                  </InfoTip>
                   <span className="text-foreground/90">
                     {elevatedCount} Elevated · {moderateCount} Moderate
                   </span>
@@ -553,7 +584,11 @@ function ModelTrustCard({
               )}
               {totalMetrics > 0 && (
                 <div className="flex justify-between">
-                  <span>Metric Edges</span>
+                  <InfoTip label="Number of statistical categories where one team performed better.">
+                    <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                      Metric Edges
+                    </span>
+                  </InfoTip>
                   <span className="font-mono tabular-nums text-foreground/90">
                     {decidedMetrics} of {totalMetrics}
                   </span>
@@ -604,10 +639,20 @@ function PredictionPill({
   );
 }
 
-function EdgeBar({ label, value, max }: { label: string; value: number; max: number }) {
+function EdgeBar({
+  label,
+  value,
+  max,
+  tooltip,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  tooltip?: string;
+}) {
   const pct = Math.max(6, Math.round((value / max) * 100));
-  return (
-    <div className="flex items-center gap-3">
+  const inner = (
+    <div className={`flex items-center gap-3 ${tooltip ? "cursor-help" : ""}`}>
       <span className="w-32 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
         {label}
       </span>
@@ -622,6 +667,35 @@ function EdgeBar({ label, value, max }: { label: string; value: number; max: num
       </span>
     </div>
   );
+  return tooltip ? <InfoTip label={tooltip}>{inner}</InfoTip> : inner;
+}
+
+function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Tooltip delayDuration={120}>
+      <TooltipTrigger asChild>
+        <span className="inline-flex">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[240px] text-[11.5px] leading-snug">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function confidenceTooltip(level: string): string {
+  const v = level.toLowerCase();
+  if (v.includes("high")) return "Clear advantage across multiple factors.";
+  if (v.includes("med")) return "Some edge, but not fully consistent.";
+  if (v.includes("low")) return "Very small edge or uncertain matchup.";
+  return "Model confidence in this matchup.";
+}
+
+function formatStatGap(away: number | null | undefined, home: number | null | undefined): string | null {
+  if (away == null || home == null || !isFinite(away) || !isFinite(home)) return null;
+  if (away === home) return null;
+  const fmt = (n: number) => (Math.abs(n) >= 100 ? n.toFixed(0) : n.toFixed(2));
+  return `${fmt(away)} vs ${fmt(home)}`;
 }
 
 // ─────────────────────────────────────────────────────────────
