@@ -564,8 +564,8 @@ function ModelTrustCard({
               </span>
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2 space-y-1 text-[12px] text-muted-foreground/80">
-              <div className="flex justify-between">
+            <CollapsibleContent className="mt-2 space-y-2.5 text-[12px] text-muted-foreground/80">
+              <div className="flex items-center justify-between">
                 <InfoTip label="Overall strength of the matchup advantage.">
                   <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
                     Edge Strength
@@ -573,14 +573,45 @@ function ModelTrustCard({
                 </InfoTip>
                 <span className="font-semibold text-foreground/90">{edgeStrength}</span>
               </div>
-              <div className="flex justify-between">
-                <InfoTip label="How many key signals were identified in this matchup.">
-                  <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                    Signals Detected
-                  </span>
-                </InfoTip>
-                <span className="font-mono tabular-nums text-foreground/90">{gameProfile?.length ?? 0}</span>
-              </div>
+              {signalAlignments.length > 0 && (
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <InfoTip label="Whether each key signal favored the predicted team or the opponent.">
+                      <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                        Signal Alignment
+                      </span>
+                    </InfoTip>
+                    {alignmentSummary && (
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-foreground/80">
+                        {alignmentSummary}
+                      </span>
+                    )}
+                  </div>
+                  <ul className="space-y-1">
+                    {signalAlignments.map((s) => {
+                      const isYes = s.aligns === "yes";
+                      const isNo = s.aligns === "no";
+                      const Icon = isYes ? Check : isNo ? X : Minus;
+                      const iconColor = isYes
+                        ? "text-success"
+                        : isNo
+                        ? "text-destructive"
+                        : "text-muted-foreground/60";
+                      const teamLabel = s.team?.shortName ?? (isYes ? predictedTeamMeta?.shortName : opponentTeamMeta?.shortName);
+                      const verb = s.aligns === "neutral" ? "was neutral" : `favored ${teamLabel ?? "neither team"}`;
+                      return (
+                        <li key={s.category} className="flex items-center gap-2 text-[12px] text-foreground/80">
+                          <Icon className={`h-3.5 w-3.5 shrink-0 ${iconColor}`} strokeWidth={2.5} />
+                          <span>
+                            <span className="text-foreground/90">{s.category}</span>{" "}
+                            <span className="text-muted-foreground/75">{verb}</span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </CollapsibleContent>
           </Collapsible>
         )}
