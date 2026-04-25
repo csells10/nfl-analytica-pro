@@ -359,17 +359,6 @@ function ModelTrustCard({
     (acc, row) => acc + (LEVEL_STEPS[row.level] ?? 0),
     0,
   );
-  const totalEdge = compWins.away + compWins.home + signalScore;
-
-  // Bias signal score toward predicted team (if any) — represents conviction
-  const predictedSide: "away" | "home" | null =
-    predicted && teamComparison && teamComparison.length > 0
-      ? // best-effort: we don't know team abbr per side here, leave neutral split
-        null
-      : null;
-
-  // Without abbr→side mapping we just show the comp wins split with signal
-  // strength annotated as conviction.
   const awayPts = compWins.away;
   const homePts = compWins.home;
   const maxPts = Math.max(awayPts, homePts, 1);
