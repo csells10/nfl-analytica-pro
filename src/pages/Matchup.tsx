@@ -306,7 +306,7 @@ function ModelOutcomeCard({
     <Card className={`mb-6 border-border bg-card border-t-[3px] ${tone.topBorder}`}>
       <CardContent className="p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold tracking-tight text-foreground">Model Outcome</h3>
+          <h3 className="text-sm font-semibold tracking-tight text-foreground">Prediction Result</h3>
           <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
             Result Check
           </span>
@@ -320,20 +320,24 @@ function ModelOutcomeCard({
             <span className={`text-base font-bold tracking-tight ${tone.text}`}>{result}</span>
           </div>
 
-          <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
+          <p className="mt-2 text-[11px] uppercase tracking-[0.06em] text-muted-foreground/70">
             {tone.label}
           </p>
 
           {!isNoPick && (
-            <div className="mt-3 flex items-center gap-4 text-[12px] text-muted-foreground">
+            <div className="mt-3 flex items-center gap-4 text-[12px]">
               <span>
                 <span className="font-medium text-muted-foreground/70">Predicted:</span>{" "}
-                <span className="font-semibold text-foreground">{outcome.predicted_team ?? "—"}</span>
+                <span className="font-semibold tracking-tight text-foreground">
+                  {outcome.predicted_team ?? "—"}
+                </span>
               </span>
               <span className="h-3 w-px bg-border" />
               <span>
                 <span className="font-medium text-muted-foreground/70">Winner:</span>{" "}
-                <span className="font-semibold text-foreground">{outcome.actual_winner ?? "—"}</span>
+                <span className="font-semibold tracking-tight text-foreground">
+                  {outcome.actual_winner ?? "—"}
+                </span>
               </span>
             </div>
           )}
