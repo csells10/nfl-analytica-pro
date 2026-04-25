@@ -608,7 +608,7 @@ function EdgeBar({ label, value, max }: { label: string; value: number; max: num
   const pct = Math.max(6, Math.round((value / max) * 100));
   return (
     <div className="flex items-center gap-3">
-      <span className="w-12 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+      <span className="w-32 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
         {label}
       </span>
       <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted/50">
@@ -617,8 +617,8 @@ function EdgeBar({ label, value, max }: { label: string; value: number; max: num
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-10 text-right font-mono text-[11px] tabular-nums text-foreground/85">
-        {value} pt{value === 1 ? "" : "s"}
+      <span className="w-6 text-right font-mono text-[11px] tabular-nums text-foreground/85">
+        {value}
       </span>
     </div>
   );
