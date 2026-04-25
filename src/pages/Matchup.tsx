@@ -541,18 +541,6 @@ function ModelTrustCard({
                 </InfoTip>
                 <span className="font-mono tabular-nums text-foreground/90">{gameProfile?.length ?? 0}</span>
               </div>
-              {totalMetrics > 0 && (
-                <div className="flex justify-between">
-                  <InfoTip label="Number of statistical categories where one team performed better.">
-                    <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                      Metric Edges
-                    </span>
-                  </InfoTip>
-                  <span className="font-mono tabular-nums text-foreground/90">
-                    {decidedMetrics} of {totalMetrics}
-                  </span>
-                </div>
-              )}
             </CollapsibleContent>
           </Collapsible>
         )}
@@ -605,12 +593,12 @@ function AdvantagePill({
   return (
     <InfoTip label={tip}>
       <div
-        className={`flex w-full cursor-help items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-all duration-150 ${styles}`}
+        className={`flex min-w-0 cursor-help flex-col items-start gap-1 rounded-lg border px-3 py-2.5 transition-all duration-150 ${styles}`}
       >
-        <span className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/85">
-          {team.shortName} Advantage
+        <span className="truncate text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground/80">
+          {team.shortName}
         </span>
-        <span className={`font-mono text-base font-semibold leading-none tabular-nums ${valueColor}`}>
+        <span className={`font-mono text-lg font-bold leading-none tabular-nums ${valueColor}`}>
           {value}
         </span>
       </div>
