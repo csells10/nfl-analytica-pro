@@ -491,20 +491,17 @@ function ModelTrustCard({
           </div>
         )}
 
-        {/* 4. Matchup Advantage — lightweight score comparison */}
+        {/* 4. Matchup Advantage — compact pill cards */}
         {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
           <div className="mt-4">
             <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
-              <p className="mb-1 cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4 inline-block">
+              <p className="mb-1.5 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
                 Matchup Advantage
               </p>
             </InfoTip>
-            <div className="flex items-baseline gap-2 text-[13px] text-foreground/85">
-              <span className="font-semibold text-foreground">{awayTeam.shortName}</span>
-              <span className="font-mono text-base font-semibold tabular-nums text-foreground">{awayPts}</span>
-              <span className="text-muted-foreground/50">–</span>
-              <span className="font-mono text-base font-semibold tabular-nums text-foreground">{homePts}</span>
-              <span className="font-semibold text-foreground">{homeTeam.shortName}</span>
+            <div className="grid grid-cols-2 gap-2">
+              <AdvantagePill team={awayTeam} value={awayPts} leading={awayPts > homePts} />
+              <AdvantagePill team={homeTeam} value={homePts} leading={homePts > awayPts} />
             </div>
           </div>
         )}
@@ -589,6 +586,37 @@ function PredictionPill({
   );
 }
 
+function AdvantagePill({
+  team,
+  value,
+  leading,
+}: {
+  team: TeamMeta;
+  value: number;
+  leading: boolean;
+}) {
+  const tip = leading
+    ? "This team had more matchup factors in its favor."
+    : "This team had fewer matchup factors in its favor.";
+  const styles = leading
+    ? "border-accent-cool/50 bg-accent-cool/10 hover:border-accent-cool/70 hover:bg-accent-cool/15 hover:-translate-y-px hover:shadow-[0_2px_10px_-4px_hsl(var(--accent-cool)/0.45)]"
+    : "border-border/60 bg-muted/20 hover:border-border hover:bg-muted/30 hover:-translate-y-px";
+  const valueColor = leading ? "text-foreground" : "text-foreground/80";
+  return (
+    <InfoTip label={tip}>
+      <div
+        className={`flex w-full cursor-help items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-all duration-150 ${styles}`}
+      >
+        <span className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/85">
+          {team.shortName} Advantage
+        </span>
+        <span className={`font-mono text-base font-semibold leading-none tabular-nums ${valueColor}`}>
+          {value}
+        </span>
+      </div>
+    </InfoTip>
+  );
+}
 
 function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
   return (
