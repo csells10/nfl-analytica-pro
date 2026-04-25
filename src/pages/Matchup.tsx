@@ -580,8 +580,12 @@ function ModelTrustCard({
                       </span>
                     </InfoTip>
                     {alignmentSummary && (
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-foreground/80">
-                        {alignmentSummary}
+                      <span className="text-[11px] font-medium normal-case tracking-tight text-foreground/80">
+                        {alignmentSummary === "Strong"
+                          ? "All signals agreed"
+                          : alignmentSummary === "Weak"
+                          ? "Signals disagreed"
+                          : "Mixed signals — not all signals agreed"}
                       </span>
                     )}
                   </div>
