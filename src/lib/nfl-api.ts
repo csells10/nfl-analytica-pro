@@ -109,6 +109,7 @@ export interface GameDetails {
     lean_summary: string;
     focus_summary: string;
     confidence: string;
+    confidence_context?: string | null;
   } | null;
   team_comparison: Array<{
     label: string;
