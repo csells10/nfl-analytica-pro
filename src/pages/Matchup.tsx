@@ -639,10 +639,20 @@ function PredictionPill({
   );
 }
 
-function EdgeBar({ label, value, max }: { label: string; value: number; max: number }) {
+function EdgeBar({
+  label,
+  value,
+  max,
+  tooltip,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  tooltip?: string;
+}) {
   const pct = Math.max(6, Math.round((value / max) * 100));
-  return (
-    <div className="flex items-center gap-3">
+  const inner = (
+    <div className={`flex items-center gap-3 ${tooltip ? "cursor-help" : ""}`}>
       <span className="w-32 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
         {label}
       </span>
@@ -657,6 +667,35 @@ function EdgeBar({ label, value, max }: { label: string; value: number; max: num
       </span>
     </div>
   );
+  return tooltip ? <InfoTip label={tooltip}>{inner}</InfoTip> : inner;
+}
+
+function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Tooltip delayDuration={120}>
+      <TooltipTrigger asChild>
+        <span className="inline-flex">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[240px] text-[11.5px] leading-snug">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function confidenceTooltip(level: string): string {
+  const v = level.toLowerCase();
+  if (v.includes("high")) return "Clear advantage across multiple factors.";
+  if (v.includes("med")) return "Some edge, but not fully consistent.";
+  if (v.includes("low")) return "Very small edge or uncertain matchup.";
+  return "Model confidence in this matchup.";
+}
+
+function formatStatGap(away: number | null | undefined, home: number | null | undefined): string | null {
+  if (away == null || home == null || !isFinite(away) || !isFinite(home)) return null;
+  if (away === home) return null;
+  const fmt = (n: number) => (Math.abs(n) >= 100 ? n.toFixed(0) : n.toFixed(2));
+  return `${fmt(away)} vs ${fmt(home)}`;
 }
 
 // ─────────────────────────────────────────────────────────────
