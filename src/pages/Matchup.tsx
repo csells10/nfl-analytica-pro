@@ -475,19 +475,42 @@ function ModelTrustCard({
                 Relative matchup strength
               </span>
             </div>
-            <div className="space-y-2">
-              <EdgeBar
-                label={`${awayTeam.abbr} Advantage`}
-                value={awayPts}
-                max={maxPts}
-                tooltip={`Number of matchup factors that favored the ${awayTeam.shortName}.`}
-              />
-              <EdgeBar
-                label={`${homeTeam.abbr} Advantage`}
-                value={homePts}
-                max={maxPts}
-                tooltip={`Number of matchup factors that favored the ${homeTeam.shortName}.`}
-              />
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 rounded-md border border-border/40 bg-muted/10 px-4 py-3">
+              {/* Away */}
+              <InfoTip label={`Number of matchup factors that favored the ${awayTeam.shortName}.`}>
+                <div className="flex cursor-help flex-col items-start gap-1 text-left">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 whitespace-nowrap">
+                    {awayTeam.shortName} Advantage
+                  </span>
+                  <span className="font-mono text-xl font-semibold tabular-nums leading-none text-foreground">
+                    {awayPts}
+                  </span>
+                </div>
+              </InfoTip>
+
+              {/* Center proportion bar */}
+              <div className="flex h-2 w-16 overflow-hidden rounded-full bg-muted/50" aria-hidden>
+                <div
+                  className="h-full bg-accent-cool/70"
+                  style={{ width: `${(awayPts / Math.max(1, awayPts + homePts)) * 100}%` }}
+                />
+                <div
+                  className="h-full bg-accent-cool/30"
+                  style={{ width: `${(homePts / Math.max(1, awayPts + homePts)) * 100}%` }}
+                />
+              </div>
+
+              {/* Home */}
+              <InfoTip label={`Number of matchup factors that favored the ${homeTeam.shortName}.`}>
+                <div className="flex cursor-help flex-col items-end gap-1 text-right">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 whitespace-nowrap">
+                    {homeTeam.shortName} Advantage
+                  </span>
+                  <span className="font-mono text-xl font-semibold tabular-nums leading-none text-foreground">
+                    {homePts}
+                  </span>
+                </div>
+              </InfoTip>
             </div>
           </div>
         )}
