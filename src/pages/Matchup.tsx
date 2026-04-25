@@ -529,19 +529,17 @@ function ModelTrustCard({
           </div>
         )}
 
-        {/* 4. Matchup Advantage — compact pill cards */}
+        {/* 4. Matchup Advantage — lightweight stat chips */}
         {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
-          <div className="mt-5">
-            <div className="mx-auto w-full max-w-[640px] px-2">
-              <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
-                <p className="mb-2.5 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                  Matchup Advantage
-                </p>
-              </InfoTip>
-              <div className="grid grid-cols-2 gap-4">
-                <AdvantagePill team={awayTeam} value={awayPts} leading={awayPts > homePts} />
-                <AdvantagePill team={homeTeam} value={homePts} leading={homePts > awayPts} />
-              </div>
+          <div className="mt-4">
+            <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+              <p className="mb-2 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60 underline decoration-dotted decoration-muted-foreground/25 underline-offset-4">
+                Matchup Advantage
+              </p>
+            </InfoTip>
+            <div className="flex items-center gap-6">
+              <AdvantageChip team={awayTeam} value={awayPts} leading={awayPts > homePts} />
+              <AdvantageChip team={homeTeam} value={homePts} leading={homePts > awayPts} />
             </div>
           </div>
         )}
