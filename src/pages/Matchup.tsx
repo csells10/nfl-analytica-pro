@@ -314,32 +314,35 @@ function ModelOutcomeCard({
 
         <div className="flex flex-col items-center text-center">
           <div
-            className={`flex items-center gap-2 rounded-full border px-3 py-1 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring}`}
+            className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring}`}
           >
-            <Icon className={`h-4 w-4 ${tone.text}`} strokeWidth={2.5} aria-hidden="true" />
-            <span className={`text-base font-bold tracking-tight ${tone.text}`}>{result}</span>
+            <Icon className={`h-[18px] w-[18px] ${tone.text}`} strokeWidth={2.5} aria-hidden="true" />
+            <span className={`text-lg font-bold tracking-tight ${tone.text}`}>{result}</span>
           </div>
 
-          <p className="mt-2 text-[11px] uppercase tracking-[0.06em] text-muted-foreground/70">
+          <p className="mt-2.5 text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
             {tone.label}
           </p>
 
           {!isNoPick && (
-            <div className="mt-3 flex items-center gap-4 text-[12px]">
-              <span>
-                <span className="font-medium text-muted-foreground/70">Predicted:</span>{" "}
-                <span className="font-semibold tracking-tight text-foreground">
-                  {outcome.predicted_team ?? "—"}
+            <>
+              <div className="mt-4 h-px w-16 bg-border/70" />
+              <div className="mt-4 flex items-center gap-4 text-[12px]">
+                <span>
+                  <span className="font-medium text-muted-foreground/70">Predicted:</span>{" "}
+                  <span className="font-bold tracking-tight text-foreground">
+                    {outcome.predicted_team ?? "—"}
+                  </span>
                 </span>
-              </span>
-              <span className="h-3 w-px bg-border" />
-              <span>
-                <span className="font-medium text-muted-foreground/70">Winner:</span>{" "}
-                <span className="font-semibold tracking-tight text-foreground">
-                  {outcome.actual_winner ?? "—"}
+                <span className="h-3 w-px bg-border" />
+                <span>
+                  <span className="font-medium text-muted-foreground/70">Winner:</span>{" "}
+                  <span className="font-bold tracking-tight text-foreground">
+                    {outcome.actual_winner ?? "—"}
+                  </span>
                 </span>
-              </span>
-            </div>
+              </div>
+            </>
           )}
         </div>
       </CardContent>
