@@ -116,6 +116,11 @@ export interface GameDetails {
     home: number;
     better: "away" | "home" | "even" | string;
   }> | null;
+  model_outcome: {
+    result: "Correct" | "Incorrect" | "No Pick" | string;
+    predicted_team: string | null;
+    actual_winner: string | null;
+  } | null;
 }
 
 async function fetchGameDetails(gameId: string): Promise<GameDetails> {
