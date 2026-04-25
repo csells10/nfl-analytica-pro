@@ -558,7 +558,7 @@ function ModelTrustCard({
             <CollapsibleTrigger className="group flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <Info className="h-3 w-3" strokeWidth={2.25} />
-                How strong was the edge?
+                How reliable was the edge?
               </span>
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
