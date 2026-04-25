@@ -376,9 +376,49 @@ function ModelTrustCard({
   const edgeStrength: "Strong" | "Moderate" | "Low" =
     winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
 
-  // Signal counts by level for the friendly summary
-  const elevatedCount = (gameProfile ?? []).filter((r) => r.level === "Elevated" || r.level === "High").length;
-  const moderateCount = (gameProfile ?? []).filter((r) => r.level === "Moderate").length;
+  // Signal alignment — does each game_profile signal favor the predicted team?
+  const teamMatchesText = (team: TeamMeta | null, text: string): boolean => {
+    if (!team || !text) return false;
+    const t = text.toLowerCase();
+    return (
+      (!!team.shortName && t.includes(team.shortName.toLowerCase())) ||
+      (!!team.fullName && t.includes(team.fullName.toLowerCase())) ||
+      (!!team.location && t.includes(team.location.toLowerCase())) ||
+      (!!team.abbr && t.includes(team.abbr.toLowerCase()))
+    );
+  };
+  const predictedTeamMeta: TeamMeta | null = predicted
+    ? teamMatchesText(awayTeam, predicted)
+      ? awayTeam
+      : teamMatchesText(homeTeam, predicted)
+      ? homeTeam
+      : null
+    : null;
+  const opponentTeamMeta: TeamMeta | null =
+    predictedTeamMeta === awayTeam ? homeTeam : predictedTeamMeta === homeTeam ? awayTeam : null;
+
+  type SignalAlignment = { category: string; team: TeamMeta | null; aligns: "yes" | "no" | "neutral" };
+  const signalAlignments: SignalAlignment[] = (gameProfile ?? []).map((row) => {
+    const tilt = row.tilt ?? "";
+    const favorsPredicted = teamMatchesText(predictedTeamMeta, tilt);
+    const favorsOpponent = teamMatchesText(opponentTeamMeta, tilt);
+    const favoredTeam = favorsPredicted ? predictedTeamMeta : favorsOpponent ? opponentTeamMeta : null;
+    return {
+      category: row.category,
+      team: favoredTeam,
+      aligns: favorsPredicted ? "yes" : favorsOpponent ? "no" : "neutral",
+    };
+  });
+  const decidedAlignments = signalAlignments.filter((s) => s.aligns !== "neutral");
+  const alignedCount = decidedAlignments.filter((s) => s.aligns === "yes").length;
+  const alignmentSummary: "Strong" | "Mixed" | "Weak" | null =
+    decidedAlignments.length === 0
+      ? null
+      : alignedCount === decidedAlignments.length
+      ? "Strong"
+      : alignedCount === 0
+      ? "Weak"
+      : "Mixed";
 
   // Resolve a readable team name from a side ("away" | "home")
   const sideToTeam = (side: string): TeamMeta | null => {
@@ -491,21 +531,23 @@ function ModelTrustCard({
 
         {/* 4. Matchup Advantage — compact pill cards */}
         {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
-          <div className="mt-4">
-            <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
-              <p className="mb-1.5 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                Matchup Advantage
-              </p>
-            </InfoTip>
-            <div className="grid grid-cols-2 gap-2">
-              <AdvantagePill team={awayTeam} value={awayPts} leading={awayPts > homePts} />
-              <AdvantagePill team={homeTeam} value={homePts} leading={homePts > awayPts} />
+          <div className="mt-5">
+            <div className="mx-auto w-full max-w-[640px] px-2">
+              <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+                <p className="mb-2.5 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                  Matchup Advantage
+                </p>
+              </InfoTip>
+              <div className="grid grid-cols-2 gap-4">
+                <AdvantagePill team={awayTeam} value={awayPts} leading={awayPts > homePts} />
+                <AdvantagePill team={homeTeam} value={homePts} leading={homePts > awayPts} />
+              </div>
             </div>
           </div>
         )}
 
         {/* 5. Model Learning Tag */}
-        <div className="mt-4 flex justify-center">
+        <div className="mt-5 flex justify-center">
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-medium ${tone.learningBg}`}>
             <LearningIcon className="h-3 w-3" strokeWidth={2.5} />
             {tone.learningTag}
@@ -522,8 +564,8 @@ function ModelTrustCard({
               </span>
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2 space-y-1 text-[12px] text-muted-foreground/80">
-              <div className="flex justify-between">
+            <CollapsibleContent className="mt-2 space-y-2.5 text-[12px] text-muted-foreground/80">
+              <div className="flex items-center justify-between">
                 <InfoTip label="Overall strength of the matchup advantage.">
                   <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
                     Edge Strength
@@ -531,14 +573,45 @@ function ModelTrustCard({
                 </InfoTip>
                 <span className="font-semibold text-foreground/90">{edgeStrength}</span>
               </div>
-              <div className="flex justify-between">
-                <InfoTip label="How many key signals were identified in this matchup.">
-                  <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                    Signals Detected
-                  </span>
-                </InfoTip>
-                <span className="font-mono tabular-nums text-foreground/90">{gameProfile?.length ?? 0}</span>
-              </div>
+              {signalAlignments.length > 0 && (
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <InfoTip label="Whether each key signal favored the predicted team or the opponent.">
+                      <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                        Signal Alignment
+                      </span>
+                    </InfoTip>
+                    {alignmentSummary && (
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-foreground/80">
+                        {alignmentSummary}
+                      </span>
+                    )}
+                  </div>
+                  <ul className="space-y-1">
+                    {signalAlignments.map((s) => {
+                      const isYes = s.aligns === "yes";
+                      const isNo = s.aligns === "no";
+                      const Icon = isYes ? Check : isNo ? X : Minus;
+                      const iconColor = isYes
+                        ? "text-success"
+                        : isNo
+                        ? "text-destructive"
+                        : "text-muted-foreground/60";
+                      const teamLabel = s.team?.shortName ?? (isYes ? predictedTeamMeta?.shortName : opponentTeamMeta?.shortName);
+                      const verb = s.aligns === "neutral" ? "was neutral" : `favored ${teamLabel ?? "neither team"}`;
+                      return (
+                        <li key={s.category} className="flex items-center gap-2 text-[12px] text-foreground/80">
+                          <Icon className={`h-3.5 w-3.5 shrink-0 ${iconColor}`} strokeWidth={2.5} />
+                          <span>
+                            <span className="text-foreground/90">{s.category}</span>{" "}
+                            <span className="text-muted-foreground/75">{verb}</span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </CollapsibleContent>
           </Collapsible>
         )}
