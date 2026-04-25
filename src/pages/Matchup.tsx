@@ -377,35 +377,35 @@ function ModelTrustCard({
     winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
 
   // Signal alignment — does each game_profile signal favor the predicted team?
-  const predictedTeamMeta: TeamMeta | null =
-    predicted && awayTeam.shortName && predicted.toLowerCase().includes(awayTeam.shortName.toLowerCase())
+  const teamMatchesText = (team: TeamMeta | null, text: string): boolean => {
+    if (!team || !text) return false;
+    const t = text.toLowerCase();
+    return (
+      (!!team.shortName && t.includes(team.shortName.toLowerCase())) ||
+      (!!team.fullName && t.includes(team.fullName.toLowerCase())) ||
+      (!!team.location && t.includes(team.location.toLowerCase())) ||
+      (!!team.abbr && t.includes(team.abbr.toLowerCase()))
+    );
+  };
+  const predictedTeamMeta: TeamMeta | null = predicted
+    ? teamMatchesText(awayTeam, predicted)
       ? awayTeam
-      : predicted && homeTeam.shortName && predicted.toLowerCase().includes(homeTeam.shortName.toLowerCase())
+      : teamMatchesText(homeTeam, predicted)
       ? homeTeam
-      : predicted && awayTeam.abbreviation && predicted.toUpperCase().includes(awayTeam.abbreviation.toUpperCase())
-      ? awayTeam
-      : predicted && homeTeam.abbreviation && predicted.toUpperCase().includes(homeTeam.abbreviation.toUpperCase())
-      ? homeTeam
-      : null;
+      : null
+    : null;
   const opponentTeamMeta: TeamMeta | null =
     predictedTeamMeta === awayTeam ? homeTeam : predictedTeamMeta === homeTeam ? awayTeam : null;
 
-  const teamMatchesTilt = (team: TeamMeta | null, tilt: string): boolean => {
-    if (!team || !tilt) return false;
-    const t = tilt.toLowerCase();
-    return (
-      (!!team.shortName && t.includes(team.shortName.toLowerCase())) ||
-      (!!team.name && t.includes(team.name.toLowerCase())) ||
-      (!!team.abbreviation && t.includes(team.abbreviation.toLowerCase()))
-    );
-  };
-
-  type SignalAlignment = { category: string; aligns: "yes" | "no" | "neutral" };
+  type SignalAlignment = { category: string; team: TeamMeta | null; aligns: "yes" | "no" | "neutral" };
   const signalAlignments: SignalAlignment[] = (gameProfile ?? []).map((row) => {
-    const favorsPredicted = teamMatchesTilt(predictedTeamMeta, row.tilt ?? "");
-    const favorsOpponent = teamMatchesTilt(opponentTeamMeta, row.tilt ?? "");
+    const tilt = row.tilt ?? "";
+    const favorsPredicted = teamMatchesText(predictedTeamMeta, tilt);
+    const favorsOpponent = teamMatchesText(opponentTeamMeta, tilt);
+    const favoredTeam = favorsPredicted ? predictedTeamMeta : favorsOpponent ? opponentTeamMeta : null;
     return {
       category: row.category,
+      team: favoredTeam,
       aligns: favorsPredicted ? "yes" : favorsOpponent ? "no" : "neutral",
     };
   });
