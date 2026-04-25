@@ -287,11 +287,15 @@ function ModelTrustCard({
   lean,
   teamComparison,
   gameProfile,
+  awayTeam,
+  homeTeam,
 }: {
   outcome: NonNullable<GameDetails["model_outcome"]>;
   lean: GameDetails["matchup_lean"];
   teamComparison: GameDetails["team_comparison"];
   gameProfile: GameDetails["game_profile"];
+  awayTeam: TeamMeta;
+  homeTeam: TeamMeta;
 }) {
   const result = outcome.result;
   const isCorrect = /correct/i.test(result) && !/incorrect/i.test(result);
