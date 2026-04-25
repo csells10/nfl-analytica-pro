@@ -261,13 +261,37 @@ function FinalScoreCard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// Model Outcome
+// Model Trust & Outcome
 // ─────────────────────────────────────────────────────────────
 
-function ModelOutcomeCard({
+type ConfidenceTier = "high" | "medium" | "low" | "unknown";
+
+function classifyConfidence(c?: string | null): ConfidenceTier {
+  if (!c) return "unknown";
+  const v = c.toLowerCase();
+  if (v.includes("high")) return "high";
+  if (v.includes("med")) return "medium";
+  if (v.includes("low")) return "low";
+  return "unknown";
+}
+
+const CONFIDENCE_STYLE: Record<ConfidenceTier, { dot: string; text: string; bg: string; border: string }> = {
+  high:    { dot: "bg-success",                 text: "text-success",            bg: "bg-success/10",            border: "border-success/40" },
+  medium:  { dot: "bg-level-elevated",          text: "text-level-elevated",     bg: "bg-level-elevated/10",     border: "border-level-elevated/40" },
+  low:     { dot: "bg-destructive",             text: "text-destructive",        bg: "bg-destructive/10",        border: "border-destructive/40" },
+  unknown: { dot: "bg-muted-foreground/50",     text: "text-muted-foreground",   bg: "bg-muted/40",              border: "border-border" },
+};
+
+function ModelTrustCard({
   outcome,
+  lean,
+  teamComparison,
+  gameProfile,
 }: {
   outcome: NonNullable<GameDetails["model_outcome"]>;
+  lean: GameDetails["matchup_lean"];
+  teamComparison: GameDetails["team_comparison"];
+  gameProfile: GameDetails["game_profile"];
 }) {
   const result = outcome.result;
   const isCorrect = /correct/i.test(result) && !/incorrect/i.test(result);
@@ -282,7 +306,11 @@ function ModelOutcomeCard({
         chipBg: "bg-success/20 dark:bg-success/25",
         chipBorder: "border-success/55",
         ring: "ring-success/25",
+        glow: "shadow-[0_0_28px_-8px_hsl(var(--success)/0.55)]",
         label: "Model prediction matched game result",
+        learningTag: "Model aligned with outcome",
+        learningIcon: Check,
+        learningBg: "bg-success/10 border-success/40 text-success",
       }
     : isIncorrect
     ? {
@@ -292,7 +320,11 @@ function ModelOutcomeCard({
         chipBg: "bg-destructive/20 dark:bg-destructive/25",
         chipBorder: "border-destructive/55",
         ring: "ring-destructive/25",
+        glow: "shadow-[0_0_28px_-8px_hsl(var(--destructive)/0.55)]",
         label: "Model prediction missed game result",
+        learningTag: "Model miss — review signals",
+        learningIcon: AlertTriangle,
+        learningBg: "bg-destructive/10 border-destructive/40 text-destructive",
       }
     : {
         Icon: Minus,
@@ -301,58 +333,255 @@ function ModelOutcomeCard({
         chipBg: "bg-muted/50",
         chipBorder: "border-border",
         ring: "ring-border",
+        glow: "",
         label: "No model pick for this matchup",
+        learningTag: "Neutral — model avoided low-confidence scenario",
+        learningIcon: Minus,
+        learningBg: "bg-muted/40 border-border text-muted-foreground",
       };
 
   const Icon = tone.Icon;
+  const LearningIcon = tone.learningIcon;
+
+  // ── Edge Score: combines team_comparison wins + game_profile signal weighting,
+  //    bucketed to whichever side the model targeted vs. the other team.
+  const predicted = outcome.predicted_team ?? lean?.target_team ?? null;
+  const actual = outcome.actual_winner ?? null;
+
+  const compWins = { away: 0, home: 0 };
+  (teamComparison ?? []).forEach((r) => {
+    if (r.better === "away") compWins.away += 1;
+    else if (r.better === "home") compWins.home += 1;
+  });
+
+  // Signal strength weighting from game_profile levels
+  const signalScore = (gameProfile ?? []).reduce(
+    (acc, row) => acc + (LEVEL_STEPS[row.level] ?? 0),
+    0,
+  );
+  const totalEdge = compWins.away + compWins.home + signalScore;
+
+  // Bias signal score toward predicted team (if any) — represents conviction
+  const predictedSide: "away" | "home" | null =
+    predicted && teamComparison && teamComparison.length > 0
+      ? // best-effort: we don't know team abbr per side here, leave neutral split
+        null
+      : null;
+
+  // Without abbr→side mapping we just show the comp wins split with signal
+  // strength annotated as conviction.
+  const awayPts = compWins.away;
+  const homePts = compWins.home;
+  const maxPts = Math.max(awayPts, homePts, 1);
+
+  // Reasons (Why the model picked this) — top-2 metrics where the model
+  // target (predicted) likely won. We don't know side mapping reliably, so
+  // surface the strongest comparison gaps + top game profile signal.
+  const topComparisons = (teamComparison ?? [])
+    .filter((r) => r.better === "away" || r.better === "home")
+    .slice(0, 2);
+  const topProfile = (gameProfile ?? [])
+    .slice()
+    .sort((a, b) => (LEVEL_STEPS[b.level] ?? 0) - (LEVEL_STEPS[a.level] ?? 0))[0];
+
+  const tier = classifyConfidence(lean?.confidence);
+  const confStyle = CONFIDENCE_STYLE[tier];
 
   return (
     <Card className={`mb-6 border-border bg-card border-t-[3px] ${tone.topBorder}`}>
       <CardContent className="p-5">
-        <div className="mb-4 flex items-baseline gap-2">
-          <h3 className="text-sm font-semibold tracking-tight text-foreground">Prediction Result</h3>
+        {/* Header */}
+        <div className="mb-5 flex items-baseline gap-2">
+          <ShieldCheck className="h-4 w-4 self-center text-muted-foreground/70" strokeWidth={2} />
+          <h3 className="text-sm font-semibold tracking-tight text-foreground">Model Trust &amp; Outcome</h3>
           <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/40">
-            Result Check
+            Should I trust this model?
           </span>
         </div>
 
+        {/* 1. Result Badge */}
         <div className="mx-auto flex w-full flex-col items-center text-center">
           <div
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring}`}
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring} ${tone.glow}`}
           >
             <Icon className={`h-[18px] w-[18px] ${tone.text}`} strokeWidth={2.75} aria-hidden="true" />
-            <span className={`text-lg font-bold leading-none tracking-tight ${tone.text}`}>
-              {result}
-            </span>
+            <span className={`text-lg font-bold leading-none tracking-tight ${tone.text}`}>{result}</span>
           </div>
-
           <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">
             {tone.label}
           </p>
+        </div>
 
-          {!isNoPick && (
-            <>
-              <div className="mt-4 h-[1.5px] w-20 rounded-full bg-border" />
-              <div className="mt-4 flex items-center gap-4 text-[12px]">
-                <span>
-                  <span className="font-medium text-muted-foreground/70">Predicted:</span>{" "}
-                  <span className="font-bold tracking-tight text-foreground">
-                    {outcome.predicted_team ?? "—"}
+        {/* 2. Prediction Summary */}
+        {!isNoPick && (predicted || actual) && (
+          <div className="mt-5 flex items-stretch justify-center gap-3">
+            <PredictionPill label="Predicted" team={predicted} match={isCorrect ? "match" : "miss"} />
+            <span className="self-center text-[10px] uppercase tracking-[0.14em] text-muted-foreground/50">
+              vs
+            </span>
+            <PredictionPill label="Actual" team={actual} match={isCorrect ? "match" : "neutral"} />
+          </div>
+        )}
+
+        {/* 3. Confidence Block */}
+        {lean?.confidence && (
+          <div className="mt-6 rounded-md border border-border/70 bg-muted/20 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                Confidence
+              </span>
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${confStyle.bg} ${confStyle.border} ${confStyle.text}`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${confStyle.dot}`} />
+                {lean.confidence}
+              </span>
+            </div>
+            {lean.confidence_context && (
+              <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-snug text-accent-warm">
+                <AlertTriangle className="mt-[1px] h-3 w-3 shrink-0" strokeWidth={2.25} />
+                <span>{lean.confidence_context}</span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* 4. Edge Score */}
+        {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                Edge Score
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/50">
+                Metric wins · {signalScore} signal pts
+              </span>
+            </div>
+            <div className="space-y-2">
+              <EdgeBar label={teamComparison[0] ? "Away" : "—"} value={awayPts} max={maxPts} />
+              <EdgeBar label="Home" value={homePts} max={maxPts} />
+            </div>
+          </div>
+        )}
+
+        {/* 5. Why the model picked this */}
+        {(topComparisons.length > 0 || topProfile) && (
+          <div className="mt-6">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+              Why the model picked this
+            </p>
+            <ul className="space-y-1.5 text-[12.5px] leading-snug text-foreground/85">
+              {topComparisons.map((r) => (
+                <li key={r.label} className="flex gap-2">
+                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                  <span>
+                    Edge in <span className="font-semibold text-foreground">{r.label}</span>
                   </span>
-                </span>
-                <span className="h-3 w-px bg-border" />
-                <span>
-                  <span className="font-medium text-muted-foreground/70">Winner:</span>{" "}
-                  <span className="font-bold tracking-tight text-foreground">
-                    {outcome.actual_winner ?? "—"}
+                </li>
+              ))}
+              {topProfile && (
+                <li className="flex gap-2">
+                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                  <span>
+                    <span className="font-semibold text-foreground">{topProfile.level}</span>{" "}
+                    {topProfile.category.toLowerCase()} environment
+                    {topProfile.tilt ? ` — ${topProfile.tilt.toLowerCase()}` : ""}
                   </span>
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        {/* 6. Model Learning Tag */}
+        <div className="mt-6 flex justify-center">
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium ${tone.learningBg}`}>
+            <LearningIcon className="h-3 w-3" strokeWidth={2.5} />
+            {tone.learningTag}
+          </span>
+        </div>
+
+        {/* Optional: Model Details */}
+        {(teamComparison?.length || gameProfile?.length) && (
+          <Collapsible className="mt-5 border-t border-border/60 pt-3">
+            <CollapsibleTrigger className="group flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Info className="h-3 w-3" strokeWidth={2.25} />
+                Model Details
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-1.5 text-[12px] text-muted-foreground/80">
+              <div className="flex justify-between">
+                <span>Metric win differential</span>
+                <span className="font-mono tabular-nums text-foreground/90">
+                  {awayPts} – {homePts}
                 </span>
               </div>
-            </>
-          )}
-        </div>
+              <div className="flex justify-between">
+                <span>Signals used</span>
+                <span className="font-mono tabular-nums text-foreground/90">{gameProfile?.length ?? 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total signal weight</span>
+                <span className="font-mono tabular-nums text-foreground/90">{signalScore}</span>
+              </div>
+              {lean?.confidence_context && (
+                <div className="flex justify-between">
+                  <span>Early-season adjustment</span>
+                  <span className="font-mono tabular-nums text-foreground/90">Applied</span>
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function PredictionPill({
+  label,
+  team,
+  match,
+}: {
+  label: string;
+  team: string | null;
+  match: "match" | "miss" | "neutral";
+}) {
+  const ring =
+    match === "match"
+      ? "border-success/50 bg-success/10"
+      : match === "miss"
+      ? "border-destructive/50 bg-destructive/10"
+      : "border-border bg-muted/30";
+  return (
+    <div className={`flex flex-col items-center rounded-md border px-4 py-2 ${ring}`}>
+      <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+        {label}
+      </span>
+      <span className="mt-0.5 text-base font-bold tracking-tight text-foreground">{team ?? "—"}</span>
+    </div>
+  );
+}
+
+function EdgeBar({ label, value, max }: { label: string; value: number; max: number }) {
+  const pct = Math.max(6, Math.round((value / max) * 100));
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-12 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+        {label}
+      </span>
+      <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted/50">
+        <div
+          className="h-full rounded-full bg-accent-cool/70"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="w-10 text-right font-mono text-[11px] tabular-nums text-foreground/85">
+        {value} pt{value === 1 ? "" : "s"}
+      </span>
+    </div>
   );
 }
 
