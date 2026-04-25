@@ -531,21 +531,23 @@ function ModelTrustCard({
 
         {/* 4. Matchup Advantage — compact pill cards */}
         {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
-          <div className="mt-4">
-            <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
-              <p className="mb-1.5 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                Matchup Advantage
-              </p>
-            </InfoTip>
-            <div className="grid grid-cols-2 gap-2">
-              <AdvantagePill team={awayTeam} value={awayPts} leading={awayPts > homePts} />
-              <AdvantagePill team={homeTeam} value={homePts} leading={homePts > awayPts} />
+          <div className="mt-5">
+            <div className="mx-auto w-full max-w-[640px] px-2">
+              <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+                <p className="mb-2.5 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
+                  Matchup Advantage
+                </p>
+              </InfoTip>
+              <div className="grid grid-cols-2 gap-4">
+                <AdvantagePill team={awayTeam} value={awayPts} leading={awayPts > homePts} />
+                <AdvantagePill team={homeTeam} value={homePts} leading={homePts > awayPts} />
+              </div>
             </div>
           </div>
         )}
 
         {/* 5. Model Learning Tag */}
-        <div className="mt-4 flex justify-center">
+        <div className="mt-5 flex justify-center">
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-medium ${tone.learningBg}`}>
             <LearningIcon className="h-3 w-3" strokeWidth={2.5} />
             {tone.learningTag}
