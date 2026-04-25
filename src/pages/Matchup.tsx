@@ -257,6 +257,93 @@ function FinalScoreCard({
 }
 
 // ─────────────────────────────────────────────────────────────
+// Model Outcome
+// ─────────────────────────────────────────────────────────────
+
+function ModelOutcomeCard({
+  outcome,
+}: {
+  outcome: NonNullable<GameDetails["model_outcome"]>;
+}) {
+  const result = outcome.result;
+  const isCorrect = /correct/i.test(result) && !/incorrect/i.test(result);
+  const isIncorrect = /incorrect/i.test(result);
+  const isNoPick = /no pick/i.test(result) || (!isCorrect && !isIncorrect);
+
+  const tone = isCorrect
+    ? {
+        Icon: Check,
+        topBorder: "border-t-success",
+        text: "text-success",
+        chipBg: "bg-success/10",
+        chipBorder: "border-success/40",
+        ring: "ring-success/20",
+        label: "Model prediction matched game result",
+      }
+    : isIncorrect
+    ? {
+        Icon: X,
+        topBorder: "border-t-destructive",
+        text: "text-destructive",
+        chipBg: "bg-destructive/10",
+        chipBorder: "border-destructive/40",
+        ring: "ring-destructive/20",
+        label: "Model prediction missed game result",
+      }
+    : {
+        Icon: Minus,
+        topBorder: "border-t-muted-foreground/40",
+        text: "text-muted-foreground",
+        chipBg: "bg-muted/40",
+        chipBorder: "border-border",
+        ring: "ring-border",
+        label: "No model pick for this matchup",
+      };
+
+  const Icon = tone.Icon;
+
+  return (
+    <Card className={`mb-6 border-border bg-card border-t-[3px] ${tone.topBorder}`}>
+      <CardContent className="p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold tracking-tight text-foreground">Model Outcome</h3>
+          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+            Result Check
+          </span>
+        </div>
+
+        <div className="flex flex-col items-center text-center">
+          <div
+            className={`flex items-center gap-2 rounded-full border px-3 py-1 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring}`}
+          >
+            <Icon className={`h-4 w-4 ${tone.text}`} strokeWidth={2.5} aria-hidden="true" />
+            <span className={`text-base font-bold tracking-tight ${tone.text}`}>{result}</span>
+          </div>
+
+          <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
+            {tone.label}
+          </p>
+
+          {!isNoPick && (
+            <div className="mt-3 flex items-center gap-4 text-[12px] text-muted-foreground">
+              <span>
+                <span className="font-medium text-muted-foreground/70">Predicted:</span>{" "}
+                <span className="font-semibold text-foreground">{outcome.predicted_team ?? "—"}</span>
+              </span>
+              <span className="h-3 w-px bg-border" />
+              <span>
+                <span className="font-medium text-muted-foreground/70">Winner:</span>{" "}
+                <span className="font-semibold text-foreground">{outcome.actual_winner ?? "—"}</span>
+              </span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────
 
