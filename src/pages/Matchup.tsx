@@ -2,6 +2,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ArrowLeft,
   ExternalLink,
@@ -14,6 +15,9 @@ import {
   Check,
   X,
   Minus,
+  ChevronDown,
+  ShieldCheck,
+  Info,
   type LucideIcon,
 } from "lucide-react";
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
