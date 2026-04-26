@@ -24,6 +24,7 @@ import {
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
+import { useEffect, useState } from "react";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -720,6 +721,21 @@ export default function Matchup() {
 
   const { data, isLoading, isError, error } = useGameDetails(id);
 
+  // Always start at the top when entering a Game Details page
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [id]);
+
+  // Minimum display time for the analyzing UI to avoid a flash
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  useEffect(() => {
+    setMinTimeElapsed(false);
+    const t = window.setTimeout(() => setMinTimeElapsed(true), 1000);
+    return () => window.clearTimeout(t);
+  }, [id]);
+
+  const showAnalyzing = isLoading || (!isError && !minTimeElapsed);
+
   return (
     <AppShell>
       <div className="mx-auto max-w-4xl py-8">
@@ -738,7 +754,7 @@ export default function Matchup() {
           Back to games
         </Button>
 
-        {isLoading && <MatchupAnalyzing />}
+        {showAnalyzing && <MatchupAnalyzing />}
 
         {isError && (
           <Card className="border-destructive/40 bg-destructive/5">
@@ -749,7 +765,7 @@ export default function Matchup() {
           </Card>
         )}
 
-        {data && <MatchupContent details={data} routeId={id} />}
+        {data && !showAnalyzing && <MatchupContent details={data} routeId={id} />}
       </div>
     </AppShell>
   );
