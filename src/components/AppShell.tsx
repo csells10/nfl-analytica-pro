@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
-import { BarChart3, CalendarDays, Target, Settings, LogOut, Sun, Moon } from "lucide-react";
+import { BarChart3, CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -9,6 +10,13 @@ const navItems = [
   { label: "Matchup Lens", path: "/matchup-lens", icon: Target },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
+
+const GUIDE_EVENT = "gamelens:open-guide";
+const GUIDE_HINT_KEY = "gamelens_guide_hint_views";
+
+export function openGuideTutorial() {
+  window.dispatchEvent(new CustomEvent(GUIDE_EVENT));
+}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
