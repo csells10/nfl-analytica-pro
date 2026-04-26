@@ -157,7 +157,32 @@ export default function Slate() {
         onDismiss={completeOnboarding}
         targetSelector="[data-onboarding='game-date']"
       />
-      <div className="mx-auto max-w-2xl py-8">
+
+      {/* Backend warm-up overlay — runs every visit, independent of tutorial. */}
+      <div
+        className={cn(
+          "pointer-events-none fixed inset-x-0 top-14 z-20 flex justify-center px-4 transition-all duration-500",
+          warmingUp ? "opacity-100 translate-y-0" : "-translate-y-2 opacity-0"
+        )}
+        aria-hidden={!warmingUp}
+      >
+        <div className="mt-4 flex items-center gap-3 rounded-full border border-border/60 bg-card/90 px-4 py-2 shadow-sm backdrop-blur-sm">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+          <div className="flex flex-col leading-tight">
+            <span className="text-xs font-medium text-foreground">Getting the board ready…</span>
+            <span className="text-[10px] text-muted-foreground">
+              Warming up matchup data and checking today's slate.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          "mx-auto max-w-2xl py-8 transition-opacity duration-500",
+          warmingUp ? "opacity-60" : "opacity-100"
+        )}
+      >
         {/* Header + date picker */}
         <div className="mb-10 space-y-5">
           <div>
