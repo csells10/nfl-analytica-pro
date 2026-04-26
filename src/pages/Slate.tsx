@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarIcon, ChevronRight, Loader2 } from "lucide-react";
@@ -14,7 +14,10 @@ import { cn } from "@/lib/utils";
 import { useNflSchedule, type NflGame } from "@/lib/nfl-api";
 import DateSelectionModal from "@/components/DateSelectionModal";
 
-const ONBOARDING_KEY = "gamelens_date_guide_completed";
+const ONBOARDING_KEY = "hasSeenDateTutorial";
+const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
+const GUIDE_EVENT = "gamelens:open-guide";
+const WARMUP_MIN_MS = 600;
 
 function MatchupCard({ game, dateParam }: { game: NflGame; dateParam?: string }) {
   const navigate = useNavigate();
@@ -89,6 +92,35 @@ export default function Slate() {
     return localStorage.getItem(ONBOARDING_KEY) !== "true";
   });
 
+  // Always-on backend warm-up: runs every visit, independent of the tutorial.
+  const [warmingUp, setWarmingUp] = useState(true);
+  useEffect(() => {
+    const controller = new AbortController();
+    const startedAt = Date.now();
+    const warm = async () => {
+      for (const url of [`${API_BASE}/health`, `${API_BASE}/`]) {
+        try {
+          await fetch(url, { signal: controller.signal, mode: "cors" });
+          break;
+        } catch {
+          /* ignore — try next */
+        }
+      }
+      const elapsed = Date.now() - startedAt;
+      const remaining = Math.max(0, WARMUP_MIN_MS - elapsed);
+      window.setTimeout(() => setWarmingUp(false), remaining);
+    };
+    warm();
+    return () => controller.abort();
+  }, []);
+
+  // Listen for the global "open guide" event from the AppShell button.
+  useEffect(() => {
+    const handler = () => setOverlayOpen(true);
+    window.addEventListener(GUIDE_EVENT, handler);
+    return () => window.removeEventListener(GUIDE_EVENT, handler);
+  }, []);
+
   const { data: games, isLoading, isError, error } = useNflSchedule(selectedDate);
 
   const dateParam = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
@@ -106,7 +138,13 @@ export default function Slate() {
     setSelectedDate(date);
     if (date) {
       setSearchParams({ date: format(date, "yyyy-MM-dd") }, { replace: true });
-      completeOnboarding();
+      // Picking a date implicitly satisfies the tutorial for first-time users,
+      // but we no longer auto-close it mid-flow if they manually opened it.
+      try {
+        localStorage.setItem(ONBOARDING_KEY, "true");
+      } catch {
+        /* ignore */
+      }
     } else {
       setSearchParams({}, { replace: true });
     }
