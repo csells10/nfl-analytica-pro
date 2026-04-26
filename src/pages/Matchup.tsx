@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
+import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -737,13 +738,7 @@ export default function Matchup() {
           Back to games
         </Button>
 
-        {isLoading && (
-          <div className="space-y-4">
-            <div className="h-20 animate-pulse rounded-md bg-muted/40" />
-            <div className="h-32 animate-pulse rounded-md bg-muted/40" />
-            <div className="h-48 animate-pulse rounded-md bg-muted/40" />
-          </div>
-        )}
+        {isLoading && <MatchupAnalyzing />}
 
         {isError && (
           <Card className="border-destructive/40 bg-destructive/5">
