@@ -24,6 +24,7 @@ import {
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
+import { useEffect, useState } from "react";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
