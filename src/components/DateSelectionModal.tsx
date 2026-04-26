@@ -2,8 +2,6 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { Sparkles, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
-
 interface DateSelectionModalProps {
   open: boolean;
   onDismiss: () => void;
