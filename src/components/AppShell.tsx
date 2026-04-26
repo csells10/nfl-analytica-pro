@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
-import { BarChart3, CalendarDays, Target, Settings, LogOut, Sun, Moon } from "lucide-react";
+import { BarChart3, CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -10,10 +11,36 @@ const navItems = [
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 
+const GUIDE_EVENT = "gamelens:open-guide";
+const GUIDE_HINT_KEY = "gamelens_guide_hint_views";
+
+export function openGuideTutorial() {
+  window.dispatchEvent(new CustomEvent(GUIDE_EVENT));
+}
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
+
+  // Show a subtle pulse on the Guide button for the first few visits so users discover it.
+  const [pulseGuide, setPulseGuide] = useState(false);
+  useEffect(() => {
+    try {
+      const views = parseInt(localStorage.getItem(GUIDE_HINT_KEY) ?? "0", 10) || 0;
+      if (views < 3) {
+        setPulseGuide(true);
+        localStorage.setItem(GUIDE_HINT_KEY, String(views + 1));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleGuideClick = () => {
+    setPulseGuide(false);
+    openGuideTutorial();
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,6 +73,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:block">{user?.email}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleGuideClick}
+              aria-label="Open guide"
+              title="Show the guide"
+              className={`relative h-8 w-8 text-muted-foreground hover:text-foreground ${
+                pulseGuide ? "animate-pulse text-primary" : ""
+              }`}
+            >
+              <HelpCircle className="h-4 w-4" />
+              {pulseGuide && (
+                <span className="pointer-events-none absolute -right-0.5 -top-0.5 inline-flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/50" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+              )}
+            </Button>
             <Button variant="ghost" size="icon" onClick={toggle} className="h-8 w-8 text-muted-foreground hover:text-foreground">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>

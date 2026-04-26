@@ -2,8 +2,6 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { Sparkles, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
-
 interface DateSelectionModalProps {
   open: boolean;
   onDismiss: () => void;
@@ -25,23 +23,6 @@ export default function DateSelectionModal({
 }: DateSelectionModalProps) {
   const [rect, setRect] = useState<Rect | null>(null);
 
-  // Background warmup ping — fires once when the overlay opens.
-  useEffect(() => {
-    if (!open) return;
-    const controller = new AbortController();
-    const warm = async () => {
-      for (const url of [`${API_BASE}/health`, `${API_BASE}/`]) {
-        try {
-          await fetch(url, { signal: controller.signal, mode: "cors" });
-          return;
-        } catch {
-          /* ignore */
-        }
-      }
-    };
-    warm();
-    return () => controller.abort();
-  }, [open]);
 
   // Track the position of the target calendar element.
   useLayoutEffect(() => {
@@ -188,12 +169,20 @@ export default function DateSelectionModal({
           </span>
         </div>
 
-        <button
-          onClick={onDismiss}
-          className="mt-4 text-xs text-muted-foreground/70 underline-offset-4 hover:text-foreground hover:underline"
-        >
-          Skip for now
-        </button>
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button
+            onClick={onDismiss}
+            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+          >
+            Skip for now
+          </button>
+          <button
+            onClick={onDismiss}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          >
+            Got it
+          </button>
+        </div>
       </div>
     </div>
   );
