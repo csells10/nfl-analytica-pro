@@ -349,9 +349,13 @@ function ModelTrustCard({
         learningBg: "bg-muted/40 border-border text-muted-foreground",
       };
 
-  // Allow backend to override learning tag tone if provided
-  const backendLearning = modelTrust?.learning_label;
-  const learningTone = backendLearning?.tone;
+  // Allow backend to override learning tag tone if provided.
+  // Backend currently sends learning_label as a plain string; tolerate object form too.
+  const rawLearning = modelTrust?.learning_label;
+  const backendLearningText =
+    typeof rawLearning === "string" ? rawLearning : rawLearning?.text ?? null;
+  const learningTone =
+    typeof rawLearning === "string" ? null : rawLearning?.tone ?? null;
   const learningStyle =
     learningTone === "positive"
       ? { icon: Check, bg: "bg-success/10 border-success/40 text-success" }
@@ -364,7 +368,7 @@ function ModelTrustCard({
   const tone = baseTone;
   const Icon = tone.Icon;
   const LearningIcon = learningStyle.icon;
-  const learningTagText = backendLearning?.text ?? tone.defaultLearningTag;
+  const learningTagText = backendLearningText ?? tone.defaultLearningTag;
 
   const predicted = outcome.predicted_team ?? lean?.target_team ?? null;
   const actual = outcome.actual_winner ?? null;
