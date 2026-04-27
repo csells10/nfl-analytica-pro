@@ -380,14 +380,18 @@ function ModelTrustCard({
     return null;
   };
 
+  // Backend matchup_advantage shape: { away: number, home: number, leader, visible }
+  const ma = modelTrust?.matchup_advantage ?? null;
+  const advantageFromBackend = !!ma;
+  const advantageVisible = ma ? ma.visible !== false : false;
+  const awayAdvBackend = typeof ma?.away === "number" ? ma.away : null;
+  const homeAdvBackend = typeof ma?.home === "number" ? ma.home : null;
+
   let awayPts = 0;
   let homePts = 0;
-  let advantageFromBackend = false;
-  if (modelTrust?.matchup_advantage) {
-    const ma = modelTrust.matchup_advantage;
-    awayPts = ma.away?.value ?? 0;
-    homePts = ma.home?.value ?? 0;
-    advantageFromBackend = true;
+  if (advantageFromBackend) {
+    awayPts = awayAdvBackend ?? 0;
+    homePts = homeAdvBackend ?? 0;
   } else {
     (teamComparison ?? []).forEach((r) => {
       if (r.better === "away") awayPts += 1;
@@ -395,10 +399,11 @@ function ModelTrustCard({
     });
   }
 
-  // ── Edge Strength ── prefer backend
+  // ── Edge Strength ── prefer backend (capitalize lowercase strings like "low" → "Low")
   let edgeStrength: string;
   if (modelTrust?.edge?.strength) {
-    edgeStrength = modelTrust.edge.strength;
+    const s = modelTrust.edge.strength;
+    edgeStrength = s.charAt(0).toUpperCase() + s.slice(1);
   } else {
     const winDiff = Math.abs(awayPts - homePts);
     edgeStrength = winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
