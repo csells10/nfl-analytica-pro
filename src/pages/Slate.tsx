@@ -75,6 +75,7 @@ const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: s
     );
   },
 );
+MatchupCard.displayName = "MatchupCard";
 
 export default function Slate() {
   const [searchParams, setSearchParams] = useSearchParams();
