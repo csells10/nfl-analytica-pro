@@ -757,15 +757,10 @@ function PredictionPill({
   );
 }
 
-function AdvantageChip({
-  team,
-  value,
-  leading,
-}: {
-  team: TeamMeta;
-  value: number;
-  leading: boolean;
-}) {
+const AdvantageChip = forwardRef<
+  HTMLDivElement,
+  { team: TeamMeta; value: number; leading: boolean }
+>(function AdvantageChip({ team, value, leading }, ref) {
   const tip = leading
     ? "This team had more matchup factors in its favor."
     : "This team had fewer matchup factors in its favor.";
@@ -775,7 +770,7 @@ function AdvantageChip({
   const labelColor = leading ? "text-muted-foreground/85" : "text-muted-foreground/60";
   const valueColor = leading ? "text-foreground" : "text-foreground/65";
   return (
-    <InfoTip label={tip}>
+    <InfoTip ref={ref} label={tip}>
       <div
         className={`inline-flex cursor-help items-baseline gap-2 rounded-md px-2.5 py-1 transition-colors duration-150 ${wrapStyles}`}
       >
@@ -788,20 +783,25 @@ function AdvantageChip({
       </div>
     </InfoTip>
   );
-}
+});
 
-function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
+const InfoTip = forwardRef<
+  HTMLSpanElement,
+  { label: string; children: React.ReactNode }
+>(function InfoTip({ label, children }, ref) {
   return (
     <Tooltip delayDuration={120}>
       <TooltipTrigger asChild>
-        <span className="inline-flex">{children}</span>
+        <span ref={ref} className="inline-flex">
+          {children}
+        </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[240px] text-[11.5px] leading-snug">
         {label}
       </TooltipContent>
     </Tooltip>
   );
-}
+});
 
 function confidenceTooltip(level: string): string {
   const v = level.toLowerCase();
