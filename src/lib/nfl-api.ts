@@ -104,7 +104,16 @@ export interface GameDetails {
     espn_link: string;
   };
   final_score: { away: ApiQuarterScore; home: ApiQuarterScore } | null;
-  game_profile: Array<{ category: string; level: string; tilt: string }> | null;
+  game_profile: Array<{
+    category: string;
+    level: string;
+    tilt: string;
+    // ── Optional structured fields (backend Phase 1, additive) ──
+    level_index?: 0 | 1 | 2 | 3;
+    icon?: "activity" | "shield" | "zap" | "trending-up" | "target" | "alert-triangle";
+    tilt_team?: "home" | "away" | "neutral" | null;
+    tilt_text?: string;
+  }> | null;
   matchup_lean: {
     target_team: string;
     lean_summary: string;
