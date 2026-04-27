@@ -1,10 +1,76 @@
-TODO: Matchup Page API Improvements
+# 🧠 Matchup API — Product Roadmap & Architecture
+
+This document defines the current state and future direction of the Matchup Page API.
+
+The system is designed to evolve from a **matchup explanation engine** into a structured, backend-driven **analysis and evaluation system**, while keeping all logic centralized and testable.
 
 ---
 
-## ✅ COMPLETED — Model Trust System (End-to-End)
+## 🧭 SYSTEM OVERVIEW
 
-1. model_trust (Backend + UI + BigQuery)
+### Current Purpose
+
+The `/game/<game_id>` endpoint is responsible for:
+
+- Explaining matchup dynamics between two teams
+- Identifying which team has the structural edge
+- Evaluating whether the model prediction was correct (postgame)
+- Persisting results for feedback and improvement
+
+This is an **Explanation Layer**, not a betting decision engine.
+
+---
+
+## ⚖️ KEY DISTINCTION
+
+Matchup API = Explanation Layer  
+Rubric (future) = Decision Layer
+
+These should NOT be merged prematurely.
+
+---
+
+## 🧠 ARCHITECTURE PRINCIPLE
+
+Views feed the model.  
+Python is the model.
+
+### BigQuery Views
+
+Used for:
+
+- Table joins
+- Latest metrics selection
+- Normalized inputs
+- Reusable datasets
+
+### Python Services
+
+Responsible for:
+
+- Matchup logic
+- Confidence rules
+- model_trust reasoning
+- Outcome evaluation
+- Feedback loop (BigQuery inserts)
+
+---
+
+## 🚫 GUIDING RULES
+
+- All logic lives in the backend
+- Frontend renders only structured fields
+- No string matching
+- No inferred logic
+- No duplicated calculations
+
+---
+
+## ✅ COMPLETED — MODEL TRUST SYSTEM
+
+The `model_trust` layer is fully implemented across backend, API, UI, and BigQuery.
+
+### Example Structure
 
 {
 "model_trust": {
@@ -38,18 +104,22 @@ TODO: Matchup Page API Improvements
 }
 }
 
-Notes:
+### Key Outcomes
 
-- Backend owns all logic (no frontend derivation)
-- Stored in BigQuery (outcomes + trust details)
-- UI reads model_trust directly
-- Section only renders when game_status is Final / Final-OT
+- Backend owns all reasoning and interpretation
+- Frontend no longer derives logic
+- Results are stored in BigQuery
+- Model Trust UI only appears for final games
 
 ---
 
 ## 🔜 NEXT — API IMPROVEMENTS
 
-2. Improve game_profile (HIGH PRIORITY)
+These steps remove remaining frontend assumptions and improve clarity and consistency.
+
+---
+
+### 1. Improve `game_profile` (HIGH PRIORITY)
 
 {
 "game_profile": [
@@ -58,13 +128,13 @@ Notes:
 "level": "Elevated",
 "level_index": 3,
 "icon": "pressure",
-"tilt_text": "BUF generating more pressure",
+"tilt_text": "...",
 "tilt_team": "home"
 }
 ]
 }
 
-Goal:
+Goals:
 
 - Remove frontend string matching
 - Improve signal alignment accuracy
@@ -72,7 +142,7 @@ Goal:
 
 ---
 
-3. Add reasoning.summary (HIGH PRIORITY)
+### 2. Add `reasoning.summary` (HIGH PRIORITY)
 
 {
 "reasoning": {
@@ -82,7 +152,7 @@ Goal:
 }
 }
 
-Goal:
+Goals:
 
 - Reduce duplication with Team Comparison
 - Provide human-readable explanation
@@ -90,36 +160,36 @@ Goal:
 
 ---
 
-4. Improve team_comparison
+### 3. Improve `team_comparison`
 
 {
 "team_comparison": [
 {
-"label": "Red Zone TD %",
+"label": "...",
 "away": 0.421,
 "home": 0.358,
 "better": "away",
 "format": "percent",
 "decimals": 1,
-"formatted_gap": "42.1% vs 35.8%"
+"formatted_gap": "..."
 }
 ],
 "team_comparison_period": "season"
 }
 
-Goal:
+Goals:
 
 - Move formatting logic to backend
-- Remove label-based guessing in frontend
-- Ensure consistent display across UI
+- Remove label-based parsing in frontend
+- Ensure consistent display
 
 ---
 
-5. Improve matchup_lean
+### 4. Improve `matchup_lean`
 
 {
 "matchup_lean": {
-"target_team": "BUF",
+"target_team": "...",
 "lean_summary": "...",
 "focus_summary": "...",
 "confidence": "Medium",
@@ -130,36 +200,36 @@ Goal:
 }
 }
 
-Goal:
+Goals:
 
 - Remove frontend substring parsing
-- Explain confidence clearly
-- Align confidence with model_trust
+- Clearly explain confidence
+- Align with model_trust
 
 ---
 
-6. Improve model_outcome
+### 5. Improve `model_outcome`
 
 {
 "model_outcome": {
-"predicted_team": "BUF",
+"predicted_team": "...",
 "predicted_side": "home",
-"actual_winner": "BUF",
+"actual_winner": "...",
 "result": "Correct",
 "result_code": "correct",
-"reason_tag": "Model aligned with pressure and turnover edge"
+"reason_tag": "..."
 }
 }
 
-Goal:
+Goals:
 
 - Remove regex logic from frontend
-- Add structured evaluation explanation
+- Add structured evaluation reasoning
 - Strengthen feedback loop
 
 ---
 
-7. Add matchup_breakdown (LOWER PRIORITY)
+### 6. Add `matchup_breakdown` (LOWER PRIORITY)
 
 {
 "matchup_breakdown": {
@@ -170,11 +240,11 @@ Goal:
 }
 }
 
-Goal:
+Goals:
 
 - Provide deeper matchup insight
-- Support betting/decision framework
-- Build advanced analysis layer (post-MVP)
+- Support future decision frameworks
+- Build advanced analysis layer
 
 ---
 
@@ -187,8 +257,8 @@ Phase 1:
 
 Phase 2:
 
-- team_comparison formatting
-- matchup_lean confidence improvements
+- team_comparison
+- matchup_lean
 
 Phase 3:
 
@@ -197,11 +267,41 @@ Phase 3:
 
 ---
 
-## 🧠 PRINCIPLE
+## 🔮 FUTURE — RUBRIC INTEGRATION
 
-All logic should live in the backend.
-Frontend should only render structured fields.
+The current API will support a future betting decision layer.
 
-No string matching.
-No inferred logic.
-No duplicated calculations.
+### Matchup Simulation (Planned)
+
+{
+"matchup_simulation": {
+"expected_pace": null,
+"volatility_rating": null,
+"turnover_differential": null,
+"short_field_probability": null,
+"drive_sustainability": null,
+"expected_pass_run_adjustment": null
+}
+}
+
+### Prop Eligibility (Future)
+
+{
+"prop_eligibility": {
+"qb_int_over": {},
+"qb_passing_attempts": {},
+"qb_sacks_taken": {},
+"team_passing_attempts": {}
+}
+}
+
+---
+
+## 🎯 OBJECTIVE
+
+Build a system where:
+
+- Backend defines truth
+- Frontend displays it clearly
+- Model decisions can be evaluated
+- Feedback improves future performance
