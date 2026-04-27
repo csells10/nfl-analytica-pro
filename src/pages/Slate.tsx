@@ -20,6 +20,9 @@ const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
 const GUIDE_EVENT = "gamelens:open-guide";
 const WARMUP_MIN_MS = 600;
 
+// Module-eval marker — fires when the lazy Slate chunk finishes parsing.
+perfMark("Slate module evaluated");
+
 const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: string }>(
   function MatchupCard({ game, dateParam }, ref) {
     const navigate = useNavigate();
