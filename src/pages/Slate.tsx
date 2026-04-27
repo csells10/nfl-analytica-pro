@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useNflSchedule, type NflGame } from "@/lib/nfl-api";
 import DateSelectionModal from "@/components/DateSelectionModal";
+import { perfMark } from "@/lib/perf";
 
 const ONBOARDING_KEY = "hasSeenDateTutorial";
 const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
@@ -132,6 +133,14 @@ export default function Slate() {
   const isColdLoad = isLoading && !games;
   const isBackgroundRefresh = isFetching && !isColdLoad && !!games;
   const showStaleWarning = isError && !!games;
+
+  // Dev-only timing markers
+  useEffect(() => {
+    perfMark("Slate route mounted");
+  }, []);
+  useEffect(() => {
+    if (games) perfMark(`Slate first data paint (${games.length} games)`);
+  }, [games]);
 
   const dateParam = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
 
