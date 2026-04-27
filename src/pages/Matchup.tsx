@@ -673,7 +673,7 @@ function ModelTrustCard({
                     )}
                   </div>
                   <ul className="space-y-1">
-                    {signalAlignments.map((s) => {
+                    {signalAlignments.map((s, idx) => {
                       const isYes = s.aligns === "yes";
                       const isNo = s.aligns === "no";
                       const RowIcon = isYes ? Check : isNo ? X : Minus;
@@ -682,17 +682,26 @@ function ModelTrustCard({
                         : isNo
                         ? "text-destructive"
                         : "text-muted-foreground/60";
-                      const verb =
-                        s.aligns === "neutral"
-                          ? "was neutral"
-                          : `favored ${s.teamLabel ?? "neither team"}`;
                       return (
-                        <li key={s.category} className="flex items-center gap-2 text-[12px] text-foreground/80">
+                        <li
+                          key={`${s.category || "signal"}-${idx}`}
+                          className="flex items-center gap-2 text-[12px] text-foreground/80"
+                        >
                           <RowIcon className={`h-3.5 w-3.5 shrink-0 ${iconColor}`} strokeWidth={2.5} />
-                          <span>
-                            <span className="text-foreground/90">{s.category}</span>{" "}
-                            <span className="text-muted-foreground/75">{verb}</span>
-                          </span>
+                          {s.sentence ? (
+                            <span className="text-foreground/85">{s.sentence}</span>
+                          ) : (
+                            <span>
+                              {s.category && (
+                                <span className="text-foreground/90">{s.category}</span>
+                              )}{" "}
+                              <span className="text-muted-foreground/75">
+                                {s.aligns === "neutral"
+                                  ? "was neutral"
+                                  : `favored ${s.teamLabel ?? "neither team"}`}
+                              </span>
+                            </span>
+                          )}
                         </li>
                       );
                     })}
