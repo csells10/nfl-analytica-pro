@@ -19,6 +19,10 @@ import {
   ChevronDown,
   ShieldCheck,
   Info,
+  Shield,
+  Zap,
+  TrendingUp,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
