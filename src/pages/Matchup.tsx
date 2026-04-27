@@ -651,9 +651,9 @@ function ModelTrustCard({
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 space-y-2.5 text-[12px] text-muted-foreground/80">
               <div className="flex items-center justify-between">
-                <InfoTip label={modelTrust?.edge?.description ?? "Overall strength of the matchup advantage."}>
+                <InfoTip label={modelTrust?.edge?.description ?? "How strongly the comparison metrics point in one direction. This is separate from model confidence."}>
                   <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                    Edge Strength
+                    Metric Agreement
                   </span>
                 </InfoTip>
                 <span className="font-semibold text-foreground/90">{edgeStrength}</span>
