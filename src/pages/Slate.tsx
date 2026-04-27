@@ -150,10 +150,18 @@ export default function Slate() {
     return () => controller.abort();
   }, [isColdLoad, games]);
 
-  // Render-time mount marker (logs on first render, not after effect batching).
-  perfMark("Slate render");
+  // Render-time mount marker (fires on the first render, before effects).
+  const renderLoggedRef = useRef(false);
+  if (!renderLoggedRef.current) {
+    renderLoggedRef.current = true;
+    perfMark("Slate first render");
+  }
+  const dataPaintLoggedRef = useRef(false);
   useEffect(() => {
-    if (games) perfMark(`Slate first data paint (${games.length} games)`);
+    if (games && !dataPaintLoggedRef.current) {
+      dataPaintLoggedRef.current = true;
+      perfMark(`Slate first data paint (${games.length} games)`);
+    }
   }, [games]);
 
   const dateParam = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
