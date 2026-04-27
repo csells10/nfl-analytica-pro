@@ -123,10 +123,35 @@ export default function Slate() {
   const isBackgroundRefresh = isFetching && !isColdLoad && !!games;
   const showStaleWarning = isError && !!games;
 
-  // Dev-only timing markers
+  // Skip the warm-up scrim entirely when we already have cached games for this
+  // date — refresh should feel instant. Only true cold loads trigger the warm-up.
   useEffect(() => {
-    perfMark("Slate route mounted");
-  }, []);
+    if (games && games.length > 0) {
+      setWarmingUp(false);
+      return;
+    }
+    if (!isColdLoad) return;
+    const controller = new AbortController();
+    const startedAt = Date.now();
+    const warm = async () => {
+      for (const url of [`${API_BASE}/health`, `${API_BASE}/`]) {
+        try {
+          await fetch(url, { signal: controller.signal, mode: "cors" });
+          break;
+        } catch {
+          /* ignore — try next */
+        }
+      }
+      const elapsed = Date.now() - startedAt;
+      const remaining = Math.max(0, WARMUP_MIN_MS - elapsed);
+      window.setTimeout(() => setWarmingUp(false), remaining);
+    };
+    warm();
+    return () => controller.abort();
+  }, [isColdLoad, games]);
+
+  // Render-time mount marker (logs on first render, not after effect batching).
+  perfMark("Slate render");
   useEffect(() => {
     if (games) perfMark(`Slate first data paint (${games.length} games)`);
   }, [games]);
