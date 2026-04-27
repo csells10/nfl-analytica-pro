@@ -453,6 +453,7 @@ function ModelTrustCard({
         category: row.category,
         aligns: favorsPredicted ? "yes" : favorsOpponent ? "no" : "neutral",
         teamLabel: favoredTeam?.shortName ?? null,
+        sentence: null,
       };
     });
     const decided = signalAlignments.filter((s) => s.aligns !== "neutral");
