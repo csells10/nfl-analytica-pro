@@ -543,12 +543,25 @@ function ModelTrustCard({
             )}
             {reasoningDrivers && reasoningDrivers.length > 0 && (
               <ul className="space-y-1 text-[12px] leading-tight text-foreground/85">
-                {reasoningDrivers.map((d, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
-                    <span>{d}</span>
-                  </li>
-                ))}
+                {reasoningDrivers.map((d, i) => {
+                  const label = d.label ?? d.category ?? null;
+                  const text = d.sentence ?? label ?? "";
+                  if (!text && !d.gap) return null;
+                  return (
+                    <li key={`${d.category ?? "driver"}-${i}`} className="flex gap-2">
+                      <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                      <span>
+                        {label && d.sentence && (
+                          <span className="font-semibold text-foreground">{label}: </span>
+                        )}
+                        {text}
+                        {d.gap && (
+                          <span className="ml-1.5 text-muted-foreground/70">({d.gap})</span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
