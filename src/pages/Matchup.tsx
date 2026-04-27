@@ -25,6 +25,7 @@ import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { useEffect, useState } from "react";
+import { perfMark } from "@/lib/perf";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -827,6 +828,14 @@ export default function Matchup() {
   const location = useLocation();
 
   const { data, isLoading, isFetching, isError, error } = useGameDetails(id);
+
+  // Dev-only timing markers
+  useEffect(() => {
+    perfMark(`Matchup route mounted (${id})`);
+  }, [id]);
+  useEffect(() => {
+    if (data) perfMark(`Matchup first data paint (${id})`);
+  }, [data, id]);
 
   // Always start at the top when entering a Game Details page
   useEffect(() => {

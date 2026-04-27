@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { perfNow, perfTime } from "@/lib/perf";
 
 interface User {
   id: string;
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Restore session on mount before any protected route decides to redirect.
   useEffect(() => {
+    const start = perfNow();
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       /* ignore corrupt storage */
     }
     setIsReady(true);
+    perfTime("auth restore", start);
   }, []);
 
   const signIn = useCallback(async (email: string, _password: string) => {

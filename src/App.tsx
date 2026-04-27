@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
@@ -8,10 +9,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "@/pages/Login";
-import Slate from "@/pages/Slate";
-import Matchup from "@/pages/Matchup";
-import SettingsPage from "@/pages/Settings";
-import Placeholder from "@/pages/Placeholder";
+import { perfMark, perfNow, perfTime } from "@/lib/perf";
+
+// Heavy/route-level pages are lazy-loaded so the initial bundle is small and
+// the app shell can paint before page code is parsed.
+const Slate = lazy(() => import("@/pages/Slate"));
+const Matchup = lazy(() => import("@/pages/Matchup"));
+const SettingsPage = lazy(() => import("@/pages/Settings"));
+const Placeholder = lazy(() => import("@/pages/Placeholder"));
 
 // Persist React Query cache so revisits/refreshes hydrate instantly
 // from the previous successful response and only re-fetch in the
@@ -31,6 +36,13 @@ const persister = createSyncStoragePersister({
   key: "gamelens.query-cache",
 });
 
+const restoreStart = perfNow();
+perfMark("app module evaluated");
+
+// Empty themed surface used while lazy chunks load — matches background so
+// there is no white/blank flash between shell and route content.
+const RouteFallback = () => <div className="min-h-screen bg-background" aria-hidden />;
+
 const App = () => (
   <PersistQueryClientProvider
     client={queryClient}
@@ -44,19 +56,22 @@ const App = () => (
         shouldDehydrateQuery: (query) => query.state.status === "success",
       },
     }}
+    onSuccess={() => perfTime("query cache restore", restoreStart)}
   >
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedRoute><Slate /></ProtectedRoute>} />
-            <Route path="/matchup/:id" element={<ProtectedRoute><Matchup /></ProtectedRoute>} />
-            <Route path="/matchup-lens" element={<ProtectedRoute><Placeholder title="Matchup Lens" /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-          </Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<ProtectedRoute><Slate /></ProtectedRoute>} />
+              <Route path="/matchup/:id" element={<ProtectedRoute><Matchup /></ProtectedRoute>} />
+              <Route path="/matchup-lens" element={<ProtectedRoute><Placeholder title="Matchup Lens" /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
