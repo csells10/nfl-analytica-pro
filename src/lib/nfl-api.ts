@@ -125,7 +125,13 @@ export interface GameDetails {
   model_trust?: {
     reasoning?: {
       headline?: string | null;
-      drivers?: string[] | null;
+      drivers?: Array<{
+        sentence?: string | null;
+        gap?: string | null;
+        label?: string | null;
+        category?: string | null;
+        team?: string | null;
+      }> | null;
     } | null;
     matchup_advantage?: {
       away?: { team?: string | null; value?: number | null; leading?: boolean | null } | null;
@@ -139,9 +145,10 @@ export interface GameDetails {
       summary?: string | null;
       summary_label?: string | null;
       signals?: Array<{
-        category: string;
-        aligns: "yes" | "no" | "neutral" | string;
+        category?: string | null;
+        aligns?: "yes" | "no" | "neutral" | string | null;
         team?: string | null;
+        sentence?: string | null;
         description?: string | null;
       }> | null;
     } | null;

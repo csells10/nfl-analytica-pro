@@ -401,18 +401,24 @@ function ModelTrustCard({
   }
 
   // ── Signal Alignment ── prefer backend
-  type SignalAlignment = { category: string; aligns: "yes" | "no" | "neutral"; teamLabel: string | null };
+  type SignalAlignment = {
+    category: string;
+    aligns: "yes" | "no" | "neutral";
+    teamLabel: string | null;
+    sentence: string | null;
+  };
   let signalAlignments: SignalAlignment[] = [];
   let alignmentSummaryText: string | null = null;
 
   if (modelTrust?.signal_alignment?.signals) {
     signalAlignments = modelTrust.signal_alignment.signals.map((s) => ({
-      category: s.category,
+      category: s.category ?? "",
       aligns: (s.aligns === "yes" || s.aligns === "no" || s.aligns === "neutral" ? s.aligns : "neutral") as
         | "yes"
         | "no"
         | "neutral",
       teamLabel: s.team ?? null,
+      sentence: s.sentence ?? s.description ?? null,
     }));
     alignmentSummaryText =
       modelTrust.signal_alignment.summary ?? modelTrust.signal_alignment.summary_label ?? null;
@@ -447,6 +453,7 @@ function ModelTrustCard({
         category: row.category,
         aligns: favorsPredicted ? "yes" : favorsOpponent ? "no" : "neutral",
         teamLabel: favoredTeam?.shortName ?? null,
+        sentence: null,
       };
     });
     const decided = signalAlignments.filter((s) => s.aligns !== "neutral");
@@ -543,12 +550,25 @@ function ModelTrustCard({
             )}
             {reasoningDrivers && reasoningDrivers.length > 0 && (
               <ul className="space-y-1 text-[12px] leading-tight text-foreground/85">
-                {reasoningDrivers.map((d, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
-                    <span>{d}</span>
-                  </li>
-                ))}
+                {reasoningDrivers.map((d, i) => {
+                  const label = d.label ?? d.category ?? null;
+                  const text = d.sentence ?? label ?? "";
+                  if (!text && !d.gap) return null;
+                  return (
+                    <li key={`${d.category ?? "driver"}-${i}`} className="flex gap-2">
+                      <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                      <span>
+                        {label && d.sentence && (
+                          <span className="font-semibold text-foreground">{label}: </span>
+                        )}
+                        {text}
+                        {d.gap && (
+                          <span className="ml-1.5 text-muted-foreground/70">({d.gap})</span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -653,7 +673,7 @@ function ModelTrustCard({
                     )}
                   </div>
                   <ul className="space-y-1">
-                    {signalAlignments.map((s) => {
+                    {signalAlignments.map((s, idx) => {
                       const isYes = s.aligns === "yes";
                       const isNo = s.aligns === "no";
                       const RowIcon = isYes ? Check : isNo ? X : Minus;
@@ -662,17 +682,26 @@ function ModelTrustCard({
                         : isNo
                         ? "text-destructive"
                         : "text-muted-foreground/60";
-                      const verb =
-                        s.aligns === "neutral"
-                          ? "was neutral"
-                          : `favored ${s.teamLabel ?? "neither team"}`;
                       return (
-                        <li key={s.category} className="flex items-center gap-2 text-[12px] text-foreground/80">
+                        <li
+                          key={`${s.category || "signal"}-${idx}`}
+                          className="flex items-center gap-2 text-[12px] text-foreground/80"
+                        >
                           <RowIcon className={`h-3.5 w-3.5 shrink-0 ${iconColor}`} strokeWidth={2.5} />
-                          <span>
-                            <span className="text-foreground/90">{s.category}</span>{" "}
-                            <span className="text-muted-foreground/75">{verb}</span>
-                          </span>
+                          {s.sentence ? (
+                            <span className="text-foreground/85">{s.sentence}</span>
+                          ) : (
+                            <span>
+                              {s.category && (
+                                <span className="text-foreground/90">{s.category}</span>
+                              )}{" "}
+                              <span className="text-muted-foreground/75">
+                                {s.aligns === "neutral"
+                                  ? "was neutral"
+                                  : `favored ${s.teamLabel ?? "neither team"}`}
+                              </span>
+                            </span>
+                          )}
                         </li>
                       );
                     })}
