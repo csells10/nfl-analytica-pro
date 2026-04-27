@@ -134,28 +134,35 @@ export interface GameDetails {
       }> | null;
     } | null;
     matchup_advantage?: {
-      away?: { team?: string | null; value?: number | null; leading?: boolean | null } | null;
-      home?: { team?: string | null; value?: number | null; leading?: boolean | null } | null;
+      away?: number | null;
+      home?: number | null;
+      leader?: "away" | "home" | string | null;
+      visible?: boolean | null;
+      tooltip?: string | null;
     } | null;
     edge?: {
       strength?: string | null;
+      score?: number | null;
       description?: string | null;
+      tooltip?: string | null;
+      has_content?: boolean | null;
     } | null;
     signal_alignment?: {
       summary?: string | null;
       summary_label?: string | null;
+      summary_code?: string | null;
+      tooltip?: string | null;
+      aligned_count?: number | null;
+      total_count?: number | null;
       signals?: Array<{
         category?: string | null;
         aligns?: "yes" | "no" | "neutral" | string | null;
-        team?: string | null;
+        favored_side?: "away" | "home" | string | null;
         sentence?: string | null;
         description?: string | null;
       }> | null;
     } | null;
-    learning_label?: {
-      text?: string | null;
-      tone?: "positive" | "negative" | "neutral" | string | null;
-    } | null;
+    learning_label?: string | { text?: string | null; tone?: string | null } | null;
   } | null;
 }
 
