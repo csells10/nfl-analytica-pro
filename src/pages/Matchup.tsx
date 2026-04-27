@@ -478,10 +478,23 @@ function ModelTrustCard({
       predictedTeamMeta === awayTeam ? homeTeam : predictedTeamMeta === homeTeam ? awayTeam : null;
 
     signalAlignments = (gameProfile ?? []).map((row) => {
-      const tilt = row.tilt ?? "";
-      const favorsPredicted = teamMatchesText(predictedTeamMeta, tilt);
-      const favorsOpponent = teamMatchesText(opponentTeamMeta, tilt);
-      const favoredTeam = favorsPredicted ? predictedTeamMeta : favorsOpponent ? opponentTeamMeta : null;
+      // Prefer backend-provided tilt_team ("home" | "away" | "neutral" | null).
+      // Fall back to legacy tilt-string substring matching only if missing.
+      let favoredTeam: TeamMeta | null = null;
+      let favorsPredicted = false;
+      let favorsOpponent = false;
+      if (row.tilt_team === "home" || row.tilt_team === "away") {
+        favoredTeam = row.tilt_team === "home" ? homeTeam : awayTeam;
+        favorsPredicted = favoredTeam === predictedTeamMeta;
+        favorsOpponent = favoredTeam === opponentTeamMeta;
+      } else if (row.tilt_team === "neutral" || row.tilt_team === null) {
+        favoredTeam = null;
+      } else {
+        const tilt = row.tilt ?? "";
+        favorsPredicted = teamMatchesText(predictedTeamMeta, tilt);
+        favorsOpponent = teamMatchesText(opponentTeamMeta, tilt);
+        favoredTeam = favorsPredicted ? predictedTeamMeta : favorsOpponent ? opponentTeamMeta : null;
+      }
       return {
         category: row.category,
         aligns: favorsPredicted ? "yes" : favorsOpponent ? "no" : "neutral",
