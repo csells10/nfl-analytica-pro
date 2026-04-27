@@ -401,18 +401,24 @@ function ModelTrustCard({
   }
 
   // ── Signal Alignment ── prefer backend
-  type SignalAlignment = { category: string; aligns: "yes" | "no" | "neutral"; teamLabel: string | null };
+  type SignalAlignment = {
+    category: string;
+    aligns: "yes" | "no" | "neutral";
+    teamLabel: string | null;
+    sentence: string | null;
+  };
   let signalAlignments: SignalAlignment[] = [];
   let alignmentSummaryText: string | null = null;
 
   if (modelTrust?.signal_alignment?.signals) {
     signalAlignments = modelTrust.signal_alignment.signals.map((s) => ({
-      category: s.category,
+      category: s.category ?? "",
       aligns: (s.aligns === "yes" || s.aligns === "no" || s.aligns === "neutral" ? s.aligns : "neutral") as
         | "yes"
         | "no"
         | "neutral",
       teamLabel: s.team ?? null,
+      sentence: s.sentence ?? s.description ?? null,
     }));
     alignmentSummaryText =
       modelTrust.signal_alignment.summary ?? modelTrust.signal_alignment.summary_label ?? null;
