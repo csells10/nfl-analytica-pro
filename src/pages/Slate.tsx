@@ -121,7 +121,17 @@ export default function Slate() {
     return () => window.removeEventListener(GUIDE_EVENT, handler);
   }, []);
 
-  const { data: games, isLoading, isError, error } = useNflSchedule(selectedDate);
+  const {
+    data: games,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useNflSchedule(selectedDate);
+  // Cold load = no cached data yet. Background refresh = have data but refetching.
+  const isColdLoad = isLoading && !games;
+  const isBackgroundRefresh = isFetching && !isColdLoad && !!games;
+  const showStaleWarning = isError && !!games;
 
   const dateParam = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
 
@@ -230,7 +240,8 @@ export default function Slate() {
         {/* Content states */}
         {selectedDate && (
           <>
-            {isLoading && (
+            {/* True cold load only — refreshes reuse cached data below. */}
+            {isColdLoad && (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 <span className="ml-3 text-sm text-muted-foreground">
@@ -239,7 +250,7 @@ export default function Slate() {
               </div>
             )}
 
-            {isError && (
+            {isError && !games && (
               <div className="py-16 text-center">
                 <p className="text-sm text-destructive">
                   Unable to load the schedule.
@@ -250,17 +261,28 @@ export default function Slate() {
               </div>
             )}
 
-            {!isLoading && !isError && games && games.length === 0 && (
+            {!isColdLoad && !isError && games && games.length === 0 && (
               <p className="py-16 text-center text-sm text-muted-foreground">
                 No games scheduled for this date.
               </p>
             )}
 
-            {!isLoading && !isError && games && games.length > 0 && (
+            {games && games.length > 0 && (
               <div className="space-y-6">
                 <div className="flex items-baseline justify-between border-b border-border/50 pb-2">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     {format(selectedDate, "MMMM d, yyyy")}
+                    {isBackgroundRefresh && (
+                      <span className="inline-flex items-center gap-1 normal-case tracking-normal text-[10px] font-normal text-muted-foreground/70">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Refreshing…
+                      </span>
+                    )}
+                    {showStaleWarning && (
+                      <span className="inline-flex items-center gap-1 normal-case tracking-normal text-[10px] font-normal text-amber-500/80">
+                        Showing cached data — refresh failed
+                      </span>
+                    )}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {games.length} game{games.length !== 1 && "s"}

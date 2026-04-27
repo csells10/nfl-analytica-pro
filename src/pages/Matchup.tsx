@@ -826,7 +826,7 @@ export default function Matchup() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { data, isLoading, isError, error } = useGameDetails(id);
+  const { data, isLoading, isFetching, isError, error } = useGameDetails(id);
 
   // Always start at the top when entering a Game Details page
   useEffect(() => {
@@ -841,7 +841,12 @@ export default function Matchup() {
     return () => window.clearTimeout(t);
   }, [id]);
 
-  const showAnalyzing = isLoading || (!isError && !minTimeElapsed);
+  // Cold load only — when cached data exists we render it immediately
+  // and only run a quiet background refresh.
+  const isColdLoad = isLoading && !data;
+  const showAnalyzing = isColdLoad || (!data && !isError && !minTimeElapsed);
+  const isBackgroundRefresh = isFetching && !isColdLoad && !!data;
+  const showStaleWarning = isError && !!data;
 
   return (
     <AppShell>
@@ -863,7 +868,7 @@ export default function Matchup() {
 
         {showAnalyzing && <MatchupAnalyzing />}
 
-        {isError && (
+        {isError && !data && (
           <Card className="border-destructive/40 bg-destructive/5">
             <CardContent className="p-5">
               <p className="text-sm font-semibold text-destructive">Couldn't load this game</p>
@@ -872,7 +877,26 @@ export default function Matchup() {
           </Card>
         )}
 
-        {data && !showAnalyzing && <MatchupContent details={data} routeId={id} />}
+        {data && !showAnalyzing && (
+          <>
+            {(isBackgroundRefresh || showStaleWarning) && (
+              <div className="mb-3 flex justify-end">
+                {isBackgroundRefresh && (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/70" />
+                    Refreshing…
+                  </span>
+                )}
+                {showStaleWarning && (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] text-amber-500/80">
+                    Showing cached data — refresh failed
+                  </span>
+                )}
+              </div>
+            )}
+            <MatchupContent details={data} routeId={id} />
+          </>
+        )}
       </div>
     </AppShell>
   );
