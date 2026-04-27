@@ -18,7 +18,7 @@ export function openGuideTutorial() {
   window.dispatchEvent(new CustomEvent(GUIDE_EVENT));
 }
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode }>(function AppShell({ children }, ref) {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
