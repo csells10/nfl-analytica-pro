@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,23 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { BarChart3 } from "lucide-react";
 
 export default function Login() {
-  const { signIn, isLoading } = useAuth();
+  const { signIn, isLoading, user, isReady } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  // If already authenticated, send the user back to where they came from
+  // (or the slate page) instead of showing the login form.
+  const redirectTo =
+    (location.state as { from?: string } | null)?.from || "/";
+
+  useEffect(() => {
+    if (isReady && user) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isReady, user, navigate, redirectTo]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -23,7 +35,7 @@ export default function Login() {
     }
     try {
       await signIn(email, password);
-      navigate("/", { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch {
       setError("Invalid credentials. Please try again.");
     }
