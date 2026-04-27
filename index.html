@@ -3,12 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
     <title>GameLens — Matchup Intelligence</title>
     <meta name="description" content="GameLens — matchup intelligence portal" />
     <meta name="author" content="Lovable" />
 
-    <!-- TODO: Update og:title to match your application name -->
     <meta property="og:title" content="Lovable App" />
     <meta property="og:description" content="Lovable Generated Project" />
     <meta property="og:type" content="website" />
@@ -17,6 +15,38 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Lovable" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <!-- Pre-mount theme: prevents white flash on refresh in dark mode -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          var theme = saved === "light" || saved === "dark" ? saved : "dark";
+          var root = document.documentElement;
+          root.classList.remove("light", "dark");
+          root.classList.add(theme);
+          // Match the HSL token from index.css for the chosen theme
+          var bg = theme === "dark" ? "hsl(215, 18%, 9%)" : "hsl(220, 16%, 96%)";
+          root.style.backgroundColor = bg;
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+          document.documentElement.style.backgroundColor = "hsl(215, 18%, 9%)";
+        }
+      })();
+    </script>
+    <style>
+      html,
+      body,
+      #root {
+        background-color: hsl(215, 18%, 9%);
+        min-height: 100%;
+      }
+      html.light,
+      html.light body,
+      html.light #root {
+        background-color: hsl(220, 16%, 96%);
+      }
+    </style>
   </head>
 
   <body>
