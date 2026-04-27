@@ -1011,10 +1011,16 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
             </div>
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
               {game_profile.map((row) => {
-                const Icon = iconForCategory(row.category);
-                const steps = LEVEL_STEPS[row.level] ?? 2;
+                // Prefer backend-provided icon key; fall back to category inference.
+                const Icon = row.icon ? ICON_MAP[row.icon] ?? iconForCategory(row.category) : iconForCategory(row.category);
+                // Prefer backend-provided level_index (0–3) → filled count 1–4.
+                const steps = typeof row.level_index === "number"
+                  ? row.level_index + 1
+                  : LEVEL_STEPS[row.level] ?? 2;
                 const colorCls = LEVEL_COLOR[row.level] ?? "text-foreground";
                 const barCls = LEVEL_BAR[row.level] ?? "bg-muted-foreground/60";
+                // Prefer backend tilt_text; fall back to legacy tilt string.
+                const tiltDisplay = row.tilt_text ?? row.tilt ?? "";
                 return (
                   <div
                     key={row.category}
@@ -1045,9 +1051,9 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                         />
                       ))}
                     </div>
-                    {row.tilt && (
+                    {tiltDisplay && (
                       <p className="mt-2 text-[11px] leading-snug text-muted-foreground/55">
-                        <span className="font-medium text-muted-foreground/75">Tilt:</span> {row.tilt}
+                        <span className="font-medium text-muted-foreground/75">Tilt:</span> {tiltDisplay}
                       </p>
                     )}
                   </div>
