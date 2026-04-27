@@ -15,10 +15,14 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const location = useLocation();
 
   if (!isReady) {
+    // eslint-disable-next-line no-console
+    console.log("[auth] ProtectedRoute waiting for auth restore", location.pathname);
     return <div className="min-h-screen bg-background" aria-hidden />;
   }
 
   if (!user) {
+    // eslint-disable-next-line no-console
+    console.log("[auth] ProtectedRoute → redirecting to /login (no user) from", location.pathname);
     return (
       <Navigate
         to="/login"
@@ -28,5 +32,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     );
   }
 
+  // eslint-disable-next-line no-console
+  console.log("[auth] ProtectedRoute rendering", location.pathname, "as", user.email);
   return <>{children}</>;
 }
