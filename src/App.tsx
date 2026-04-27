@@ -48,6 +48,7 @@ if (typeof window !== "undefined") {
 const RouteFallback = forwardRef<HTMLDivElement>(function RouteFallback(_, ref) {
   return <div ref={ref} className="min-h-screen bg-background" aria-hidden />;
 });
+RouteFallback.displayName = "RouteFallback";
 
 const App = () => (
   <PersistQueryClientProvider
