@@ -349,9 +349,13 @@ function ModelTrustCard({
         learningBg: "bg-muted/40 border-border text-muted-foreground",
       };
 
-  // Allow backend to override learning tag tone if provided
-  const backendLearning = modelTrust?.learning_label;
-  const learningTone = backendLearning?.tone;
+  // Allow backend to override learning tag tone if provided.
+  // Backend currently sends learning_label as a plain string; tolerate object form too.
+  const rawLearning = modelTrust?.learning_label;
+  const backendLearningText =
+    typeof rawLearning === "string" ? rawLearning : rawLearning?.text ?? null;
+  const learningTone =
+    typeof rawLearning === "string" ? null : rawLearning?.tone ?? null;
   const learningStyle =
     learningTone === "positive"
       ? { icon: Check, bg: "bg-success/10 border-success/40 text-success" }
@@ -364,7 +368,7 @@ function ModelTrustCard({
   const tone = baseTone;
   const Icon = tone.Icon;
   const LearningIcon = learningStyle.icon;
-  const learningTagText = backendLearning?.text ?? tone.defaultLearningTag;
+  const learningTagText = backendLearningText ?? tone.defaultLearningTag;
 
   const predicted = outcome.predicted_team ?? lean?.target_team ?? null;
   const actual = outcome.actual_winner ?? null;
@@ -376,14 +380,18 @@ function ModelTrustCard({
     return null;
   };
 
+  // Backend matchup_advantage shape: { away: number, home: number, leader, visible }
+  const ma = modelTrust?.matchup_advantage ?? null;
+  const advantageFromBackend = !!ma;
+  const advantageVisible = ma ? ma.visible !== false : false;
+  const awayAdvBackend = typeof ma?.away === "number" ? ma.away : null;
+  const homeAdvBackend = typeof ma?.home === "number" ? ma.home : null;
+
   let awayPts = 0;
   let homePts = 0;
-  let advantageFromBackend = false;
-  if (modelTrust?.matchup_advantage) {
-    const ma = modelTrust.matchup_advantage;
-    awayPts = ma.away?.value ?? 0;
-    homePts = ma.home?.value ?? 0;
-    advantageFromBackend = true;
+  if (advantageFromBackend) {
+    awayPts = awayAdvBackend ?? 0;
+    homePts = homeAdvBackend ?? 0;
   } else {
     (teamComparison ?? []).forEach((r) => {
       if (r.better === "away") awayPts += 1;
@@ -391,10 +399,11 @@ function ModelTrustCard({
     });
   }
 
-  // ── Edge Strength ── prefer backend
+  // ── Edge Strength ── prefer backend (capitalize lowercase strings like "low" → "Low")
   let edgeStrength: string;
   if (modelTrust?.edge?.strength) {
-    edgeStrength = modelTrust.edge.strength;
+    const s = modelTrust.edge.strength;
+    edgeStrength = s.charAt(0).toUpperCase() + s.slice(1);
   } else {
     const winDiff = Math.abs(awayPts - homePts);
     edgeStrength = winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
@@ -417,7 +426,12 @@ function ModelTrustCard({
         | "yes"
         | "no"
         | "neutral",
-      teamLabel: s.team ?? null,
+      teamLabel:
+        s.favored_side === "away"
+          ? awayTeam.shortName ?? awayTeam.abbr
+          : s.favored_side === "home"
+          ? homeTeam.shortName ?? homeTeam.abbr
+          : null,
       sentence: s.sentence ?? s.description ?? null,
     }));
     alignmentSummaryText =
@@ -484,8 +498,10 @@ function ModelTrustCard({
   const tier = classifyConfidence(lean?.confidence);
   const confStyle = CONFIDENCE_STYLE[tier];
 
+  // Backend authoritative: only show when matchup_advantage exists, visible !== false,
+  // and at least one side has an explicit numeric value (do not invent 0–0).
   const showAdvantage = advantageFromBackend
-    ? !!modelTrust?.matchup_advantage
+    ? advantageVisible && (awayAdvBackend !== null || homeAdvBackend !== null)
     : (awayPts > 0 || homePts > 0) && !!teamComparison && teamComparison.length > 0;
 
   const showEdgeDetails = !!edgeStrength || signalAlignments.length > 0;
