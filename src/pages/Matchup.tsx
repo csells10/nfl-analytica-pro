@@ -645,12 +645,14 @@ function ModelTrustCard({
         )}
 
         {/* 5. Model Learning Tag */}
-        <div className="mt-5 flex justify-center">
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-medium ${learningStyle.bg}`}>
-            <LearningIcon className="h-3 w-3" strokeWidth={2.5} />
-            {learningTagText}
-          </span>
-        </div>
+        {learningTagText && (
+          <div className="mt-5 flex justify-center">
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-medium ${learningStyle.bg}`}>
+              <LearningIcon className="h-3 w-3" strokeWidth={2.5} />
+              {learningTagText}
+            </span>
+          </div>
+        )}
 
         {/* 6. Edge details — collapsed by default */}
         {showEdgeDetails && (
