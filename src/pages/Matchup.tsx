@@ -1053,8 +1053,8 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         </Card>
       )}
 
-      {/* ── Model Outcome ── */}
-      {details.model_outcome && (
+      {/* ── Model Trust & Outcome ── only for finalized games ── */}
+      {(header.game_status === "Final" || header.game_status === "Final/OT") && details.model_outcome && (
         <ModelTrustCard
           outcome={details.model_outcome}
           lean={matchup_lean}
