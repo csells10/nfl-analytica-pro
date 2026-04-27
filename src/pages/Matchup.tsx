@@ -842,19 +842,26 @@ export default function Matchup() {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [id]);
 
-  // Minimum display time for the analyzing UI to avoid a flash
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  // Cold load only — when cached data exists (from React Query persisted
+  // cache) we render the page instantly and only run a quiet background
+  // refresh. The analyzing animation is reserved for true cold loads.
+  const isColdLoad = isLoading && !data;
+
+  // Minimum display time so the analyzing UI doesn't flash on fast cold
+  // loads. Only armed when we actually start a cold load.
+  const [minTimeElapsed, setMinTimeElapsed] = useState(true);
   useEffect(() => {
+    if (!isColdLoad) {
+      setMinTimeElapsed(true);
+      return;
+    }
     setMinTimeElapsed(false);
     const t = window.setTimeout(() => setMinTimeElapsed(true), 1000);
     return () => window.clearTimeout(t);
-  }, [id]);
+  }, [id, isColdLoad]);
 
-  // Cold load only — when cached data exists we render it immediately
-  // and only run a quiet background refresh.
-  const isColdLoad = isLoading && !data;
   const showAnalyzing = isColdLoad || (!data && !isError && !minTimeElapsed);
-  const isBackgroundRefresh = isFetching && !isColdLoad && !!data;
+  const isBackgroundRefresh = isFetching && !!data;
   const showStaleWarning = isError && !!data;
 
   return (
