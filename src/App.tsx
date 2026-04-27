@@ -38,6 +38,10 @@ const persister = createSyncStoragePersister({
 
 const restoreStart = perfNow();
 perfMark("app module evaluated");
+if (typeof window !== "undefined") {
+  // eslint-disable-next-line no-console
+  console.log("[boot] initial URL", window.location.href, "pathname=", window.location.pathname);
+}
 
 // Empty themed surface used while lazy chunks load — matches background so
 // there is no white/blank flash between shell and route content.
