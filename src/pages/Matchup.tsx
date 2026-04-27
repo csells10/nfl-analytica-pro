@@ -1016,6 +1016,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           lean={matchup_lean}
           teamComparison={team_comparison}
           gameProfile={game_profile}
+          modelTrust={details.model_trust ?? null}
           awayTeam={awayTeam}
           homeTeam={homeTeam}
         />
