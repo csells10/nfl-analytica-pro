@@ -757,15 +757,10 @@ function PredictionPill({
   );
 }
 
-function AdvantageChip({
-  team,
-  value,
-  leading,
-}: {
-  team: TeamMeta;
-  value: number;
-  leading: boolean;
-}) {
+const AdvantageChip = forwardRef<
+  HTMLDivElement,
+  { team: TeamMeta; value: number; leading: boolean }
+>(function AdvantageChip({ team, value, leading }, ref) {
   const tip = leading
     ? "This team had more matchup factors in its favor."
     : "This team had fewer matchup factors in its favor.";
@@ -775,7 +770,7 @@ function AdvantageChip({
   const labelColor = leading ? "text-muted-foreground/85" : "text-muted-foreground/60";
   const valueColor = leading ? "text-foreground" : "text-foreground/65";
   return (
-    <InfoTip label={tip}>
+    <InfoTip ref={ref} label={tip}>
       <div
         className={`inline-flex cursor-help items-baseline gap-2 rounded-md px-2.5 py-1 transition-colors duration-150 ${wrapStyles}`}
       >
@@ -788,20 +783,25 @@ function AdvantageChip({
       </div>
     </InfoTip>
   );
-}
+});
 
-function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
+const InfoTip = forwardRef<
+  HTMLSpanElement,
+  { label: string; children: React.ReactNode }
+>(function InfoTip({ label, children }, ref) {
   return (
     <Tooltip delayDuration={120}>
       <TooltipTrigger asChild>
-        <span className="inline-flex">{children}</span>
+        <span ref={ref} className="inline-flex">
+          {children}
+        </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[240px] text-[11.5px] leading-snug">
         {label}
       </TooltipContent>
     </Tooltip>
   );
-}
+});
 
 function confidenceTooltip(level: string): string {
   const v = level.toLowerCase();
@@ -842,19 +842,26 @@ export default function Matchup() {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [id]);
 
-  // Minimum display time for the analyzing UI to avoid a flash
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  // Cold load only — when cached data exists (from React Query persisted
+  // cache) we render the page instantly and only run a quiet background
+  // refresh. The analyzing animation is reserved for true cold loads.
+  const isColdLoad = isLoading && !data;
+
+  // Minimum display time so the analyzing UI doesn't flash on fast cold
+  // loads. Only armed when we actually start a cold load.
+  const [minTimeElapsed, setMinTimeElapsed] = useState(true);
   useEffect(() => {
+    if (!isColdLoad) {
+      setMinTimeElapsed(true);
+      return;
+    }
     setMinTimeElapsed(false);
     const t = window.setTimeout(() => setMinTimeElapsed(true), 1000);
     return () => window.clearTimeout(t);
-  }, [id]);
+  }, [id, isColdLoad]);
 
-  // Cold load only — when cached data exists we render it immediately
-  // and only run a quiet background refresh.
-  const isColdLoad = isLoading && !data;
   const showAnalyzing = isColdLoad || (!data && !isError && !minTimeElapsed);
-  const isBackgroundRefresh = isFetching && !isColdLoad && !!data;
+  const isBackgroundRefresh = isFetching && !!data;
   const showStaleWarning = isError && !!data;
 
   return (

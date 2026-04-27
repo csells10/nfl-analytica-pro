@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
@@ -18,7 +18,7 @@ export function openGuideTutorial() {
   window.dispatchEvent(new CustomEvent(GUIDE_EVENT));
 }
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode }>(function AppShell({ children }, ref) {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
@@ -43,7 +43,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div ref={ref} className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-6">
@@ -103,4 +103,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
     </div>
   );
-}
+});
+
+export default AppShell;

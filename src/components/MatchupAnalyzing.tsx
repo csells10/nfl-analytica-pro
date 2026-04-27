@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { Activity, Gauge, Flame, Zap } from "lucide-react";
 
 /**
  * MatchupAnalyzing
  * Structured "live analysis" loading state for the Game Details page.
  * Confident, calm, analytical — uses semantic tokens only.
+ *
+ * All sub-components are wrapped in forwardRef so they can be safely composed
+ * with Radix `asChild` triggers (Tooltip, Popover, etc.) without React
+ * emitting "Function components cannot be given refs" warnings.
  */
 
 const STAGES = [
@@ -14,7 +18,7 @@ const STAGES = [
   "Building matchup lens…",
 ];
 
-export function MatchupAnalyzing() {
+export const MatchupAnalyzing = forwardRef<HTMLDivElement>(function MatchupAnalyzing(_, ref) {
   const [stageIndex, setStageIndex] = useState(0);
 
   useEffect(() => {
@@ -25,7 +29,7 @@ export function MatchupAnalyzing() {
   }, []);
 
   return (
-    <div className="space-y-5">
+    <div ref={ref} className="space-y-5">
       {/* Stage banner */}
       <div className="flex items-center gap-2 text-xs">
         <Activity className="h-3.5 w-3.5 text-primary" />
@@ -94,119 +98,125 @@ export function MatchupAnalyzing() {
       </SectionPanel>
     </div>
   );
-}
+});
 
 // ── Sub-components ───────────────────────────────────────────
 
-function SectionPanel({
-  children,
-  delay,
-  label,
-}: {
+interface SectionPanelProps {
   children: React.ReactNode;
   delay: number;
   label: string;
-}) {
-  return (
-    <div
-      className="rounded-lg border border-border/60 bg-card/70 p-4 opacity-0 animate-fade-in"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
-    >
-      <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
-        {label}
-      </p>
-      {children}
-    </div>
-  );
 }
 
-function TeamHeaderSkeleton({ align }: { align: "left" | "right" }) {
-  return (
-    <div
-      className={`flex items-center gap-3 ${align === "right" ? "flex-row-reverse text-right" : ""}`}
-    >
-      <div className="h-12 w-12 rounded-full bg-muted/60" />
-      <div className={`space-y-1.5 ${align === "right" ? "items-end" : ""} flex flex-col`}>
-        <div className="h-2.5 w-14 rounded-sm bg-muted/50" />
-        <div className="h-3.5 w-28 rounded-sm bg-muted/70" />
+const SectionPanel = forwardRef<HTMLDivElement, SectionPanelProps>(
+  function SectionPanel({ children, delay, label }, ref) {
+    return (
+      <div
+        ref={ref}
+        className="rounded-lg border border-border/60 bg-card/70 p-4 opacity-0 animate-fade-in"
+        style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
+      >
+        <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+          {label}
+        </p>
+        {children}
       </div>
-    </div>
-  );
-}
+    );
+  },
+);
 
-function SignalTile({
-  icon: Icon,
-  title,
-  delay,
-}: {
+const TeamHeaderSkeleton = forwardRef<HTMLDivElement, { align: "left" | "right" }>(
+  function TeamHeaderSkeleton({ align }, ref) {
+    return (
+      <div
+        ref={ref}
+        className={`flex items-center gap-3 ${align === "right" ? "flex-row-reverse text-right" : ""}`}
+      >
+        <div className="h-12 w-12 rounded-full bg-muted/60" />
+        <div className={`space-y-1.5 ${align === "right" ? "items-end" : ""} flex flex-col`}>
+          <div className="h-2.5 w-14 rounded-sm bg-muted/50" />
+          <div className="h-3.5 w-28 rounded-sm bg-muted/70" />
+        </div>
+      </div>
+    );
+  },
+);
+
+interface SignalTileProps {
   icon: typeof Activity;
   title: string;
   delay: number;
-}) {
-  const heights = [40, 70, 55, 85, 60];
-  return (
-    <div className="rounded-md border border-border/50 bg-muted/10 p-3">
-      <div className="mb-2.5 flex items-center gap-1.5">
-        <Icon className="h-3 w-3 text-primary/80" />
-        <span className="text-[10px] font-medium uppercase tracking-wider text-foreground/60">
-          {title}
-        </span>
-      </div>
-      <div className="flex h-10 items-end justify-between gap-1">
-        {heights.map((h, i) => (
-          <div
-            key={i}
-            className="relative flex-1 overflow-hidden rounded-sm bg-muted/30"
-            style={{ height: `${h}%` }}
-          >
-            <div
-              className="absolute inset-0 animate-shimmer-slide bg-gradient-to-t from-primary/50 to-primary/20"
-              style={{ animationDelay: `${delay + i * 90}ms` }}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
-function ComparisonRow({ delay, leftBias }: { delay: number; leftBias: number }) {
-  const leftPct = Math.round(leftBias * 100);
-  const rightPct = 100 - leftPct;
-  return (
-    <div className="space-y-1.5">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <div className="ml-auto h-2 w-12 rounded-sm bg-muted/50" />
-        <div className="h-2 w-10 rounded-sm bg-muted/40" />
-        <div className="h-2 w-12 rounded-sm bg-muted/50" />
-      </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        {/* Left bar — fills from right edge inward */}
-        <div className="relative h-2 overflow-hidden rounded-full bg-muted/25">
-          <div
-            className="absolute inset-y-0 right-0 overflow-hidden rounded-full bg-accent-cool/70"
-            style={{ width: `${leftPct}%` }}
-          >
-            <div
-              className="absolute inset-0 animate-shimmer-slide bg-gradient-to-r from-transparent via-foreground/20 to-transparent"
-              style={{ animationDelay: `${delay}ms` }}
-            />
-          </div>
+const SignalTile = forwardRef<HTMLDivElement, SignalTileProps>(
+  function SignalTile({ icon: Icon, title, delay }, ref) {
+    const heights = [40, 70, 55, 85, 60];
+    return (
+      <div ref={ref} className="rounded-md border border-border/50 bg-muted/10 p-3">
+        <div className="mb-2.5 flex items-center gap-1.5">
+          <Icon className="h-3 w-3 text-primary/80" />
+          <span className="text-[10px] font-medium uppercase tracking-wider text-foreground/60">
+            {title}
+          </span>
         </div>
-        <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-        {/* Right bar — fills from left */}
-        <div className="relative h-2 overflow-hidden rounded-full bg-muted/25">
-          <div
-            className="absolute inset-y-0 left-0 overflow-hidden rounded-full bg-primary/70"
-            style={{ width: `${rightPct}%` }}
-          >
+        <div className="flex h-10 items-end justify-between gap-1">
+          {heights.map((h, i) => (
             <div
-              className="absolute inset-0 animate-shimmer-slide bg-gradient-to-r from-transparent via-foreground/20 to-transparent"
-              style={{ animationDelay: `${delay + 100}ms` }}
-            />
-          </div>
+              key={i}
+              className="relative flex-1 overflow-hidden rounded-sm bg-muted/30"
+              style={{ height: `${h}%` }}
+            >
+              <div
+                className="absolute inset-0 animate-shimmer-slide bg-gradient-to-t from-primary/50 to-primary/20"
+                style={{ animationDelay: `${delay + i * 90}ms` }}
+              />
+            </div>
+          ))}
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  },
+);
+
+const ComparisonRow = forwardRef<HTMLDivElement, { delay: number; leftBias: number }>(
+  function ComparisonRow({ delay, leftBias }, ref) {
+    const leftPct = Math.round(leftBias * 100);
+    const rightPct = 100 - leftPct;
+    return (
+      <div ref={ref} className="space-y-1.5">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="ml-auto h-2 w-12 rounded-sm bg-muted/50" />
+          <div className="h-2 w-10 rounded-sm bg-muted/40" />
+          <div className="h-2 w-12 rounded-sm bg-muted/50" />
+        </div>
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          {/* Left bar — fills from right edge inward */}
+          <div className="relative h-2 overflow-hidden rounded-full bg-muted/25">
+            <div
+              className="absolute inset-y-0 right-0 overflow-hidden rounded-full bg-accent-cool/70"
+              style={{ width: `${leftPct}%` }}
+            >
+              <div
+                className="absolute inset-0 animate-shimmer-slide bg-gradient-to-r from-transparent via-foreground/20 to-transparent"
+                style={{ animationDelay: `${delay}ms` }}
+              />
+            </div>
+          </div>
+          <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+          {/* Right bar — fills from left */}
+          <div className="relative h-2 overflow-hidden rounded-full bg-muted/25">
+            <div
+              className="absolute inset-y-0 left-0 overflow-hidden rounded-full bg-primary/70"
+              style={{ width: `${rightPct}%` }}
+            >
+              <div
+                className="absolute inset-0 animate-shimmer-slide bg-gradient-to-r from-transparent via-foreground/20 to-transparent"
+                style={{ animationDelay: `${delay + 100}ms` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
