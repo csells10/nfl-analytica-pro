@@ -548,29 +548,22 @@ function ModelTrustCard({
                 {reasoningHeadline}
               </p>
             )}
-            {reasoningDrivers && reasoningDrivers.length > 0 && (
-              <ul className="space-y-1 text-[12px] leading-tight text-foreground/85">
-                {reasoningDrivers.map((d, i) => {
-                  const label = d.label ?? d.category ?? null;
-                  const text = d.sentence ?? label ?? "";
-                  if (!text && !d.gap) return null;
-                  return (
-                    <li key={`${d.category ?? "driver"}-${i}`} className="flex gap-2">
-                      <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
-                      <span>
-                        {label && d.sentence && (
-                          <span className="font-semibold text-foreground">{label}: </span>
-                        )}
-                        {text}
-                        {d.gap && (
-                          <span className="ml-1.5 text-muted-foreground/70">({d.gap})</span>
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            {(() => {
+              const driverLabels = (reasoningDrivers ?? [])
+                .map((d) => (d.label ?? d.category ?? "").toString().trim().toLowerCase())
+                .filter((s) => s.length > 0);
+              if (driverLabels.length === 0) return null;
+              const top = driverLabels.slice(0, 2);
+              const joined =
+                top.length === 1 ? top[0] : `${top[0]} and ${top[1]}`;
+              const extra = driverLabels.length - top.length;
+              return (
+                <p className="text-[12px] leading-snug text-foreground/75">
+                  Driven primarily by {joined}
+                  {extra > 0 ? ` (+${extra} more)` : ""}. See Team Comparison for full metric breakdown.
+                </p>
+              );
+            })()}
           </div>
         ) : (
           (fallbackTopComparisons.length > 0 || fallbackTopProfile) && (
