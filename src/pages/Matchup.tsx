@@ -290,6 +290,7 @@ function ModelTrustCard({
   lean,
   teamComparison,
   gameProfile,
+  modelTrust,
   awayTeam,
   homeTeam,
 }: {
@@ -297,6 +298,7 @@ function ModelTrustCard({
   lean: GameDetails["matchup_lean"];
   teamComparison: GameDetails["team_comparison"];
   gameProfile: GameDetails["game_profile"];
+  modelTrust: GameDetails["model_trust"];
   awayTeam: TeamMeta;
   homeTeam: TeamMeta;
 }) {
@@ -305,7 +307,7 @@ function ModelTrustCard({
   const isIncorrect = /incorrect/i.test(result);
   const isNoPick = /no pick/i.test(result) || (!isCorrect && !isIncorrect);
 
-  const tone = isCorrect
+  const baseTone = isCorrect
     ? {
         Icon: Check,
         topBorder: "border-t-success",
@@ -315,7 +317,7 @@ function ModelTrustCard({
         ring: "ring-success/25",
         glow: "shadow-[0_0_28px_-8px_hsl(var(--success)/0.55)]",
         label: "Model prediction matched game result",
-        learningTag: "Model aligned with outcome",
+        defaultLearningTag: "Model aligned with outcome",
         learningIcon: Check,
         learningBg: "bg-success/10 border-success/40 text-success",
       }
@@ -329,7 +331,7 @@ function ModelTrustCard({
         ring: "ring-destructive/25",
         glow: "shadow-[0_0_28px_-8px_hsl(var(--destructive)/0.55)]",
         label: "Model prediction missed game result",
-        learningTag: "Model miss — review signals",
+        defaultLearningTag: "Model miss — review signals",
         learningIcon: AlertTriangle,
         learningBg: "bg-destructive/10 border-destructive/40 text-destructive",
       }
@@ -342,104 +344,144 @@ function ModelTrustCard({
         ring: "ring-border",
         glow: "",
         label: "No model pick for this matchup",
-        learningTag: "Neutral — model avoided low-confidence scenario",
+        defaultLearningTag: "Neutral — model avoided low-confidence scenario",
         learningIcon: Minus,
         learningBg: "bg-muted/40 border-border text-muted-foreground",
       };
 
-  const Icon = tone.Icon;
-  const LearningIcon = tone.learningIcon;
+  // Allow backend to override learning tag tone if provided
+  const backendLearning = modelTrust?.learning_label;
+  const learningTone = backendLearning?.tone;
+  const learningStyle =
+    learningTone === "positive"
+      ? { icon: Check, bg: "bg-success/10 border-success/40 text-success" }
+      : learningTone === "negative"
+      ? { icon: AlertTriangle, bg: "bg-destructive/10 border-destructive/40 text-destructive" }
+      : learningTone === "neutral"
+      ? { icon: Minus, bg: "bg-muted/40 border-border text-muted-foreground" }
+      : { icon: baseTone.learningIcon, bg: baseTone.learningBg };
 
-  // ── Matchup Advantage: combines team_comparison wins + game_profile signal weighting.
+  const tone = baseTone;
+  const Icon = tone.Icon;
+  const LearningIcon = learningStyle.icon;
+  const learningTagText = backendLearning?.text ?? tone.defaultLearningTag;
+
   const predicted = outcome.predicted_team ?? lean?.target_team ?? null;
   const actual = outcome.actual_winner ?? null;
 
-  const compWins = { away: 0, home: 0 };
-  (teamComparison ?? []).forEach((r) => {
-    if (r.better === "away") compWins.away += 1;
-    else if (r.better === "home") compWins.home += 1;
-  });
-
-  // Signal strength weighting from game_profile levels
-  const signalScore = (gameProfile ?? []).reduce(
-    (acc, row) => acc + (LEVEL_STEPS[row.level] ?? 0),
-    0,
-  );
-  const awayPts = compWins.away;
-  const homePts = compWins.home;
-  
-  const winnerPts = Math.max(awayPts, homePts);
-  const winnerSide: "away" | "home" | null =
-    awayPts === homePts ? null : awayPts > homePts ? "away" : "home";
-  const winnerTeam = winnerSide === "away" ? awayTeam : winnerSide === "home" ? homeTeam : null;
-
-  // Edge strength bucketing — based on metric win differential
-  const winDiff = Math.abs(awayPts - homePts);
-  const edgeStrength: "Strong" | "Moderate" | "Low" =
-    winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
-
-  // Signal alignment — does each game_profile signal favor the predicted team?
-  const teamMatchesText = (team: TeamMeta | null, text: string): boolean => {
-    if (!team || !text) return false;
-    const t = text.toLowerCase();
-    return (
-      (!!team.shortName && t.includes(team.shortName.toLowerCase())) ||
-      (!!team.fullName && t.includes(team.fullName.toLowerCase())) ||
-      (!!team.location && t.includes(team.location.toLowerCase())) ||
-      (!!team.abbr && t.includes(team.abbr.toLowerCase()))
-    );
-  };
-  const predictedTeamMeta: TeamMeta | null = predicted
-    ? teamMatchesText(awayTeam, predicted)
-      ? awayTeam
-      : teamMatchesText(homeTeam, predicted)
-      ? homeTeam
-      : null
-    : null;
-  const opponentTeamMeta: TeamMeta | null =
-    predictedTeamMeta === awayTeam ? homeTeam : predictedTeamMeta === homeTeam ? awayTeam : null;
-
-  type SignalAlignment = { category: string; team: TeamMeta | null; aligns: "yes" | "no" | "neutral" };
-  const signalAlignments: SignalAlignment[] = (gameProfile ?? []).map((row) => {
-    const tilt = row.tilt ?? "";
-    const favorsPredicted = teamMatchesText(predictedTeamMeta, tilt);
-    const favorsOpponent = teamMatchesText(opponentTeamMeta, tilt);
-    const favoredTeam = favorsPredicted ? predictedTeamMeta : favorsOpponent ? opponentTeamMeta : null;
-    return {
-      category: row.category,
-      team: favoredTeam,
-      aligns: favorsPredicted ? "yes" : favorsOpponent ? "no" : "neutral",
-    };
-  });
-  const decidedAlignments = signalAlignments.filter((s) => s.aligns !== "neutral");
-  const alignedCount = decidedAlignments.filter((s) => s.aligns === "yes").length;
-  const alignmentSummary: "Strong" | "Mixed" | "Weak" | null =
-    decidedAlignments.length === 0
-      ? null
-      : alignedCount === decidedAlignments.length
-      ? "Strong"
-      : alignedCount === 0
-      ? "Weak"
-      : "Mixed";
-
-  // Resolve a readable team name from a side ("away" | "home")
+  // ── Matchup Advantage ── prefer backend; fallback to frontend derivation
   const sideToTeam = (side: string): TeamMeta | null => {
     if (side === "away") return awayTeam;
     if (side === "home") return homeTeam;
     return null;
   };
 
-  // Reasons (Why the model picked this) — top metric edges + top signal
-  const topComparisons = (teamComparison ?? [])
+  let awayPts = 0;
+  let homePts = 0;
+  let advantageFromBackend = false;
+  if (modelTrust?.matchup_advantage) {
+    const ma = modelTrust.matchup_advantage;
+    awayPts = ma.away?.value ?? 0;
+    homePts = ma.home?.value ?? 0;
+    advantageFromBackend = true;
+  } else {
+    (teamComparison ?? []).forEach((r) => {
+      if (r.better === "away") awayPts += 1;
+      else if (r.better === "home") homePts += 1;
+    });
+  }
+
+  // ── Edge Strength ── prefer backend
+  let edgeStrength: string;
+  if (modelTrust?.edge?.strength) {
+    edgeStrength = modelTrust.edge.strength;
+  } else {
+    const winDiff = Math.abs(awayPts - homePts);
+    edgeStrength = winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
+  }
+
+  // ── Signal Alignment ── prefer backend
+  type SignalAlignment = { category: string; aligns: "yes" | "no" | "neutral"; teamLabel: string | null };
+  let signalAlignments: SignalAlignment[] = [];
+  let alignmentSummaryText: string | null = null;
+
+  if (modelTrust?.signal_alignment?.signals) {
+    signalAlignments = modelTrust.signal_alignment.signals.map((s) => ({
+      category: s.category,
+      aligns: (s.aligns === "yes" || s.aligns === "no" || s.aligns === "neutral" ? s.aligns : "neutral") as
+        | "yes"
+        | "no"
+        | "neutral",
+      teamLabel: s.team ?? null,
+    }));
+    alignmentSummaryText =
+      modelTrust.signal_alignment.summary ?? modelTrust.signal_alignment.summary_label ?? null;
+  } else {
+    // Fallback: original frontend derivation
+    const teamMatchesText = (team: TeamMeta | null, text: string): boolean => {
+      if (!team || !text) return false;
+      const t = text.toLowerCase();
+      return (
+        (!!team.shortName && t.includes(team.shortName.toLowerCase())) ||
+        (!!team.fullName && t.includes(team.fullName.toLowerCase())) ||
+        (!!team.location && t.includes(team.location.toLowerCase())) ||
+        (!!team.abbr && t.includes(team.abbr.toLowerCase()))
+      );
+    };
+    const predictedTeamMeta: TeamMeta | null = predicted
+      ? teamMatchesText(awayTeam, predicted)
+        ? awayTeam
+        : teamMatchesText(homeTeam, predicted)
+        ? homeTeam
+        : null
+      : null;
+    const opponentTeamMeta: TeamMeta | null =
+      predictedTeamMeta === awayTeam ? homeTeam : predictedTeamMeta === homeTeam ? awayTeam : null;
+
+    signalAlignments = (gameProfile ?? []).map((row) => {
+      const tilt = row.tilt ?? "";
+      const favorsPredicted = teamMatchesText(predictedTeamMeta, tilt);
+      const favorsOpponent = teamMatchesText(opponentTeamMeta, tilt);
+      const favoredTeam = favorsPredicted ? predictedTeamMeta : favorsOpponent ? opponentTeamMeta : null;
+      return {
+        category: row.category,
+        aligns: favorsPredicted ? "yes" : favorsOpponent ? "no" : "neutral",
+        teamLabel: favoredTeam?.shortName ?? null,
+      };
+    });
+    const decided = signalAlignments.filter((s) => s.aligns !== "neutral");
+    const aligned = decided.filter((s) => s.aligns === "yes").length;
+    if (decided.length === 0) alignmentSummaryText = null;
+    else if (aligned === decided.length) alignmentSummaryText = "All signals agreed";
+    else if (aligned === 0) alignmentSummaryText = "Signals disagreed";
+    else alignmentSummaryText = "Mixed signals — not all signals agreed";
+  }
+
+  // ── Reasoning ("Why the model picked this") ── prefer backend
+  const reasoningHeadline = modelTrust?.reasoning?.headline ?? null;
+  const reasoningDrivers = modelTrust?.reasoning?.drivers ?? null;
+  const hasBackendReasoning = !!(reasoningHeadline || (reasoningDrivers && reasoningDrivers.length > 0));
+
+  // Fallback reasoning rows (only used if backend reasoning is absent)
+  const fallbackTopComparisons = (teamComparison ?? [])
     .filter((r) => r.better === "away" || r.better === "home")
     .slice(0, 2);
-  const topProfile = (gameProfile ?? [])
+  const fallbackTopProfile = (gameProfile ?? [])
     .slice()
     .sort((a, b) => (LEVEL_STEPS[b.level] ?? 0) - (LEVEL_STEPS[a.level] ?? 0))[0];
-  const topProfileTeam = topProfile ? (winnerTeam ?? null) : null;
+  const fallbackWinnerSide: "away" | "home" | null =
+    awayPts === homePts ? null : awayPts > homePts ? "away" : "home";
+  const fallbackWinnerTeam =
+    fallbackWinnerSide === "away" ? awayTeam : fallbackWinnerSide === "home" ? homeTeam : null;
 
   const tier = classifyConfidence(lean?.confidence);
   const confStyle = CONFIDENCE_STYLE[tier];
+
+  const showAdvantage = advantageFromBackend
+    ? !!modelTrust?.matchup_advantage
+    : (awayPts > 0 || homePts > 0) && !!teamComparison && teamComparison.length > 0;
+
+  const showEdgeDetails = !!edgeStrength || signalAlignments.length > 0;
 
   return (
     <Card className={`mb-6 border-border bg-card border-t-[3px] ${tone.topBorder}`}>
@@ -488,51 +530,74 @@ function ModelTrustCard({
           </p>
         )}
 
-        {/* 3. Why the model picked this — primary insight */}
-        {(topComparisons.length > 0 || topProfile) && (
+        {/* 3. Why the model picked this — backend-first */}
+        {hasBackendReasoning ? (
           <div className="mt-4">
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
               Why the model picked this
             </p>
-            <ul className="space-y-1 text-[12px] leading-tight text-foreground/85">
-              {topComparisons.map((r) => {
-                const team = sideToTeam(r.better);
-                const teamName = team?.shortName ?? "Team";
-                const tip = formatStatGap(r.away, r.home);
-                const row = (
-                  <span className={tip ? "cursor-help" : undefined}>
-                    <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
-                    <span className="text-foreground">{r.label.toLowerCase()}</span>
-                  </span>
-                );
-                return (
-                  <li key={r.label} className="flex gap-2">
+            {reasoningHeadline && (
+              <p className="mb-2 text-[13px] font-semibold leading-snug text-foreground">
+                {reasoningHeadline}
+              </p>
+            )}
+            {reasoningDrivers && reasoningDrivers.length > 0 && (
+              <ul className="space-y-1 text-[12px] leading-tight text-foreground/85">
+                {reasoningDrivers.map((d, i) => (
+                  <li key={i} className="flex gap-2">
                     <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
-                    {tip ? <InfoTip label={tip}>{row}</InfoTip> : row}
+                    <span>{d}</span>
                   </li>
-                );
-              })}
-              {topProfile && (
-                <li className="flex gap-2">
-                  <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
-                  <span>
-                    {topProfileTeam ? (
-                      <>
-                        <span className="font-semibold text-foreground">{topProfileTeam.shortName}</span>{" "}
-                        had the stronger {topProfile.category.toLowerCase()} profile
-                      </>
-                    ) : (
-                      <>Stronger {topProfile.category.toLowerCase()} profile detected</>
-                    )}
-                  </span>
-                </li>
-              )}
-            </ul>
+                ))}
+              </ul>
+            )}
           </div>
+        ) : (
+          (fallbackTopComparisons.length > 0 || fallbackTopProfile) && (
+            <div className="mt-4">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                Why the model picked this
+              </p>
+              <ul className="space-y-1 text-[12px] leading-tight text-foreground/85">
+                {fallbackTopComparisons.map((r) => {
+                  const team = sideToTeam(r.better);
+                  const teamName = team?.shortName ?? "Team";
+                  const tip = formatStatGap(r.away, r.home);
+                  const row = (
+                    <span className={tip ? "cursor-help" : undefined}>
+                      <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
+                      <span className="text-foreground">{r.label.toLowerCase()}</span>
+                    </span>
+                  );
+                  return (
+                    <li key={r.label} className="flex gap-2">
+                      <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                      {tip ? <InfoTip label={tip}>{row}</InfoTip> : row}
+                    </li>
+                  );
+                })}
+                {fallbackTopProfile && (
+                  <li className="flex gap-2">
+                    <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-accent-cool" />
+                    <span>
+                      {fallbackWinnerTeam ? (
+                        <>
+                          <span className="font-semibold text-foreground">{fallbackWinnerTeam.shortName}</span>{" "}
+                          had the stronger {fallbackTopProfile.category.toLowerCase()} profile
+                        </>
+                      ) : (
+                        <>Stronger {fallbackTopProfile.category.toLowerCase()} profile detected</>
+                      )}
+                    </span>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )
         )}
 
-        {/* 4. Matchup Advantage — lightweight stat chips */}
-        {(awayPts > 0 || homePts > 0) && teamComparison && teamComparison.length > 0 && (
+        {/* 4. Matchup Advantage */}
+        {showAdvantage && (
           <div className="mt-4">
             <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
               <p className="mb-2 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60 underline decoration-dotted decoration-muted-foreground/25 underline-offset-4">
@@ -548,14 +613,14 @@ function ModelTrustCard({
 
         {/* 5. Model Learning Tag */}
         <div className="mt-5 flex justify-center">
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-medium ${tone.learningBg}`}>
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-medium ${learningStyle.bg}`}>
             <LearningIcon className="h-3 w-3" strokeWidth={2.5} />
-            {tone.learningTag}
+            {learningTagText}
           </span>
         </div>
 
         {/* 6. Edge details — collapsed by default */}
-        {(teamComparison?.length || gameProfile?.length) && (
+        {showEdgeDetails && (
           <Collapsible className="mt-3 border-t border-border/60 pt-2">
             <CollapsibleTrigger className="group flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground">
               <span className="inline-flex items-center gap-1.5">
@@ -566,7 +631,7 @@ function ModelTrustCard({
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 space-y-2.5 text-[12px] text-muted-foreground/80">
               <div className="flex items-center justify-between">
-                <InfoTip label="Overall strength of the matchup advantage.">
+                <InfoTip label={modelTrust?.edge?.description ?? "Overall strength of the matchup advantage."}>
                   <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
                     Edge Strength
                   </span>
@@ -581,13 +646,9 @@ function ModelTrustCard({
                         Signal Alignment
                       </span>
                     </InfoTip>
-                    {alignmentSummary && (
+                    {alignmentSummaryText && (
                       <span className="text-[11px] font-medium normal-case tracking-tight text-foreground/80">
-                        {alignmentSummary === "Strong"
-                          ? "All signals agreed"
-                          : alignmentSummary === "Weak"
-                          ? "Signals disagreed"
-                          : "Mixed signals — not all signals agreed"}
+                        {alignmentSummaryText}
                       </span>
                     )}
                   </div>
@@ -595,17 +656,19 @@ function ModelTrustCard({
                     {signalAlignments.map((s) => {
                       const isYes = s.aligns === "yes";
                       const isNo = s.aligns === "no";
-                      const Icon = isYes ? Check : isNo ? X : Minus;
+                      const RowIcon = isYes ? Check : isNo ? X : Minus;
                       const iconColor = isYes
                         ? "text-success"
                         : isNo
                         ? "text-destructive"
                         : "text-muted-foreground/60";
-                      const teamLabel = s.team?.shortName ?? (isYes ? predictedTeamMeta?.shortName : opponentTeamMeta?.shortName);
-                      const verb = s.aligns === "neutral" ? "was neutral" : `favored ${teamLabel ?? "neither team"}`;
+                      const verb =
+                        s.aligns === "neutral"
+                          ? "was neutral"
+                          : `favored ${s.teamLabel ?? "neither team"}`;
                       return (
                         <li key={s.category} className="flex items-center gap-2 text-[12px] text-foreground/80">
-                          <Icon className={`h-3.5 w-3.5 shrink-0 ${iconColor}`} strokeWidth={2.5} />
+                          <RowIcon className={`h-3.5 w-3.5 shrink-0 ${iconColor}`} strokeWidth={2.5} />
                           <span>
                             <span className="text-foreground/90">{s.category}</span>{" "}
                             <span className="text-muted-foreground/75">{verb}</span>
