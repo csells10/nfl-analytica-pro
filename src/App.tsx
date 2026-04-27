@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { forwardRef, lazy, Suspense } from "react";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
@@ -45,7 +45,9 @@ if (typeof window !== "undefined") {
 
 // Empty themed surface used while lazy chunks load — matches background so
 // there is no white/blank flash between shell and route content.
-const RouteFallback = () => <div className="min-h-screen bg-background" aria-hidden />;
+const RouteFallback = forwardRef<HTMLDivElement>(function RouteFallback(_, ref) {
+  return <div ref={ref} className="min-h-screen bg-background" aria-hidden />;
+});
 
 const App = () => (
   <PersistQueryClientProvider
