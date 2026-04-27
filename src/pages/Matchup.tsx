@@ -498,8 +498,10 @@ function ModelTrustCard({
   const tier = classifyConfidence(lean?.confidence);
   const confStyle = CONFIDENCE_STYLE[tier];
 
+  // Backend authoritative: only show when matchup_advantage exists, visible !== false,
+  // and at least one side has an explicit numeric value (do not invent 0–0).
   const showAdvantage = advantageFromBackend
-    ? !!modelTrust?.matchup_advantage
+    ? advantageVisible && (awayAdvBackend !== null || homeAdvBackend !== null)
     : (awayPts > 0 || homePts > 0) && !!teamComparison && teamComparison.length > 0;
 
   const showEdgeDetails = !!edgeStrength || signalAlignments.length > 0;
