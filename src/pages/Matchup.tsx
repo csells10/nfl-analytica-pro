@@ -66,6 +66,16 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Scoring: Flame,
 };
 
+// Backend-provided icon keys → Lucide components.
+const ICON_MAP: Record<string, LucideIcon> = {
+  activity: Activity,
+  shield: Shield,
+  zap: Zap,
+  "trending-up": TrendingUp,
+  target: Target,
+  "alert-triangle": AlertTriangle,
+};
+
 function iconForCategory(cat: string): LucideIcon {
   if (CATEGORY_ICONS[cat]) return CATEGORY_ICONS[cat];
   const key = Object.keys(CATEGORY_ICONS).find((k) =>
