@@ -426,7 +426,12 @@ function ModelTrustCard({
         | "yes"
         | "no"
         | "neutral",
-      teamLabel: s.team ?? null,
+      teamLabel:
+        s.favored_side === "away"
+          ? awayTeam.shortName ?? awayTeam.abbr
+          : s.favored_side === "home"
+          ? homeTeam.shortName ?? homeTeam.abbr
+          : null,
       sentence: s.sentence ?? s.description ?? null,
     }));
     alignmentSummaryText =
