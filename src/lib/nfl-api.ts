@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { perfNow, perfTime } from "@/lib/perf";
 
 const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
 
@@ -195,7 +196,14 @@ async function fetchGameDetails(gameId: string): Promise<GameDetails> {
 export function useGameDetails(gameId: string | undefined) {
   return useQuery({
     queryKey: ["nfl-game", gameId],
-    queryFn: () => fetchGameDetails(gameId!),
+    queryFn: async () => {
+      const start = perfNow();
+      try {
+        return await fetchGameDetails(gameId!);
+      } finally {
+        perfTime(`API game ${gameId}`, start);
+      }
+    },
     enabled: !!gameId,
     staleTime: 5 * 60 * 1000,
     retry: 1,
@@ -207,7 +215,14 @@ export function useNflSchedule(date: Date | undefined) {
 
   return useQuery({
     queryKey: ["nfl-schedule", dateStr],
-    queryFn: () => fetchNflSchedule(dateStr),
+    queryFn: async () => {
+      const start = perfNow();
+      try {
+        return await fetchNflSchedule(dateStr);
+      } finally {
+        perfTime(`API schedule ${dateStr}`, start);
+      }
+    },
     enabled: !!dateStr,
     staleTime: 5 * 60 * 1000,
     retry: 2,
