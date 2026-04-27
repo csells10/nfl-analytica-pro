@@ -44,10 +44,10 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
       components={{
         IconLeft: React.forwardRef<SVGSVGElement>((_props, ref) => (
           <ChevronLeft ref={ref} className="h-4 w-4" />
-        )),
+        )) as unknown as () => JSX.Element,
         IconRight: React.forwardRef<SVGSVGElement>((_props, ref) => (
           <ChevronRight ref={ref} className="h-4 w-4" />
-        )),
+        )) as unknown as () => JSX.Element,
       }}
       {...props}
     />
