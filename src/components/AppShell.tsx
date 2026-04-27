@@ -104,5 +104,6 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode }>(funct
     </div>
   );
 });
+AppShell.displayName = "AppShell";
 
 export default AppShell;
