@@ -122,6 +122,34 @@ export interface GameDetails {
     predicted_team: string | null;
     actual_winner: string | null;
   } | null;
+  model_trust?: {
+    reasoning?: {
+      headline?: string | null;
+      drivers?: string[] | null;
+    } | null;
+    matchup_advantage?: {
+      away?: { team?: string | null; value?: number | null; leading?: boolean | null } | null;
+      home?: { team?: string | null; value?: number | null; leading?: boolean | null } | null;
+    } | null;
+    edge?: {
+      strength?: string | null;
+      description?: string | null;
+    } | null;
+    signal_alignment?: {
+      summary?: string | null;
+      summary_label?: string | null;
+      signals?: Array<{
+        category: string;
+        aligns: "yes" | "no" | "neutral" | string;
+        team?: string | null;
+        description?: string | null;
+      }> | null;
+    } | null;
+    learning_label?: {
+      text?: string | null;
+      tone?: "positive" | "negative" | "neutral" | string | null;
+    } | null;
+  } | null;
 }
 
 async function fetchGameDetails(gameId: string): Promise<GameDetails> {
