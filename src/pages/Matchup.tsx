@@ -331,7 +331,7 @@ function ModelTrustCard({
         ring: "ring-destructive/25",
         glow: "shadow-[0_0_28px_-8px_hsl(var(--destructive)/0.55)]",
         label: "Model prediction missed game result",
-        defaultLearningTag: "Model miss — review signals",
+        defaultLearningTag: "Model miss — learning opportunity logged",
         learningIcon: AlertTriangle,
         learningBg: "bg-destructive/10 border-destructive/40 text-destructive",
       }
