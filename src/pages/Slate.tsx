@@ -1,4 +1,4 @@
-import { forwardRef, useState, useMemo, useEffect } from "react";
+import { forwardRef, useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarIcon, ChevronRight, Loader2 } from "lucide-react";
@@ -19,6 +19,9 @@ const ONBOARDING_KEY = "hasSeenDateTutorial";
 const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
 const GUIDE_EVENT = "gamelens:open-guide";
 const WARMUP_MIN_MS = 600;
+
+// Module-eval marker — fires when the lazy Slate chunk finishes parsing.
+perfMark("Slate module evaluated");
 
 const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: string }>(
   function MatchupCard({ game, dateParam }, ref) {
@@ -96,27 +99,10 @@ export default function Slate() {
     return localStorage.getItem(ONBOARDING_KEY) !== "true";
   });
 
-  // Always-on backend warm-up: runs every visit, independent of the tutorial.
+  // Backend warm-up: only meaningful on a true cold load. If we already have
+  // cached schedule data for this date (instant-render via persisted query
+  // cache), skip the warm-up scrim so the refresh feels instant.
   const [warmingUp, setWarmingUp] = useState(true);
-  useEffect(() => {
-    const controller = new AbortController();
-    const startedAt = Date.now();
-    const warm = async () => {
-      for (const url of [`${API_BASE}/health`, `${API_BASE}/`]) {
-        try {
-          await fetch(url, { signal: controller.signal, mode: "cors" });
-          break;
-        } catch {
-          /* ignore — try next */
-        }
-      }
-      const elapsed = Date.now() - startedAt;
-      const remaining = Math.max(0, WARMUP_MIN_MS - elapsed);
-      window.setTimeout(() => setWarmingUp(false), remaining);
-    };
-    warm();
-    return () => controller.abort();
-  }, []);
 
   // Listen for the global "open guide" event from the AppShell button.
   useEffect(() => {
@@ -137,12 +123,45 @@ export default function Slate() {
   const isBackgroundRefresh = isFetching && !isColdLoad && !!games;
   const showStaleWarning = isError && !!games;
 
-  // Dev-only timing markers
+  // Skip the warm-up scrim entirely when we already have cached games for this
+  // date — refresh should feel instant. Only true cold loads trigger the warm-up.
   useEffect(() => {
-    perfMark("Slate route mounted");
-  }, []);
+    if (games && games.length > 0) {
+      setWarmingUp(false);
+      return;
+    }
+    if (!isColdLoad) return;
+    const controller = new AbortController();
+    const startedAt = Date.now();
+    const warm = async () => {
+      for (const url of [`${API_BASE}/health`, `${API_BASE}/`]) {
+        try {
+          await fetch(url, { signal: controller.signal, mode: "cors" });
+          break;
+        } catch {
+          /* ignore — try next */
+        }
+      }
+      const elapsed = Date.now() - startedAt;
+      const remaining = Math.max(0, WARMUP_MIN_MS - elapsed);
+      window.setTimeout(() => setWarmingUp(false), remaining);
+    };
+    warm();
+    return () => controller.abort();
+  }, [isColdLoad, games]);
+
+  // Render-time mount marker (fires on the first render, before effects).
+  const renderLoggedRef = useRef(false);
+  if (!renderLoggedRef.current) {
+    renderLoggedRef.current = true;
+    perfMark("Slate first render");
+  }
+  const dataPaintLoggedRef = useRef(false);
   useEffect(() => {
-    if (games) perfMark(`Slate first data paint (${games.length} games)`);
+    if (games && !dataPaintLoggedRef.current) {
+      dataPaintLoggedRef.current = true;
+      perfMark(`Slate first data paint (${games.length} games)`);
+    }
   }, [games]);
 
   const dateParam = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
