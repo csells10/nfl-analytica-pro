@@ -24,7 +24,7 @@ import {
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
 
 // ─────────────────────────────────────────────────────────────
@@ -101,18 +101,18 @@ function teamFromApi(t: GameDetails["header"]["away_team"]): TeamMeta {
 // Reusable bits
 // ─────────────────────────────────────────────────────────────
 
-function TeamLogo({
-  team,
-  fallbackLogo,
-  size = 40,
-}: {
-  team: TeamMeta;
-  fallbackLogo?: string;
-  size?: number;
-}) {
+const TeamLogo = forwardRef<
+  HTMLImageElement,
+  {
+    team: TeamMeta;
+    fallbackLogo?: string;
+    size?: number;
+  }
+>(function TeamLogo({ team, fallbackLogo, size = 40 }, ref) {
   const src = teamLogoUrl(team.abbr, 500) || fallbackLogo;
   return (
     <img
+      ref={ref}
       src={src}
       alt={`${team.fullName} logo`}
       width={size}
@@ -130,7 +130,7 @@ function TeamLogo({
       }}
     />
   );
-}
+});
 
 function Badge({
   children,
