@@ -16,7 +16,7 @@ import DateSelectionModal from "@/components/DateSelectionModal";
 import { perfMark } from "@/lib/perf";
 
 const ONBOARDING_KEY = "hasSeenDateTutorial";
-
+const GUIDE_EVENT = "gamelens:open-guide";
 // Module-eval marker — fires when the lazy Slate chunk finishes parsing.
 perfMark("Slate module evaluated");
 
