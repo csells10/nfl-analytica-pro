@@ -891,11 +891,11 @@ export default function Matchup() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-4xl py-8">
+      <div className="mx-auto max-w-4xl pt-1 pb-8">
         <Button
           variant="ghost"
           size="sm"
-          className="mb-8 gap-1.5 text-muted-foreground hover:text-primary"
+          className="mb-3 -ml-2 gap-1.5 text-muted-foreground hover:text-primary"
           onClick={() => {
             const search = new URLSearchParams(location.search);
             const stateDate = (location.state as { fromDate?: string } | null)?.fromDate;
