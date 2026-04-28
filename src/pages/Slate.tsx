@@ -100,10 +100,9 @@ export default function Slate() {
     return localStorage.getItem(ONBOARDING_KEY) !== "true";
   });
 
-  // Backend warm-up: only meaningful on a true cold load. If we already have
-  // cached schedule data for this date (instant-render via persisted query
-  // cache), skip the warm-up scrim so the refresh feels instant.
-  const [warmingUp, setWarmingUp] = useState(true);
+  // Backend warm-up scrim: only shown while the games API is actively
+  // running on a true cold load. Never shown just because the page mounted.
+  const [warmingUp, setWarmingUp] = useState(false);
 
   // Listen for the global "open guide" event from the AppShell button.
   useEffect(() => {
@@ -124,14 +123,18 @@ export default function Slate() {
   const isBackgroundRefresh = isFetching && !isColdLoad && !!games;
   const showStaleWarning = isError && !!games;
 
-  // Skip the warm-up scrim entirely when we already have cached games for this
-  // date — refresh should feel instant. Only true cold loads trigger the warm-up.
+  // Only warm up while a games request is actively in-flight on a cold load.
+  // No date selected or cached data present → no scrim.
   useEffect(() => {
     if (games && games.length > 0) {
       setWarmingUp(false);
       return;
     }
-    if (!isColdLoad) return;
+    if (!selectedDate || !isColdLoad) {
+      setWarmingUp(false);
+      return;
+    }
+    setWarmingUp(true);
     const controller = new AbortController();
     const startedAt = Date.now();
     const warm = async () => {
