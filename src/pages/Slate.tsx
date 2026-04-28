@@ -152,7 +152,7 @@ export default function Slate() {
     };
     warm();
     return () => controller.abort();
-  }, [isColdLoad, games]);
+  }, [isColdLoad, games, selectedDate]);
 
   // Render-time mount marker (fires on the first render, before effects).
   const renderLoggedRef = useRef(false);
