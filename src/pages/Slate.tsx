@@ -1,7 +1,7 @@
 import { forwardRef, useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CalendarIcon, ChevronRight, Loader2 } from "lucide-react";
+import { CalendarIcon, ChevronRight } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,9 +16,6 @@ import DateSelectionModal from "@/components/DateSelectionModal";
 import { perfMark } from "@/lib/perf";
 
 const ONBOARDING_KEY = "hasSeenDateTutorial";
-const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
-const GUIDE_EVENT = "gamelens:open-guide";
-const WARMUP_MIN_MS = 600;
 
 // Module-eval marker — fires when the lazy Slate chunk finishes parsing.
 perfMark("Slate module evaluated");
@@ -257,8 +254,7 @@ export default function Slate() {
                   <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     {format(selectedDate, "MMMM d, yyyy")}
                     {isBackgroundRefresh && (
-                      <span className="inline-flex items-center gap-1 normal-case tracking-normal text-[10px] font-normal text-muted-foreground/70">
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                      <span className="normal-case tracking-normal text-[10px] font-normal text-muted-foreground/70">
                         Refreshing…
                       </span>
                     )}
