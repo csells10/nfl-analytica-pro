@@ -135,6 +135,8 @@ export interface GameDetails {
   model_trust?: {
     reasoning?: {
       headline?: string | null;
+      summary?: string | null;
+      has_content?: boolean | null;
       drivers?: Array<{
         sentence?: string | null;
         gap?: string | null;
