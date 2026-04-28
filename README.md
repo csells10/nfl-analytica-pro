@@ -66,11 +66,11 @@ Responsible for:
 
 ---
 
-## ✅ COMPLETED — MODEL TRUST SYSTEM
+## ✅ COMPLETED — CORE SYSTEM
 
-The `model_trust` layer is fully implemented across backend, API, UI, and BigQuery.
+### 1. Model Trust System (End-to-End)
 
-### Example Structure
+Fully implemented across backend, API, UI, and BigQuery.
 
 {
 "model_trust": {
@@ -104,7 +104,7 @@ The `model_trust` layer is fully implemented across backend, API, UI, and BigQue
 }
 }
 
-### Key Outcomes
+Key Outcomes:
 
 - Backend owns all reasoning and interpretation
 - Frontend no longer derives logic
@@ -113,13 +113,9 @@ The `model_trust` layer is fully implemented across backend, API, UI, and BigQue
 
 ---
 
-## 🔜 NEXT — API IMPROVEMENTS
+### 2. Game Profile — Backend Signal Ownership
 
-These steps remove remaining frontend assumptions and improve clarity and consistency.
-
----
-
-### 1. Improve `game_profile` (HIGH PRIORITY)
+Game Profile is now fully backend-driven.
 
 {
 "game_profile": [
@@ -134,15 +130,37 @@ These steps remove remaining frontend assumptions and improve clarity and consis
 ]
 }
 
-Goals:
+Key Outcomes:
 
-- Remove frontend string matching
-- Improve signal alignment accuracy
-- Standardize category + intensity handling
+- Backend defines:
+  - icon
+  - level_index
+  - tilt_team
+  - tilt_text
+
+- Frontend no longer:
+  - infers icon from category
+  - infers strength from level
+  - parses tilt text
+
+- Category naming standardized:
+  - Pressure
+  - Turnover Risk
+  - Scoring Efficiency
+
+Result:
+
+Frontend renders structured signals only — no guessing.
 
 ---
 
-### 2. Add `reasoning.summary` (HIGH PRIORITY)
+## 🔜 NEXT — API IMPROVEMENTS
+
+These steps continue removing frontend assumptions and improving clarity.
+
+---
+
+### 1. Add `reasoning.summary` (HIGH PRIORITY)
 
 {
 "reasoning": {
@@ -156,11 +174,11 @@ Goals:
 
 - Reduce duplication with Team Comparison
 - Provide human-readable explanation
-- Keep drivers as supporting evidence only
+- Make reasoning feel intentional, not repetitive
 
 ---
 
-### 3. Improve `team_comparison`
+### 2. Improve `team_comparison`
 
 {
 "team_comparison": [
@@ -180,12 +198,12 @@ Goals:
 Goals:
 
 - Move formatting logic to backend
-- Remove label-based parsing in frontend
-- Ensure consistent display
+- Remove label-based parsing
+- Ensure consistent metric display
 
 ---
 
-### 4. Improve `matchup_lean`
+### 3. Improve `matchup_lean`
 
 {
 "matchup_lean": {
@@ -204,11 +222,11 @@ Goals:
 
 - Remove frontend substring parsing
 - Clearly explain confidence
-- Align with model_trust
+- Align confidence with model_trust
 
 ---
 
-### 5. Improve `model_outcome`
+### 4. Improve `model_outcome`
 
 {
 "model_outcome": {
@@ -223,13 +241,13 @@ Goals:
 
 Goals:
 
-- Remove regex logic from frontend
-- Add structured evaluation reasoning
+- Remove regex logic
+- Provide structured evaluation reasoning
 - Strengthen feedback loop
 
 ---
 
-### 6. Add `matchup_breakdown` (LOWER PRIORITY)
+### 5. Add `matchup_breakdown` (LOWER PRIORITY)
 
 {
 "matchup_breakdown": {
@@ -250,17 +268,16 @@ Goals:
 
 ## 🧭 IMPLEMENTATION ORDER
 
-Phase 1:
+### Phase 1 (Next Step)
 
-- game_profile
 - reasoning.summary
 
-Phase 2:
+### Phase 2
 
-- team_comparison
-- matchup_lean
+- team_comparison improvements
+- matchup_lean improvements
 
-Phase 3:
+### Phase 3
 
 - model_outcome enhancements
 - matchup_breakdown
@@ -271,7 +288,7 @@ Phase 3:
 
 The current API will support a future betting decision layer.
 
-### Matchup Simulation (Planned)
+### Matchup Simulation
 
 {
 "matchup_simulation": {
@@ -284,7 +301,7 @@ The current API will support a future betting decision layer.
 }
 }
 
-### Prop Eligibility (Future)
+### Prop Eligibility
 
 {
 "prop_eligibility": {
