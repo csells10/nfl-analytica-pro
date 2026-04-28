@@ -512,8 +512,9 @@ function ModelTrustCard({
 
   // ── Reasoning ("Why the model picked this") ── prefer backend
   const reasoningHeadline = modelTrust?.reasoning?.headline ?? null;
+  const reasoningSummary = modelTrust?.reasoning?.summary ?? null;
   const reasoningDrivers = modelTrust?.reasoning?.drivers ?? null;
-  const hasBackendReasoning = !!(reasoningHeadline || (reasoningDrivers && reasoningDrivers.length > 0));
+  const hasBackendReasoning = !!(reasoningHeadline || reasoningSummary || (reasoningDrivers && reasoningDrivers.length > 0));
 
   // Fallback reasoning rows (only used if backend reasoning is absent)
   const fallbackTopComparisons = (teamComparison ?? [])
@@ -592,26 +593,23 @@ function ModelTrustCard({
               Why the model picked this
             </p>
             {reasoningHeadline && (
-              <p className="mb-2 text-[13px] font-semibold leading-snug text-foreground">
+              <p
+                className={`mb-2 text-[13px] font-semibold leading-snug ${
+                  isNoPick ? "text-accent-warm" : "text-foreground"
+                }`}
+              >
                 {reasoningHeadline}
               </p>
             )}
-            {(() => {
-              const driverLabels = (reasoningDrivers ?? [])
-                .map((d) => (d.label ?? d.category ?? "").toString().trim().toLowerCase())
-                .filter((s) => s.length > 0);
-              if (driverLabels.length === 0) return null;
-              const top = driverLabels.slice(0, 2);
-              const joined =
-                top.length === 1 ? top[0] : `${top[0]} and ${top[1]}`;
-              const extra = driverLabels.length - top.length;
-              return (
-                <p className="text-[12px] leading-snug text-foreground/75">
-                  Driven primarily by {joined}
-                  {extra > 0 ? ` (+${extra} more)` : ""}. See Team Comparison for full metric breakdown.
-                </p>
-              );
-            })()}
+            {reasoningSummary && (
+              <p
+                className={`text-[12.5px] leading-relaxed ${
+                  isNoPick ? "text-accent-warm/80" : "text-muted-foreground"
+                }`}
+              >
+                {reasoningSummary}
+              </p>
+            )}
           </div>
         ) : (
           (fallbackTopComparisons.length > 0 || fallbackTopProfile) && (
