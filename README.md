@@ -332,13 +332,111 @@ Goals:
 
 ---
 
+---
+
+# 🧭 PHASE 7 — AUTHENTICATION (USER ACCESS LAYER)
+
+## Objective
+
+Introduce a simple, secure authentication layer to:
+
+- Prevent unrestricted public access to the app
+- Avoid unexpected cloud costs (GCP usage protection)
+- Enable future user-specific features
+
+Primary goal:
+
+👉 Allow users to sign in using their **Google account (Gmail)**
+
+---
+
+## Recommended Approach
+
+Use **Firebase Authentication (Google Sign-In)**
+
+Reason:
+
+- Native to Google Cloud ecosystem
+- Minimal backend changes required
+- Easy frontend integration
+- Handles OAuth securely out of the box
+
+---
+
+## High-Level Flow
+
+1. User clicks "Sign in with Google"
+2. Firebase handles OAuth flow
+3. Frontend receives authenticated user session
+4. Frontend includes auth token in API requests
+5. Backend validates token before serving data
+
+---
+
+## Backend Considerations
+
+Minimal required changes:
+
+- Validate Firebase ID token on incoming requests
+- Optionally extract:
+  - user_id
+  - email
+
+Future (optional):
+
+- Store user actions / preferences
+- Associate saved results or feedback with user
+
+---
+
+## Frontend Responsibilities
+
+- Integrate Firebase SDK
+- Add Google Sign-In button
+- Manage auth state (logged in / logged out)
+- Attach auth token to API requests
+
+---
+
+## Security Goals
+
+- Prevent anonymous scraping of API
+- Limit access to authenticated users only
+- Reduce risk of runaway Cloud Run costs
+
+---
+
+## Optional Enhancements (Future)
+
+- Allow “guest mode” with limited access
+- Rate limiting by user
+- Role-based access (admin vs user)
+- Persist user-specific views or preferences
+
+---
+
+## Design Considerations
+
+- Keep login lightweight and fast
+- Do NOT block core experience with friction
+- Allow immediate entry after login
+
+---
+
+## Status
+
+🔄 Not started
+
+---
+
 # 🎯 PM RECOMMENDED ORDER
 
 1. Phase 4 — Core Area Visualization
-2. matchup_lean refinement
-3. team_comparison formatting
-4. model_outcome depth
-5. Phase 5 — Team Context
+2. Phase 7 — Authentication (Firebase / Google Sign-In)
+3. matchup_lean refinement
+4. team_comparison formatting
+5. model_outcome depth
+6. Phase 5 — Team Context
 
 ---
 
