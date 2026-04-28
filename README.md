@@ -1,14 +1,14 @@
 # 🧠 Matchup API — Product Roadmap & Architecture
 
-This document defines the current state and future direction of the Matchup Page API.
+This document defines the current state, completed work, and future direction of the Matchup Page API.
 
-The system is designed to evolve from a **matchup explanation engine** into a structured, backend-driven **analysis and evaluation system**, while keeping all logic centralized and testable.
+The system is evolving from a **matchup explanation engine** into a structured, backend-driven **analysis and evaluation system**, while keeping all logic centralized, consistent, and testable.
 
 ---
 
-## 🧭 SYSTEM OVERVIEW
+# 🧭 SYSTEM OVERVIEW
 
-### Current Purpose
+## Current Purpose
 
 The `/game/<game_id>` endpoint is responsible for:
 
@@ -21,7 +21,7 @@ This is an **Explanation Layer**, not a betting decision engine.
 
 ---
 
-## ⚖️ KEY DISTINCTION
+# ⚖️ KEY DISTINCTION
 
 Matchup API = Explanation Layer  
 Rubric (future) = Decision Layer
@@ -30,12 +30,12 @@ These should NOT be merged prematurely.
 
 ---
 
-## 🧠 ARCHITECTURE PRINCIPLE
+# 🧠 ARCHITECTURE PRINCIPLE
 
 Views feed the model.  
 Python is the model.
 
-### BigQuery Views
+## BigQuery Views
 
 Used for:
 
@@ -44,19 +44,19 @@ Used for:
 - Normalized inputs
 - Reusable datasets
 
-### Python Services
+## Python Services
 
 Responsible for:
 
 - Matchup logic
 - Confidence rules
-- model_trust reasoning
+- Model Trust reasoning
 - Outcome evaluation
 - Feedback loop (BigQuery inserts)
 
 ---
 
-## 🚫 GUIDING RULES
+# 🚫 GUIDING RULES
 
 - All logic lives in the backend
 - Frontend renders only structured fields
@@ -66,71 +66,102 @@ Responsible for:
 
 ---
 
-## ✅ COMPLETED — CORE SYSTEM
+# ✅ COMPLETED — CORE SYSTEM
 
-### 1. Model Trust System (End-to-End)
+## 1. Model Trust System (End-to-End) ✅ COMPLETE
 
 Fully implemented across backend, API, UI, and BigQuery.
 
-{
-"model_trust": {
-"reasoning": {
-"headline": "...",
-"has_content": true,
-"drivers": []
-},
-"matchup_advantage": {
-"visible": true,
-"away": 2,
-"home": 4,
-"leader": "home",
-"tooltip": "..."
-},
-"edge": {
-"strength": "moderate",
-"score": 0.62,
-"tooltip": "...",
-"has_content": true
-},
-"signal_alignment": {
-"summary_code": "mixed",
-"summary_label": "...",
-"aligned_count": 2,
-"total_count": 4,
-"tooltip": "...",
-"signals": []
-},
-"learning_label": "..."
-}
-}
+model_trust:
+reasoning:
+headline: "..."
+summary: "..."
+has_content: true
+drivers: []
+matchup_advantage:
+visible: true
+away: 2
+home: 4
+leader: "home"
+tooltip: "..."
+edge:
+strength: "moderate"
+score: 0.62
+tooltip: "..."
+has_content: true
+signal_alignment:
+summary_code: "mixed"
+summary_label: "..."
+aligned_count: 2
+total_count: 4
+tooltip: "..."
+signals: []
+learning_label: "..."
 
-Key Outcomes:
+### Key Outcomes
 
 - Backend owns all reasoning and interpretation
 - Frontend no longer derives logic
 - Results are stored in BigQuery
 - Model Trust UI only appears for final games
+- reasoning.summary fully integrated and rendered in UI
+- No-pick scenarios handled cleanly with consistent messaging
 
 ---
 
-### 2. Game Profile — Backend Signal Ownership
+## 2. Reasoning Summary (Explanation Layer) ✅ COMPLETE
 
-Game Profile is now fully backend-driven.
+reasoning:
+headline: "..."
+summary: "..."
 
-{
-"game_profile": [
-{
-"category": "Pressure",
-"level": "Elevated",
-"level_index": 3,
-"icon": "pressure",
-"tilt_text": "...",
-"tilt_team": "home"
-}
-]
-}
+### Key Outcomes
 
-Key Outcomes:
+- Removed frontend-generated explanation text
+- Eliminated contradictions ("Driven primarily by...")
+- Introduced variation engine (Mad Libs style)
+- Ensured consistent storytelling across all outcomes
+
+### Result
+
+[What happened]  
+[Why it happened]
+
+---
+
+## 3. Signal Alignment System ✅ COMPLETE
+
+signal_alignment:
+summary_code: "..."
+summary_label: "..."
+signals: []
+
+### Key Outcomes
+
+- Clean handling of:
+  - Correct
+  - Incorrect
+  - No Pick (not_applicable)
+
+- Improved messaging:
+
+Signals were mixed and did not support a confident prediction
+
+- No fake alignment or forced evaluation
+
+---
+
+## 4. Game Profile — Backend Signal Ownership ✅ COMPLETE
+
+game_profile:
+
+- category: "Pressure"
+  level: "Moderate"
+  level_index: 1
+  tilt_team: "home"
+  tilt_text: "..."
+
+### Key Outcomes
 
 - Backend defines:
   - icon
@@ -138,187 +169,187 @@ Key Outcomes:
   - tilt_team
   - tilt_text
 
-- Frontend no longer:
-  - infers icon from category
-  - infers strength from level
-  - parses tilt text
-
-- Category naming standardized:
-  - Pressure
-  - Turnover Risk
-  - Scoring Efficiency
-
-Result:
-
-Frontend renders structured signals only — no guessing.
+- Frontend renders structured signals only
+- No parsing or inference
 
 ---
 
-## 🔜 NEXT — API IMPROVEMENTS
+## 5. Frontend Alignment ✅ COMPLETE
 
-These steps continue removing frontend assumptions and improving clarity.
+### Changes
+
+- Removed frontend explanation generation
+- Inserted reasoning.summary under headline
+- Introduced consistent styling:
+
+Correct → Green  
+No Pick → Soft Amber  
+Incorrect → Red
+
+### Result
+
+- No contradictions
+- Clear hierarchy
+- Explanation feels intentional
 
 ---
 
-### 1. Add `reasoning.summary` (HIGH PRIORITY)
+# 🔜 PROPOSED — NEXT PHASES
 
-{
-"reasoning": {
-"headline": "...",
-"summary": "...",
-"drivers": []
-}
-}
+---
+
+# 🧭 PHASE 4 — CORE AREA DATA USAGE (HIGH IMPACT)
+
+## Objective
+
+Introduce a category-level comparison layer using Core Areas:
+
+- Defensive Control
+- Disruption and Turnovers
+- Offensive Output
+- Scoring Efficiency
+- Field Control (Special Teams)
+
+---
+
+## Backend Concept
+
+core_area_comparison:
+
+- core_area: "Defensive Control"
+  away_score: 0.62
+  home_score: 0.48
+  leader: "away"
+
+---
+
+## Key Rule
+
+Do NOT expose raw values  
+Normalize + aggregate into comparable scores
+
+---
+
+## Frontend Direction
+
+Radial / Spider Chart:
+
+- Each axis = Core Area
+- Each polygon = Team
+
+---
+
+## Product Value
+
+- Instant visual understanding
+- Reinforces Game Profile signals
+- Bridges metrics → intuition
+
+---
+
+## Status
+
+Not started
+
+---
+
+# 🧭 PHASE 5 — TEAM CONTEXT (PAST PERFORMANCE)
+
+## Objective
+
+Provide context:
+
+- Recent performance
+- Opponent strength
+- Trend direction
+
+---
+
+## Backend Example
+
+recent_form:
+away: - opponent: "BUF"
+result: "W"
+score: "24-20"
+home: - opponent: "DAL"
+result: "W"
+score: "31-27"
+
+---
+
+## Frontend Direction
+
+Keep lightweight:
+
+- Small strip OR expandable section
+- Avoid clutter
+
+---
+
+## Product Value
+
+- Adds trust
+- Helps validate model
+- Provides context without complexity
+
+---
+
+## Status
+
+Not started
+
+---
+
+# 🧭 PHASE 6 — DATA POLISH & ALIGNMENT
+
+## team_comparison (LOW PRIORITY)
+
+Add:
+
+format: "percent"  
+decimals: 1  
+formatted_gap: "..."
+
+---
+
+## matchup_lean (HIGH PRIORITY)
 
 Goals:
 
-- Reduce duplication with Team Comparison
-- Provide human-readable explanation
-- Make reasoning feel intentional, not repetitive
-
----
-
-### 2. Improve `team_comparison`
-
-{
-"team_comparison": [
-{
-"label": "...",
-"away": 0.421,
-"home": 0.358,
-"better": "away",
-"format": "percent",
-"decimals": 1,
-"formatted_gap": "..."
-}
-],
-"team_comparison_period": "season"
-}
-
-Goals:
-
-- Move formatting logic to backend
-- Remove label-based parsing
-- Ensure consistent metric display
-
----
-
-### 3. Improve `matchup_lean`
-
-{
-"matchup_lean": {
-"target_team": "...",
-"lean_summary": "...",
-"focus_summary": "...",
-"confidence": "Medium",
-"confidence_tier": "medium",
-"confidence_explanation": "...",
-"confidence_context": "...",
-"has_content": true
-}
-}
-
-Goals:
-
-- Remove frontend substring parsing
-- Clearly explain confidence
+- Clarify who the lean is for
+- Explain why
 - Align confidence with model_trust
 
 ---
 
-### 4. Improve `model_outcome`
-
-{
-"model_outcome": {
-"predicted_team": "...",
-"predicted_side": "home",
-"actual_winner": "...",
-"result": "Correct",
-"result_code": "correct",
-"reason_tag": "..."
-}
-}
+## model_outcome (MEDIUM)
 
 Goals:
 
-- Remove regex logic
-- Provide structured evaluation reasoning
-- Strengthen feedback loop
+- Add structured reasoning for:
+  - why correct
+  - why incorrect
 
 ---
 
-### 5. Add `matchup_breakdown` (LOWER PRIORITY)
+# 🎯 PM RECOMMENDED ORDER
 
-{
-"matchup_breakdown": {
-"disruption_risk": [],
-"offensive_strength": [],
-"defensive_control": [],
-"finishing_ability": []
-}
-}
-
-Goals:
-
-- Provide deeper matchup insight
-- Support future decision frameworks
-- Build advanced analysis layer
+1. Phase 4 — Core Area Visualization
+2. matchup_lean refinement
+3. team_comparison formatting
+4. model_outcome depth
+5. Phase 5 — Team Context
 
 ---
 
-## 🧭 IMPLEMENTATION ORDER
-
-### Phase 1 (Next Step)
-
-- reasoning.summary
-
-### Phase 2
-
-- team_comparison improvements
-- matchup_lean improvements
-
-### Phase 3
-
-- model_outcome enhancements
-- matchup_breakdown
-
----
-
-## 🔮 FUTURE — RUBRIC INTEGRATION
-
-The current API will support a future betting decision layer.
-
-### Matchup Simulation
-
-{
-"matchup_simulation": {
-"expected_pace": null,
-"volatility_rating": null,
-"turnover_differential": null,
-"short_field_probability": null,
-"drive_sustainability": null,
-"expected_pass_run_adjustment": null
-}
-}
-
-### Prop Eligibility
-
-{
-"prop_eligibility": {
-"qb_int_over": {},
-"qb_passing_attempts": {},
-"qb_sacks_taken": {},
-"team_passing_attempts": {}
-}
-}
-
----
-
-## 🎯 OBJECTIVE
+# 🧭 FINAL OBJECTIVE
 
 Build a system where:
 
 - Backend defines truth
 - Frontend displays it clearly
-- Model decisions can be evaluated
+- Model explains itself
+- Users understand decisions instantly
 - Feedback improves future performance
+
+---
