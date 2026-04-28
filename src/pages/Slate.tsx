@@ -100,9 +100,8 @@ export default function Slate() {
     return localStorage.getItem(ONBOARDING_KEY) !== "true";
   });
 
-  // Backend warm-up scrim: only shown while the games API is actively
-  // running on a true cold load. Never shown just because the page mounted.
-  const [warmingUp, setWarmingUp] = useState(false);
+  // Controls the date-picker popover so we can auto-close it on selection.
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Listen for the global "open guide" event from the AppShell button.
   useEffect(() => {
@@ -123,36 +122,6 @@ export default function Slate() {
   const isBackgroundRefresh = isFetching && !isColdLoad && !!games;
   const showStaleWarning = isError && !!games;
 
-  // Only warm up while a games request is actively in-flight on a cold load.
-  // No date selected or cached data present → no scrim.
-  useEffect(() => {
-    if (games && games.length > 0) {
-      setWarmingUp(false);
-      return;
-    }
-    if (!selectedDate || !isColdLoad) {
-      setWarmingUp(false);
-      return;
-    }
-    setWarmingUp(true);
-    const controller = new AbortController();
-    const startedAt = Date.now();
-    const warm = async () => {
-      for (const url of [`${API_BASE}/health`, `${API_BASE}/`]) {
-        try {
-          await fetch(url, { signal: controller.signal, mode: "cors" });
-          break;
-        } catch {
-          /* ignore — try next */
-        }
-      }
-      const elapsed = Date.now() - startedAt;
-      const remaining = Math.max(0, WARMUP_MIN_MS - elapsed);
-      window.setTimeout(() => setWarmingUp(false), remaining);
-    };
-    warm();
-    return () => controller.abort();
-  }, [isColdLoad, games, selectedDate]);
 
   // Render-time mount marker (fires on the first render, before effects).
   const renderLoggedRef = useRef(false);
@@ -183,6 +152,8 @@ export default function Slate() {
     setSelectedDate(date);
     if (date) {
       setSearchParams({ date: format(date, "yyyy-MM-dd") }, { replace: true });
+      // Auto-close the calendar once a date is picked.
+      setDatePickerOpen(false);
       // Picking a date implicitly satisfies the tutorial for first-time users,
       // but we no longer auto-close it mid-flow if they manually opened it.
       try {
