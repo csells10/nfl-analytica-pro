@@ -1,7 +1,7 @@
 import { forwardRef, useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CalendarIcon, ChevronRight, Loader2 } from "lucide-react";
+import { CalendarIcon, ChevronRight } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,10 +16,7 @@ import DateSelectionModal from "@/components/DateSelectionModal";
 import { perfMark } from "@/lib/perf";
 
 const ONBOARDING_KEY = "hasSeenDateTutorial";
-const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
 const GUIDE_EVENT = "gamelens:open-guide";
-const WARMUP_MIN_MS = 600;
-
 // Module-eval marker — fires when the lazy Slate chunk finishes parsing.
 perfMark("Slate module evaluated");
 
@@ -100,9 +97,8 @@ export default function Slate() {
     return localStorage.getItem(ONBOARDING_KEY) !== "true";
   });
 
-  // Backend warm-up scrim: only shown while the games API is actively
-  // running on a true cold load. Never shown just because the page mounted.
-  const [warmingUp, setWarmingUp] = useState(false);
+  // Controls the date-picker popover so we can auto-close it on selection.
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Listen for the global "open guide" event from the AppShell button.
   useEffect(() => {
@@ -123,36 +119,6 @@ export default function Slate() {
   const isBackgroundRefresh = isFetching && !isColdLoad && !!games;
   const showStaleWarning = isError && !!games;
 
-  // Only warm up while a games request is actively in-flight on a cold load.
-  // No date selected or cached data present → no scrim.
-  useEffect(() => {
-    if (games && games.length > 0) {
-      setWarmingUp(false);
-      return;
-    }
-    if (!selectedDate || !isColdLoad) {
-      setWarmingUp(false);
-      return;
-    }
-    setWarmingUp(true);
-    const controller = new AbortController();
-    const startedAt = Date.now();
-    const warm = async () => {
-      for (const url of [`${API_BASE}/health`, `${API_BASE}/`]) {
-        try {
-          await fetch(url, { signal: controller.signal, mode: "cors" });
-          break;
-        } catch {
-          /* ignore — try next */
-        }
-      }
-      const elapsed = Date.now() - startedAt;
-      const remaining = Math.max(0, WARMUP_MIN_MS - elapsed);
-      window.setTimeout(() => setWarmingUp(false), remaining);
-    };
-    warm();
-    return () => controller.abort();
-  }, [isColdLoad, games, selectedDate]);
 
   // Render-time mount marker (fires on the first render, before effects).
   const renderLoggedRef = useRef(false);
@@ -183,6 +149,8 @@ export default function Slate() {
     setSelectedDate(date);
     if (date) {
       setSearchParams({ date: format(date, "yyyy-MM-dd") }, { replace: true });
+      // Auto-close the calendar once a date is picked.
+      setDatePickerOpen(false);
       // Picking a date implicitly satisfies the tutorial for first-time users,
       // but we no longer auto-close it mid-flow if they manually opened it.
       try {
@@ -203,31 +171,7 @@ export default function Slate() {
         targetSelector="[data-onboarding='game-date']"
       />
 
-      {/* Backend warm-up overlay — runs every visit, independent of tutorial. */}
-      <div
-        className={cn(
-          "pointer-events-none fixed inset-x-0 top-14 z-20 flex justify-center px-4 transition-all duration-500",
-          warmingUp ? "opacity-100 translate-y-0" : "-translate-y-2 opacity-0"
-        )}
-        aria-hidden={!warmingUp}
-      >
-        <div className="mt-4 flex items-center gap-3 rounded-full border border-border/60 bg-card/90 px-4 py-2 shadow-sm backdrop-blur-sm">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-          <div className="flex flex-col leading-tight">
-            <span className="text-xs font-medium text-foreground">Getting the board ready…</span>
-            <span className="text-[10px] text-muted-foreground">
-              Warming up matchup data and checking today's slate.
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={cn(
-          "mx-auto max-w-2xl py-8 transition-opacity duration-500",
-          warmingUp ? "opacity-60" : "opacity-100"
-        )}
-      >
+      <div className="mx-auto max-w-2xl py-8">
         {/* Header + date picker */}
         <div className="mb-10 space-y-5">
           <div>
@@ -243,7 +187,7 @@ export default function Slate() {
             <label className="block mb-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Game date
             </label>
-            <Popover>
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
                   data-onboarding="game-date"
@@ -282,12 +226,9 @@ export default function Slate() {
           <>
             {/* True cold load only — refreshes reuse cached data below. */}
             {isColdLoad && (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                <span className="ml-3 text-sm text-muted-foreground">
-                  Loading schedule…
-                </span>
-              </div>
+              <p className="py-20 text-center text-sm text-muted-foreground">
+                Loading schedule…
+              </p>
             )}
 
             {isError && !games && (
@@ -313,8 +254,7 @@ export default function Slate() {
                   <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     {format(selectedDate, "MMMM d, yyyy")}
                     {isBackgroundRefresh && (
-                      <span className="inline-flex items-center gap-1 normal-case tracking-normal text-[10px] font-normal text-muted-foreground/70">
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                      <span className="normal-case tracking-normal text-[10px] font-normal text-muted-foreground/70">
                         Refreshing…
                       </span>
                     )}
