@@ -273,6 +273,11 @@ export default function Slate() {
         </div>
 
         {/* Content states */}
+        {!selectedDate && (
+          <p className="py-16 text-center text-sm text-muted-foreground">
+            Select a game date to load matchups.
+          </p>
+        )}
         {selectedDate && (
           <>
             {/* True cold load only — refreshes reuse cached data below. */}
