@@ -29,6 +29,7 @@ import { useGameDetails, userMessageForError, type GameDetails } from "@/lib/nfl
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
+import { MatchupHelpDialog } from "@/components/MatchupHelpDialog";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
 
@@ -892,6 +893,7 @@ export default function Matchup() {
 
   return (
     <AppShell>
+      <MatchupHelpDialog />
       <div className="mx-auto max-w-4xl pt-1 pb-8">
         <Button
           variant="ghost"
