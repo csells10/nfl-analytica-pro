@@ -198,7 +198,7 @@ Incorrect → Red
 
 ---
 
-# 🧭 PHASE 4 — CORE AREA DATA USAGE (HIGH IMPACT)
+# 🧭 PHASE 4 — CORE AREA DATA USAGE (HIGH IMPACT) 🟡 PARTIALLY COMPLETE
 
 ## Objective
 
@@ -210,6 +210,8 @@ Introduce a category-level comparison layer using Core Areas:
 - Scoring Efficiency
 - Field Control (Special Teams)
 
+This layer helps users understand broader matchup strengths before reading the final Matchup Lean.
+
 ---
 
 ## Backend Concept
@@ -217,39 +219,121 @@ Introduce a category-level comparison layer using Core Areas:
 core_area_comparison:
 
 - core_area: "Defensive Control"
-  away_score: 0.62
-  home_score: 0.48
-  leader: "away"
+  away_score: 0.333
+  home_score: 0.667
+  leader: "home"
+  metric_count: 6
+
+---
+
+## Completed Backend/API Work
+
+- Added `core_area_comparison` to `/game/<game_id>`
+- Created `services/core_area_analysis.py`
+- Preserved `core_area` metadata from aggregate metric tables
+- Updated `get_team_metrics()` so each metric includes:
+  - value
+  - metric
+  - category
+  - core_area
+  - data_date
+  - team_id
+  - team_abv
+
+- Added `metric_value()` helper so existing logic can still safely read numeric values
+- Updated hardcoded metric keys after aggregate naming cleanup
+- Added zero-vs-zero skip logic so empty metrics do not create false neutral scores
+- Special Teams is supported, but only appears when usable non-zero data exists
+- Confirmed metric counts now align with expected usable Core Area metrics
+
+---
+
+## Completed Frontend Work
+
+- Added Core Area Advantage section to the matchup page
+- Final layout selected:
+  - Compact Core Area Cards
+- Section placed directly below Game Profile and above Matchup Lean
+- Frontend renders:
+  - core area name
+  - away/home score percentages
+  - leader / edge team
+  - metric count
+  - compact split bar
 
 ---
 
 ## Key Rule
 
-Do NOT expose raw values  
-Normalize + aggregate into comparable scores
+Do NOT expose raw metric values in the main UI.
+
+Normalize + aggregate into comparable Core Area scores.
+
+Raw metric detail can be saved for future tooltip, drilldown, or expanded views.
 
 ---
 
-## Frontend Direction
+## Current Frontend Direction
 
-Radial / Spider Chart:
+Use compact Core Area cards.
 
-- Each axis = Core Area
-- Each polygon = Team
+Each card shows:
+
+- Core Area name
+- Which team has the edge
+- Away score vs home score
+- Metric count
+- Mini split bar
+
+This replaced the earlier radar/spider chart idea for the first version.
+
+Radar/spider chart remains a possible future visualization, but it is not the preferred first implementation because it can be harder to read and may exaggerate differences.
 
 ---
 
 ## Product Value
 
-- Instant visual understanding
+- Gives users instant category-level matchup context
 - Reinforces Game Profile signals
 - Bridges metrics → intuition
+- Helps explain why a matchup lean exists
+- Reveals when a game is actually closer to a coin flip despite a directional signal lean
+
+---
+
+## Important Learning From Testing
+
+Core Area Advantage revealed that some games may have a directional signal lean while broader Core Areas are split.
+
+Example pattern:
+
+- Team A leads Defensive Control
+- Team A leads Disruption and Turnovers
+- Team B leads Offensive Output
+- Team B leads Scoring Efficiency
+
+This should be treated as a mixed or balanced profile, not necessarily a strong overall edge.
+
+---
+
+## Still Pending
+
+- Use Core Area Advantage inside `matchup_lean`
+- Detect when Core Areas are split or near coin-flip
+- Soften Matchup Lean language when broader Core Areas do not support a strong directional edge
+- Avoid saying “overall matchup edge” when the data only supports a slight signal lean
+- Evaluate matchup strength across all Core Area metrics, not only selected Team Comparison metrics
 
 ---
 
 ## Status
 
-Not started
+Partially complete
+
+Backend/API: Complete  
+Frontend display: Complete  
+Model integration: Pending  
+Matchup Lean refinement using Core Areas: High priority
 
 ---
 
@@ -431,12 +515,11 @@ Future (optional):
 
 # 🎯 PM RECOMMENDED ORDER
 
-1. Phase 4 — Core Area Visualization
+1. matchup_lean refinement using Core Area context
 2. Phase 7 — Authentication (Firebase / Google Sign-In)
-3. matchup_lean refinement
-4. team_comparison formatting
-5. model_outcome depth
-6. Phase 5 — Team Context
+3. team_comparison formatting
+4. model_outcome depth
+5. Phase 5 — Team Context
 
 ---
 
