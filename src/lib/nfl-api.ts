@@ -124,23 +124,17 @@ async function fetchNflSchedule(dateStr: string): Promise<NflGame[]> {
     res = await fetch(url, { headers: await authHeaders() });
   } catch (err) {
     console.error("[nfl-api] Network error (likely CORS or offline):", err);
-    throw new Error(
-      `Network error reaching backend. This is usually a CORS issue on the Cloud Run service. Original: ${(err as Error).message}`
-    );
+    throw new ApiError("network", "Network error", undefined);
   }
 
-  const rawBody = await res.text();
-  if (!res.ok) {
-    console.error("[nfl-api] HTTP error", res.status, res.statusText, rawBody);
-    throw new Error(`Backend returned ${res.status} ${res.statusText}: ${rawBody.slice(0, 200)}`);
-  }
+  const rawBody = await handleApiResponse(res, "GET /games");
 
   let data: BackendResponse;
   try {
     data = JSON.parse(rawBody);
   } catch (err) {
     console.error("[nfl-api] Failed to parse JSON. Raw body:", rawBody);
-    throw new Error(`Invalid JSON from backend: ${rawBody.slice(0, 200)}`);
+    throw new ApiError("server", "Invalid response", res.status);
   }
 
   console.log("[nfl-api] Received", data.games?.length ?? 0, "games for", data.date);
