@@ -28,9 +28,7 @@ import {
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
-import { CoreAreaAdvantageBars } from "@/components/CoreAreaAdvantageBars";
-import { CoreAreaAdvantageCards } from "@/components/CoreAreaAdvantageCards";
-import { CoreAreaAdvantageDumbbell } from "@/components/CoreAreaAdvantageDumbbell";
+import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
 

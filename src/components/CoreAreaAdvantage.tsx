@@ -9,7 +9,7 @@ interface Props {
 
 const pct = (n: number) => Math.max(0, Math.min(100, Math.round((n ?? 0) * 100)));
 
-export function CoreAreaAdvantageCards({ rows, awayAbbr, homeAbbr }: Props) {
+export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr }: Props) {
   if (!rows || rows.length === 0) return null;
 
   return (
