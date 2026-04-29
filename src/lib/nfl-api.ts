@@ -127,6 +127,13 @@ export interface GameDetails {
     home: number;
     better: "away" | "home" | "even" | string;
   }> | null;
+  core_area_comparison?: Array<{
+    core_area: string;
+    away_score: number;
+    home_score: number;
+    leader: "away" | "home" | "neutral" | string;
+    metric_count: number;
+  }> | null;
   model_outcome: {
     result: "Correct" | "Incorrect" | "No Pick" | string;
     predicted_team: string | null;

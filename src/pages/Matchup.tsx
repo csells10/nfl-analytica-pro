@@ -28,6 +28,7 @@ import {
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
+import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
 
@@ -1073,6 +1074,15 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* ── Core Area Advantage ── */}
+      {details.core_area_comparison && details.core_area_comparison.length > 0 && (
+        <CoreAreaAdvantage
+          rows={details.core_area_comparison}
+          awayAbbr={awayTeam.abbr}
+          homeAbbr={homeTeam.abbr}
+        />
       )}
 
       {/* ── Matchup Lean ── */}
