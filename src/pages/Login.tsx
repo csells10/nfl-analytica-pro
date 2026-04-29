@@ -9,19 +9,9 @@ export default function Login() {
   const { signInWithGoogle, isLoading, user, isReady, authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const runtimeLocation = {
-    hostname: window.location.hostname,
-    origin: window.location.origin,
-  };
 
   const redirectTo =
     (location.state as { from?: string } | null)?.from || "/";
-
-  useEffect(() => {
-    console.info("[auth-debug] window.location.hostname:", runtimeLocation.hostname);
-    console.info("[auth-debug] window.location.origin:", runtimeLocation.origin);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (isReady && user) {
@@ -30,8 +20,6 @@ export default function Login() {
   }, [isReady, user, navigate, redirectTo]);
 
   const handleGoogleSignIn = async () => {
-    console.info("[auth-debug] sign-in click hostname:", window.location.hostname);
-    console.info("[auth-debug] sign-in click origin:", window.location.origin);
     try {
       await signInWithGoogle();
     } catch {
@@ -69,11 +57,6 @@ export default function Login() {
           <p className="mt-4 text-center text-xs text-muted-foreground">
             Access is restricted to authorized accounts.
           </p>
-          <div className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">Auth debug</p>
-            <p className="mt-1 break-all">hostname: {runtimeLocation.hostname}</p>
-            <p className="mt-1 break-all">origin: {runtimeLocation.origin}</p>
-          </div>
         </CardContent>
       </Card>
     </div>
