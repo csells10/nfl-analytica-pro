@@ -1,19 +1,79 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { perfNow, perfTime } from "@/lib/perf";
-import { getAuthToken } from "@/lib/firebase";
+import { getAuthToken, firebaseAuth } from "@/lib/firebase";
+import { signOut as firebaseSignOut } from "firebase/auth";
 
 const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
 
 /**
+ * Typed API error so the UI can render a safe, user-facing message based on
+ * `kind` without ever surfacing raw backend response bodies.
+ */
+export type ApiErrorKind = "unauthenticated" | "forbidden" | "network" | "server" | "unknown";
+
+export class ApiError extends Error {
+  kind: ApiErrorKind;
+  status?: number;
+  constructor(kind: ApiErrorKind, message: string, status?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.kind = kind;
+    this.status = status;
+  }
+}
+
+export function userMessageForError(err: unknown): string {
+  if (err instanceof ApiError) {
+    switch (err.kind) {
+      case "unauthenticated":
+        return "Your session expired. Please sign in again.";
+      case "forbidden":
+        return "This account is not authorized for GameLens.";
+      case "network":
+        return "Network error. Please check your connection and try again.";
+      case "server":
+      case "unknown":
+      default:
+        return "Something went wrong loading GameLens data.";
+    }
+  }
+  return "Something went wrong loading GameLens data.";
+}
+
+/**
  * Build request headers with the current Firebase ID token attached as a
- * Bearer token. The backend will start enforcing this in a later phase; for
- * now the header is sent opportunistically and unauthenticated requests still
- * succeed.
+ * Bearer token. The backend enforces this — unauthenticated requests are
+ * rejected with 401.
  */
 async function authHeaders(): Promise<HeadersInit> {
   const token = await getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * Centralized response handler. Converts non-OK responses into a typed
+ * `ApiError` and signs the user out on 401 so the UI returns to /login.
+ */
+async function handleApiResponse(res: Response, context: string): Promise<string> {
+  const rawBody = await res.text();
+  if (res.ok) return rawBody;
+
+  // Log raw body server/dev side only — never throw it into the UI.
+  console.error(`[nfl-api] ${context} failed`, res.status, res.statusText, rawBody);
+
+  if (res.status === 401) {
+    // Token missing/expired — force sign-out so ProtectedRoute redirects to /login.
+    firebaseSignOut(firebaseAuth).catch((e) => console.error("[nfl-api] signOut failed:", e));
+    throw new ApiError("unauthenticated", "Session expired", 401);
+  }
+  if (res.status === 403) {
+    throw new ApiError("forbidden", "Account not authorized", 403);
+  }
+  if (res.status >= 500) {
+    throw new ApiError("server", "Server error", res.status);
+  }
+  throw new ApiError("unknown", "Request failed", res.status);
 }
 
 export interface NflGame {
