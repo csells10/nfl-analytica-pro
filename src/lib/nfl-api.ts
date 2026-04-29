@@ -120,6 +120,18 @@ export interface GameDetails {
     focus_summary: string;
     confidence: string;
     confidence_context?: string | null;
+    // Backend Phase 2 (additive): refined matchup-lean signals.
+    profile_type?:
+      | "coin_flip_profile"
+      | "split_profile"
+      | "confirmed_edge"
+      | "conflicting_profile"
+      | "no_clear_edge"
+      | string
+      | null;
+    target_side?: "home" | "away" | "neutral" | string | null;
+    signal_score?: number | null;
+    core_area_context?: string | null;
   } | null;
   team_comparison: Array<{
     label: string;
