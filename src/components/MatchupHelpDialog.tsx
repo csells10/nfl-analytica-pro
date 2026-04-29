@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Activity, Swords, Scale, ShieldCheck, Check } from "lucide-react";
+import { Activity, Swords, Scale, ShieldCheck, Check, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const GUIDE_EVENT = "gamelens:open-guide";
