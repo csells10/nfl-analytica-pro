@@ -20,7 +20,7 @@ function pct(n: number): number {
   return Math.max(0, Math.min(100, v));
 }
 
-export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr }: Props) {
+export function CoreAreaAdvantageBars({ rows, awayAbbr, homeAbbr }: Props) {
   if (!rows || rows.length === 0) return null;
 
   return (

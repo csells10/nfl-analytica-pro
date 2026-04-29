@@ -28,7 +28,9 @@ import {
 import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
-import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
+import { CoreAreaAdvantageBars } from "@/components/CoreAreaAdvantageBars";
+import { CoreAreaAdvantageCards } from "@/components/CoreAreaAdvantageCards";
+import { CoreAreaAdvantageDumbbell } from "@/components/CoreAreaAdvantageDumbbell";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
 
@@ -1076,13 +1078,40 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         </Card>
       )}
 
-      {/* ── Core Area Advantage ── */}
+      {/* ── Core Area Advantage — TEMPORARY DESIGN REVIEW (3 options) ── */}
       {details.core_area_comparison && details.core_area_comparison.length > 0 && (
-        <CoreAreaAdvantage
-          rows={details.core_area_comparison}
-          awayAbbr={awayTeam.abbr}
-          homeAbbr={homeTeam.abbr}
-        />
+        <div className="mb-6 space-y-4">
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Option A — Split Advantage Bars
+            </p>
+            <CoreAreaAdvantageBars
+              rows={details.core_area_comparison}
+              awayAbbr={awayTeam.abbr}
+              homeAbbr={homeTeam.abbr}
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Option B — Compact Core Area Cards
+            </p>
+            <CoreAreaAdvantageCards
+              rows={details.core_area_comparison}
+              awayAbbr={awayTeam.abbr}
+              homeAbbr={homeTeam.abbr}
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Option C — Dumbbell / Analytics Rows
+            </p>
+            <CoreAreaAdvantageDumbbell
+              rows={details.core_area_comparison}
+              awayAbbr={awayTeam.abbr}
+              homeAbbr={homeTeam.abbr}
+            />
+          </div>
+        </div>
       )}
 
       {/* ── Matchup Lean ── */}
