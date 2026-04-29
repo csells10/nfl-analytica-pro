@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Activity, Swords, Scale, ShieldCheck, Check } from "lucide-react";
+import { Activity, Swords, Scale, ShieldCheck, Check, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const GUIDE_EVENT = "gamelens:open-guide";
@@ -47,17 +48,17 @@ const STEPS: Step[] = [
     body: (
       <>
         <p>
-          Matchup Lean is the backend's final directional read. The wording
-          matters:
+          Matchup Lean is the backend's final directional read. Pay attention
+          to the wording:
         </p>
-        <ul className="mt-2 space-y-1.5 pl-1">
+        <ul className="mt-1.5 space-y-1 pl-1">
           <li>
-            <span className="text-foreground">"slight lean"</span> — the signal
-            points one way, but confidence is limited.
+            <span className="text-foreground">"slight lean"</span> — limited
+            confidence.
           </li>
           <li>
             <span className="text-foreground">"mixed profile"</span> — both
-            teams have meaningful advantages.
+            teams have advantages.
           </li>
           <li>
             <span className="text-foreground">"broader matchup edge"</span> —
@@ -100,38 +101,50 @@ export function MatchupHelpDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg [&>button]:hidden">
         <DialogHeader>
           <DialogTitle>How to read this matchup</DialogTitle>
           <DialogDescription>
             A quick guide to the intended reading order.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[60vh] pr-3">
-          <ol className="space-y-4">
-            {STEPS.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <li key={step.title} className="flex gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground">
-                    {i + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-primary" />
-                      <h3 className="text-sm font-semibold text-foreground">
-                        {step.title}
-                      </h3>
+        <div className="relative">
+          <ScrollArea className="max-h-[60vh] pr-3">
+            <ol className="space-y-4 pb-6">
+              {STEPS.map((step, i) => {
+                const Icon = step.icon;
+                return (
+                  <li key={step.title} className="flex gap-3">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground">
+                      {i + 1}
                     </div>
-                    <div className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      {step.body}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-primary" />
+                        <h3 className="text-sm font-semibold text-foreground">
+                          {step.title}
+                        </h3>
+                      </div>
+                      <div className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                        {step.body}
+                      </div>
                     </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </ScrollArea>
+                  </li>
+                );
+              })}
+            </ol>
+          </ScrollArea>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent"
+          />
+        </div>
+        <DialogPrimitive.Close
+          className="absolute right-4 top-4 rounded-sm text-muted-foreground/60 opacity-70 transition-opacity hover:text-muted-foreground hover:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-border"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
       </DialogContent>
     </Dialog>
   );
