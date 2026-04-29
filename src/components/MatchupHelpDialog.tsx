@@ -47,17 +47,17 @@ const STEPS: Step[] = [
     body: (
       <>
         <p>
-          Matchup Lean is the backend's final directional read. The wording
-          matters:
+          Matchup Lean is the backend's final directional read. Pay attention
+          to the wording:
         </p>
-        <ul className="mt-2 space-y-1.5 pl-1">
+        <ul className="mt-1.5 space-y-1 pl-1">
           <li>
-            <span className="text-foreground">"slight lean"</span> — the signal
-            points one way, but confidence is limited.
+            <span className="text-foreground">"slight lean"</span> — limited
+            confidence.
           </li>
           <li>
             <span className="text-foreground">"mixed profile"</span> — both
-            teams have meaningful advantages.
+            teams have advantages.
           </li>
           <li>
             <span className="text-foreground">"broader matchup edge"</span> —
