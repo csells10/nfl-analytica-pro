@@ -1005,3 +1005,284 @@ Frontend displays it clearly.
 Users understand the matchup instantly.  
 Model misses become learning opportunities.  
 Confidence stays honest.
+
+# 🧊 BACK BURNER IDEAS
+
+These are product ideas that came up during planning but should not distract from the current roadmap.
+
+They are worth preserving because they may become useful later, but they are not priorities right now.
+
+---
+
+## Radar / Spider Chart for Core Areas
+
+Original idea:
+
+Use a radar or spider chart to compare home vs away teams across Core Areas.
+
+Why it was parked:
+
+- Compact Core Area cards are easier to read.
+- Radar charts can exaggerate small differences.
+- The matchup page already has a lot of information.
+- The first version needed clarity more than visual flair.
+
+Future use case:
+
+A radar chart could return later as an optional advanced visualization, especially on desktop or in an expanded analytics view.
+
+Status:
+
+Back burner.
+
+---
+
+## Core Area Drilldown View
+
+Idea:
+
+Allow users to click or expand a Core Area to see which categories or metrics drove that score.
+
+Example:
+
+Disruption and Turnovers could expand into:
+
+- pressure profile
+- turnover margin
+- sacks
+- interceptions
+- related signal notes
+
+Why it was parked:
+
+The main page needs to stay simple first.
+
+Future use case:
+
+This could become a great “show me why” feature once the core page layout is stable.
+
+Status:
+
+Back burner / future enhancement.
+
+---
+
+## Raw Metric Detail Tooltips
+
+Idea:
+
+Expose more raw metric values inside tooltips or expanded views.
+
+Why it was parked:
+
+The main UI should avoid raw metric overload.
+
+Current rule:
+
+Core Area Advantage should show normalized comparison context, not dump raw metrics.
+
+Future use case:
+
+Raw detail could be useful for advanced users, debugging, or an “advanced mode.”
+
+Status:
+
+Back burner.
+
+---
+
+## League-Relative Percentile Scoring
+
+Idea:
+
+Move beyond matchup-relative Core Area scoring and compare each team to the league.
+
+Why it was parked:
+
+The current matchup-relative scoring is good enough for v1.
+
+Future use case:
+
+League-relative scoring would help answer:
+
+- Is this team actually strong?
+- Or are they only stronger than this opponent?
+- How does this matchup compare across the league?
+
+Status:
+
+Important future improvement, but not immediate.
+
+---
+
+## User-Specific Saved Views
+
+Idea:
+
+Once authentication exists, allow users to save preferences or views.
+
+Possible examples:
+
+- favorite teams
+- preferred matchup sections
+- compact vs detailed display
+- saved games
+- hidden sections
+- preferred confidence filters
+
+Why it was parked:
+
+Authentication needs to come first.
+
+Status:
+
+Back burner until user accounts exist.
+
+---
+
+## Guest Mode
+
+Idea:
+
+Allow limited app access without signing in.
+
+Why it was parked:
+
+The main authentication goal is to reduce unrestricted access and protect cloud costs.
+
+Future use case:
+
+Guest mode may be useful if GameLens becomes public-facing, but it should be rate-limited or limited in scope.
+
+Status:
+
+Back burner.
+
+---
+
+## Admin / Power User Mode
+
+Idea:
+
+Create a more detailed internal view for debugging model behavior.
+
+Possible features:
+
+- raw API response inspection
+- model scoring details
+- hidden profile fields
+- feedback insert status
+- data freshness indicators
+
+Why it was parked:
+
+The main user experience should stay clean.
+
+Future use case:
+
+Useful for development, QA, and model tuning.
+
+Status:
+
+Back burner.
+
+---
+
+## Historical Accuracy Dashboard
+
+Idea:
+
+Create a dashboard showing how the model performs over time.
+
+Possible views:
+
+- correct vs incorrect by confidence tier
+- profile type accuracy
+- low-confidence lean performance
+- coin-flip profile outcomes
+- signal alignment accuracy
+- Core Area split performance
+
+Why it was parked:
+
+The app first needed structured model outcomes and better explanation language.
+
+Future use case:
+
+This could become one of the most valuable internal tools for improving the model.
+
+Status:
+
+Back burner, but high long-term value.
+
+---
+
+## Betting Decision Layer
+
+Idea:
+
+Eventually connect the explanation layer to a betting rubric or decision engine.
+
+Why it was parked:
+
+The Matchup API is not ready to be a betting recommendation engine yet.
+
+Current rule:
+
+Explanation Layer first.  
+Decision Layer later.
+
+Future use case:
+
+The betting layer could use Matchup Lean, Core Area context, confidence, injuries, odds, and rubric logic as inputs.
+
+Status:
+
+Back burner / separate future system.
+
+---
+
+## Mobile Optimization Pass
+
+Idea:
+
+Refine the Matchup Page specifically for mobile.
+
+Why it was parked:
+
+The current focus has been desktop layout, API structure, and explanation correctness.
+
+Future use case:
+
+Once the core sections are stable, mobile should get its own pass for spacing, stacking, readability, and touch behavior.
+
+Status:
+
+Back burner.
+
+---
+
+## Visual Design Polish Pass
+
+Idea:
+
+Revisit spacing, colors, section hierarchy, and visual rhythm across the whole Matchup Page.
+
+Why it was parked:
+
+Functionality and explanation consistency came first.
+
+Future use case:
+
+Once the core product is stable, a polish pass could improve:
+
+- confidence badges
+- section spacing
+- Core Area colors
+- signal styling
+- outcome states
+- empty/loading states
+
+Status:
+
+Back burner.
