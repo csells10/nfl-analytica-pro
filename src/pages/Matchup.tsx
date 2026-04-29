@@ -25,7 +25,7 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react";
-import { useGameDetails, type GameDetails } from "@/lib/nfl-api";
+import { useGameDetails, userMessageForError, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
@@ -914,7 +914,7 @@ export default function Matchup() {
           <Card className="border-destructive/40 bg-destructive/5">
             <CardContent className="p-5">
               <p className="text-sm font-semibold text-destructive">Couldn't load this game</p>
-              <p className="mt-1 text-xs text-muted-foreground">{(error as Error)?.message}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{userMessageForError(error)}</p>
             </CardContent>
           </Card>
         )}
