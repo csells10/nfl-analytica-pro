@@ -1075,6 +1075,15 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         </Card>
       )}
 
+      {/* ── Core Area Advantage ── */}
+      {details.core_area_comparison && details.core_area_comparison.length > 0 && (
+        <CoreAreaAdvantage
+          rows={details.core_area_comparison}
+          awayAbbr={awayTeam.abbr}
+          homeAbbr={homeTeam.abbr}
+        />
+      )}
+
       {/* ── Matchup Lean ── */}
       {matchup_lean && (
         <Card className="mb-6 border-border bg-card border-t-[3px] border-t-accent-cool shadow-[0_0_0_1px_hsl(var(--accent-cool)/0.08)] dark:border-t-accent-cool">
