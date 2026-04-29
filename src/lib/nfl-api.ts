@@ -1,8 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { perfNow, perfTime } from "@/lib/perf";
+import { getAuthToken } from "@/lib/firebase";
 
 const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
+
+/**
+ * Build request headers with the current Firebase ID token attached as a
+ * Bearer token. The backend will start enforcing this in a later phase; for
+ * now the header is sent opportunistically and unauthenticated requests still
+ * succeed.
+ */
+async function authHeaders(): Promise<HeadersInit> {
+  const token = await getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export interface NflGame {
   id: string;
