@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useNflSchedule, type NflGame } from "@/lib/nfl-api";
+import { useNflSchedule, userMessageForError, type NflGame } from "@/lib/nfl-api";
 import DateSelectionModal from "@/components/DateSelectionModal";
 import { perfMark } from "@/lib/perf";
 
