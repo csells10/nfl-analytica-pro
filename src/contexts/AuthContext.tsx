@@ -6,74 +6,114 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  type User as FirebaseUser,
+} from "firebase/auth";
+import { firebaseAuth, googleProvider, isEmailAllowed } from "@/lib/firebase";
 import { perfNow, perfTime } from "@/lib/perf";
 
 interface User {
   id: string;
   email: string;
   name: string;
+  photoURL?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  /** True once the initial session-restore check has completed. */
+  /** True once the initial auth-state check has completed. */
   isReady: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => void;
+  /** Error from the most recent sign-in attempt (e.g. not allowlisted). */
+  authError: string | null;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = "gamelens.auth.user";
+function toUser(fbUser: FirebaseUser): User {
+  return {
+    id: fbUser.uid,
+    email: fbUser.email ?? "",
+    name: fbUser.displayName ?? (fbUser.email ?? "").split("@")[0],
+    photoURL: fbUser.photoURL,
+  };
+}
 
-// Mock auth — replace with Lovable Cloud / Supabase auth later.
-// Session is persisted to localStorage so refresh does not log the user out.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Restore session on mount before any protected route decides to redirect.
   useEffect(() => {
     const start = perfNow();
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as User;
-        if (parsed && parsed.email) setUser(parsed);
+    const unsub = onAuthStateChanged(firebaseAuth, (fbUser) => {
+      if (fbUser) {
+        if (!isEmailAllowed(fbUser.email)) {
+          // Non-allowlisted users are signed out immediately.
+          console.warn("[auth] Non-allowlisted user, signing out:", fbUser.email);
+          setAuthError(
+            `Account ${fbUser.email ?? ""} is not authorized to use GameLens.`,
+          );
+          setUser(null);
+          firebaseSignOut(firebaseAuth).catch((err) =>
+            console.error("[auth] signOut failed:", err),
+          );
+        } else {
+          setUser(toUser(fbUser));
+          setAuthError(null);
+        }
+      } else {
+        setUser(null);
       }
-    } catch {
-      /* ignore corrupt storage */
-    }
-    setIsReady(true);
-    perfTime("auth restore", start);
+      if (!isReady) {
+        setIsReady(true);
+        perfTime("auth restore", start);
+      }
+    });
+    return () => unsub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const signIn = useCallback(async (email: string, _password: string) => {
+  const signInWithGoogle = useCallback(async () => {
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    const next: User = { id: "1", email, name: email.split("@")[0] };
-    setUser(next);
+    setAuthError(null);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
+      const result = await signInWithPopup(firebaseAuth, googleProvider);
+      if (!isEmailAllowed(result.user.email)) {
+        await firebaseSignOut(firebaseAuth);
+        const msg = `Account ${result.user.email ?? ""} is not authorized to use GameLens.`;
+        setAuthError(msg);
+        throw new Error(msg);
+      }
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        // User dismissed the popup — not an error worth surfacing.
+        setAuthError(null);
+      } else if (!authError) {
+        setAuthError((err as Error).message || "Sign-in failed.");
+      }
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  }, [authError]);
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    await firebaseSignOut(firebaseAuth);
     setUser(null);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isReady, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, isReady, authError, signInWithGoogle, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
