@@ -61,7 +61,7 @@ async function fetchNflSchedule(dateStr: string): Promise<NflGame[]> {
 
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetch(url, { headers: await authHeaders() });
   } catch (err) {
     console.error("[nfl-api] Network error (likely CORS or offline):", err);
     throw new Error(
@@ -234,7 +234,7 @@ async function fetchGameDetails(gameId: string): Promise<GameDetails> {
 
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetch(url, { headers: await authHeaders() });
   } catch (err) {
     console.error("[nfl-api] Network error:", err);
     throw new Error(`Network error reaching backend: ${(err as Error).message}`);
