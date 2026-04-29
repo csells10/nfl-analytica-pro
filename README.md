@@ -1286,3 +1286,31 @@ Once the core product is stable, a polish pass could improve:
 Status:
 
 Back burner.
+
+## Custom Auth Domain Branding
+
+Idea:
+
+Change the Google sign-in popup so it displays GameLens.io instead of the default Firebase project domain.
+
+Current behavior:
+
+Google sign-in currently says:
+
+Sign in to nfl-stream-406420.firebaseapp.com
+
+Why:
+
+Firebase Auth is using the default Firebase auth domain.
+
+Future desired behavior:
+
+Sign in to GameLens.io
+
+Why it is parked:
+
+Authentication is now working, and custom auth domain setup requires additional domain/DNS/Firebase Hosting/OAuth redirect configuration.
+
+Status:
+
+Back burner / polish after core auth is stable.
