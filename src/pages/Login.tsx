@@ -9,19 +9,9 @@ export default function Login() {
   const { signInWithGoogle, isLoading, user, isReady, authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const runtimeLocation = {
-    hostname: window.location.hostname,
-    origin: window.location.origin,
-  };
 
   const redirectTo =
     (location.state as { from?: string } | null)?.from || "/";
-
-  useEffect(() => {
-    console.info("[auth-debug] window.location.hostname:", runtimeLocation.hostname);
-    console.info("[auth-debug] window.location.origin:", runtimeLocation.origin);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (isReady && user) {
@@ -30,8 +20,6 @@ export default function Login() {
   }, [isReady, user, navigate, redirectTo]);
 
   const handleGoogleSignIn = async () => {
-    console.info("[auth-debug] sign-in click hostname:", window.location.hostname);
-    console.info("[auth-debug] sign-in click origin:", window.location.origin);
     try {
       await signInWithGoogle();
     } catch {
