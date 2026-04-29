@@ -57,11 +57,6 @@ export default function Login() {
           <p className="mt-4 text-center text-xs text-muted-foreground">
             Access is restricted to authorized accounts.
           </p>
-          <div className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">Auth debug</p>
-            <p className="mt-1 break-all">hostname: {runtimeLocation.hostname}</p>
-            <p className="mt-1 break-all">origin: {runtimeLocation.origin}</p>
-          </div>
         </CardContent>
       </Card>
     </div>
