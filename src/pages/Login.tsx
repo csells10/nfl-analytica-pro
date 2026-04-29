@@ -1,22 +1,15 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { BarChart3 } from "lucide-react";
 
 export default function Login() {
-  const { signIn, isLoading, user, isReady } = useAuth();
+  const { signInWithGoogle, isLoading, user, isReady, authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
 
-  // If already authenticated, send the user back to where they came from
-  // (or the slate page) instead of showing the login form.
   const redirectTo =
     (location.state as { from?: string } | null)?.from || "/";
 
@@ -26,18 +19,11 @@ export default function Login() {
     }
   }, [isReady, user, navigate, redirectTo]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!email || !password) {
-      setError("Please enter email and password.");
-      return;
-    }
+  const handleGoogleSignIn = async () => {
     try {
-      await signIn(email, password);
-      navigate(redirectTo, { replace: true });
+      await signInWithGoogle();
     } catch {
-      setError("Invalid credentials. Please try again.");
+      /* error surfaced via authError */
     }
   };
 
@@ -55,39 +41,35 @@ export default function Login() {
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in…" : "Sign in"}
-            </Button>
-          </form>
+          <Button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+            className="w-full"
+            variant="outline"
+          >
+            <GoogleIcon className="mr-2 h-4 w-4" />
+            {isLoading ? "Signing in…" : "Sign in with Google"}
+          </Button>
+          {authError && (
+            <p className="mt-3 text-center text-sm text-destructive">{authError}</p>
+          )}
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Demo: enter any email &amp; password
+            Access is restricted to authorized accounts.
           </p>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.3 14.7 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z"
+      />
+    </svg>
   );
 }

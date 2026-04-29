@@ -1,8 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { perfNow, perfTime } from "@/lib/perf";
+import { getAuthToken } from "@/lib/firebase";
 
 const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
+
+/**
+ * Build request headers with the current Firebase ID token attached as a
+ * Bearer token. The backend will start enforcing this in a later phase; for
+ * now the header is sent opportunistically and unauthenticated requests still
+ * succeed.
+ */
+async function authHeaders(): Promise<HeadersInit> {
+  const token = await getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export interface NflGame {
   id: string;
@@ -49,7 +61,7 @@ async function fetchNflSchedule(dateStr: string): Promise<NflGame[]> {
 
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetch(url, { headers: await authHeaders() });
   } catch (err) {
     console.error("[nfl-api] Network error (likely CORS or offline):", err);
     throw new Error(
@@ -222,7 +234,7 @@ async function fetchGameDetails(gameId: string): Promise<GameDetails> {
 
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetch(url, { headers: await authHeaders() });
   } catch (err) {
     console.error("[nfl-api] Network error:", err);
     throw new Error(`Network error reaching backend: ${(err as Error).message}`);
