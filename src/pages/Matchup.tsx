@@ -948,7 +948,8 @@ function getCoreAreaContextText(
   context?: NonNullable<GameDetails["matchup_lean"]>["core_area_context"],
 ): string | null {
   if (!context || !context.available) return null;
-  const split = context.core_area_split;
+  // Normalize "2-2" → "2–2" for cleaner typography.
+  const split = context.core_area_split?.replace(/(\d)-(\d)/g, "$1–$2");
   switch (context.profile_type) {
     case "coin_flip_profile":
       return split
