@@ -944,6 +944,29 @@ export default function Matchup() {
   );
 }
 
+function getCoreAreaContextText(
+  context?: NonNullable<GameDetails["matchup_lean"]>["core_area_context"],
+): string | null {
+  if (!context || !context.available) return null;
+  const split = context.core_area_split;
+  switch (context.profile_type) {
+    case "coin_flip_profile":
+      return split
+        ? `Core Areas were split ${split} and nearly even overall.`
+        : "Core Areas were nearly even overall.";
+    case "split_profile":
+      return split
+        ? `Core Areas were split ${split}, limiting confidence.`
+        : "Core Areas were split, limiting confidence.";
+    case "conflicting_profile":
+      return "Core Area context did not fully confirm the signal lean.";
+    case "confirmed_edge":
+      return "Core Areas supported the same side as the signal lean.";
+    default:
+      return null;
+  }
+}
+
 function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: string }) {
   const { header, final_score, game_profile, matchup_lean, team_comparison } = details;
   const awayTeam = teamFromApi(header.away_team);
@@ -951,6 +974,8 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
   const showStatus = header.game_status && header.game_status !== "Scheduled";
   // Render final score whenever the API returns it — trust the backend.
   const hasFinalScore = !!final_score;
+  const coreAreaContextText = getCoreAreaContextText(matchup_lean?.core_area_context);
+
 
   return (
     <>
