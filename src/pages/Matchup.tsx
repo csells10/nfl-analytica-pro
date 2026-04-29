@@ -1143,9 +1143,9 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                     {matchup_lean.focus_summary}
                   </p>
                 )}
-                {matchup_lean.core_area_context && (
+                {coreAreaContextText && (
                   <p className="text-[11.5px] leading-snug text-muted-foreground/70">
-                    {matchup_lean.core_area_context}
+                    {coreAreaContextText}
                   </p>
                 )}
               </div>
