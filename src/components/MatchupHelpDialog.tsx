@@ -101,16 +101,16 @@ export function MatchupHelpDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-lg [&>button]:hidden">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[85vh] max-w-lg flex-col gap-4 [&>button]:hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>How to read this matchup</DialogTitle>
           <DialogDescription>
             A quick guide to the intended reading order.
           </DialogDescription>
         </DialogHeader>
-        <div className="relative">
-          <ScrollArea className="max-h-[60vh] pr-3">
-            <ol className="space-y-4 pb-6">
+        <div className="relative min-h-0 flex-1">
+          <div className="h-full overflow-y-auto pr-3">
+            <ol className="space-y-4 pb-8">
               {STEPS.map((step, i) => {
                 const Icon = step.icon;
                 return (
@@ -133,7 +133,7 @@ export function MatchupHelpDialog() {
                 );
               })}
             </ol>
-          </ScrollArea>
+          </div>
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent"
