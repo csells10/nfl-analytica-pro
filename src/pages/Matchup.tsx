@@ -1118,6 +1118,11 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                     {matchup_lean.focus_summary}
                   </p>
                 )}
+                {matchup_lean.core_area_context && (
+                  <p className="text-[11.5px] leading-snug text-muted-foreground/70">
+                    {matchup_lean.core_area_context}
+                  </p>
+                )}
               </div>
               {matchup_lean.confidence && (
                 <div className="flex shrink-0 items-center gap-2 sm:pt-0.5">
