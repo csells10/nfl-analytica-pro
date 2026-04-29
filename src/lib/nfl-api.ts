@@ -291,20 +291,16 @@ async function fetchGameDetails(gameId: string): Promise<GameDetails> {
     res = await fetch(url, { headers: await authHeaders() });
   } catch (err) {
     console.error("[nfl-api] Network error:", err);
-    throw new Error(`Network error reaching backend: ${(err as Error).message}`);
+    throw new ApiError("network", "Network error");
   }
 
-  const rawBody = await res.text();
-  if (!res.ok) {
-    console.error("[nfl-api] HTTP error", res.status, rawBody);
-    throw new Error(`Backend returned ${res.status}: ${rawBody.slice(0, 200)}`);
-  }
+  const rawBody = await handleApiResponse(res, `GET /game/${gameId}`);
 
   try {
     return JSON.parse(rawBody) as GameDetails;
   } catch (err) {
     console.error("[nfl-api] Failed to parse JSON:", rawBody);
-    throw new Error(`Invalid JSON from backend: ${rawBody.slice(0, 200)}`);
+    throw new ApiError("server", "Invalid response", res.status);
   }
 }
 
