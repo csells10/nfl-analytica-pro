@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useNflSchedule, type NflGame } from "@/lib/nfl-api";
+import { useNflSchedule, userMessageForError, type NflGame } from "@/lib/nfl-api";
 import DateSelectionModal from "@/components/DateSelectionModal";
 import { perfMark } from "@/lib/perf";
 
@@ -237,7 +237,7 @@ export default function Slate() {
                   Unable to load the schedule.
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {(error as Error)?.message || "Please try again later."}
+                  {userMessageForError(error)}
                 </p>
               </div>
             )}

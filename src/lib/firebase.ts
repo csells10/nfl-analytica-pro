@@ -15,17 +15,6 @@ const firebaseConfig = {
   measurementId: "G-66BTRJWG9X",
 };
 
-// Frontend allowlist. The backend will be the real authority once Cloud Run
-// starts validating Firebase ID tokens — this is a UX gate only.
-export const EMAIL_ALLOWLIST: ReadonlyArray<string> = [
-  "csells10@gmail.com",
-];
-
-export function isEmailAllowed(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return EMAIL_ALLOWLIST.includes(email.toLowerCase().trim());
-}
-
 export const firebaseApp: FirebaseApp = initializeApp(firebaseConfig);
 export const firebaseAuth: Auth = getAuth(firebaseApp);
 export const googleProvider = new GoogleAuthProvider();

@@ -12,7 +12,7 @@ import {
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from "firebase/auth";
-import { firebaseAuth, googleProvider, isEmailAllowed } from "@/lib/firebase";
+import { firebaseAuth, googleProvider } from "@/lib/firebase";
 import { perfNow, perfTime } from "@/lib/perf";
 
 interface User {
@@ -54,20 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const start = perfNow();
     const unsub = onAuthStateChanged(firebaseAuth, (fbUser) => {
       if (fbUser) {
-        if (!isEmailAllowed(fbUser.email)) {
-          // Non-allowlisted users are signed out immediately.
-          console.warn("[auth] Non-allowlisted user, signing out:", fbUser.email);
-          setAuthError(
-            `Account ${fbUser.email ?? ""} is not authorized to use GameLens.`,
-          );
-          setUser(null);
-          firebaseSignOut(firebaseAuth).catch((err) =>
-            console.error("[auth] signOut failed:", err),
-          );
-        } else {
-          setUser(toUser(fbUser));
-          setAuthError(null);
-        }
+        setUser(toUser(fbUser));
+        setAuthError(null);
       } else {
         setUser(null);
       }
@@ -84,13 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setAuthError(null);
     try {
-      const result = await signInWithPopup(firebaseAuth, googleProvider);
-      if (!isEmailAllowed(result.user.email)) {
-        await firebaseSignOut(firebaseAuth);
-        const msg = `Account ${result.user.email ?? ""} is not authorized to use GameLens.`;
-        setAuthError(msg);
-        throw new Error(msg);
-      }
+      await signInWithPopup(firebaseAuth, googleProvider);
+      // Authorization is now enforced by the backend (Firestore allowlist).
+      // If this account isn't authorized, API calls will return 401/403 and
+      // the API layer will sign the user out with a clear message.
     } catch (err) {
       const code = (err as { code?: string }).code;
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
