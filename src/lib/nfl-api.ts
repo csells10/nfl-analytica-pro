@@ -131,7 +131,26 @@ export interface GameDetails {
       | null;
     target_side?: "home" | "away" | "neutral" | string | null;
     signal_score?: number | null;
-    core_area_context?: string | null;
+    core_area_context?: {
+      available?: boolean | null;
+      profile_type?:
+        | "coin_flip_profile"
+        | "split_profile"
+        | "confirmed_edge"
+        | "conflicting_profile"
+        | "no_clear_edge"
+        | string
+        | null;
+      core_area_split?: string | null;
+      core_area_leader?: "home" | "away" | "neutral" | string | null;
+      core_gap?: number | null;
+      away_core_avg?: number | null;
+      home_core_avg?: number | null;
+      away_core_wins?: number | null;
+      home_core_wins?: number | null;
+      neutral_core_areas?: number | null;
+      total_core_areas?: number | null;
+    } | null;
   } | null;
   team_comparison: Array<{
     label: string;
