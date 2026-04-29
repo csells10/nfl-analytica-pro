@@ -11,52 +11,17 @@ const pct = (n: number) =>
   Math.max(0, Math.min(100, Math.round((n ?? 0) * 100)));
 
 /**
- * Frontend-only display mapping that connects Core Area categories to the
- * Game Profile signals shown above. These are presentational labels — they
- * never alter scores or model behavior. Keys are matched case-insensitively
- * against the backend `core_area` string.
+ * Frontend-only relationship microcopy connecting each core area back to the
+ * Game Profile signals shown above. Display labels only — never alters scores
+ * or model behavior. Matched case-insensitively against backend `core_area`.
  */
-type Accent = "amber" | "blue" | "neutral" | "cool";
-
-interface CoreAreaDisplay {
-  tags: string[];
-  accent: Accent;
-}
-
-const CORE_AREA_DISPLAY: Record<string, CoreAreaDisplay> = {
-  "disruption and turnovers": {
-    tags: ["Pressure", "Turnover Risk"],
-    accent: "amber",
-  },
-  "scoring efficiency": {
-    tags: ["Scoring Efficiency"],
-    accent: "blue",
-  },
-  "defensive control": {
-    tags: ["Defensive Support"],
-    accent: "neutral",
-  },
-  "offensive output": {
-    tags: ["Offensive Strength"],
-    accent: "cool",
-  },
+const RELATIONSHIP_LABEL: Record<string, string> = {
+  "disruption and turnovers": "Supports Pressure + Turnover Risk",
+  "scoring efficiency": "Supports Scoring Efficiency",
+  "defensive control": "Defensive context",
+  "offensive output": "Offensive context",
+  "field control": "Field position context",
 };
-
-const ACCENT_BAR: Record<Accent, { lead: string; trail: string }> = {
-  amber: { lead: "bg-level-elevated/80", trail: "bg-level-elevated/25" },
-  blue: { lead: "bg-level-moderate/80", trail: "bg-level-moderate/25" },
-  neutral: { lead: "bg-muted-foreground/70", trail: "bg-muted-foreground/20" },
-  cool: { lead: "bg-accent-cool/80", trail: "bg-accent-cool/25" },
-};
-
-function getDisplay(coreArea: string): CoreAreaDisplay {
-  return (
-    CORE_AREA_DISPLAY[coreArea.toLowerCase()] ?? {
-      tags: [],
-      accent: "cool",
-    }
-  );
-}
 
 export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr }: Props) {
   if (!rows || rows.length === 0) return null;
@@ -73,61 +38,48 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr }: Props) {
           </span>
         </div>
         <p className="mb-4 text-xs text-muted-foreground">
-          Category-level strengths behind the matchup signals.
+          Broad team-strength categories behind the matchup signals.
         </p>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {rows.map((row) => {
             const away = pct(row.away_score);
             const home = pct(row.home_score);
             const isNeutral = row.leader === "neutral" || away === home;
-            const edge = isNeutral
+            const edgeLabel = isNeutral
               ? "Even"
               : row.leader === "away"
-                ? awayAbbr
+                ? `${awayAbbr} Edge`
                 : row.leader === "home"
-                  ? homeAbbr
+                  ? `${homeAbbr} Edge`
                   : "Even";
 
-            const display = getDisplay(row.core_area);
-            const bar = isNeutral
-              ? { lead: "bg-muted-foreground/40", trail: "bg-muted-foreground/20" }
-              : ACCENT_BAR[display.accent];
+            const relationship = RELATIONSHIP_LABEL[row.core_area.toLowerCase()];
 
             return (
               <div
                 key={row.core_area}
-                className="group rounded-md border border-border/70 bg-muted/10 p-3 transition-colors hover:border-accent-cool/40 hover:bg-muted/20"
+                className="rounded-md border border-border/60 bg-muted/5 p-3 transition-colors hover:border-border/80 hover:bg-muted/10"
               >
-                <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                <div className="mb-1 flex items-baseline justify-between gap-2">
                   <span className="text-xs font-medium text-foreground">
                     {row.core_area}
                   </span>
-                  <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/70">
-                    Edge:{" "}
-                    <span
-                      className={
-                        isNeutral
-                          ? "text-muted-foreground"
-                          : "font-semibold text-foreground"
-                      }
-                    >
-                      {edge}
-                    </span>
+                  <span
+                    className={`text-[10px] uppercase tracking-[0.1em] ${
+                      isNeutral
+                        ? "text-muted-foreground"
+                        : "font-semibold text-foreground"
+                    }`}
+                  >
+                    {edgeLabel}
                   </span>
                 </div>
 
-                {display.tags.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-1">
-                    {display.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-sm border border-border/60 bg-background/40 px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.08em] text-muted-foreground/80"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                {relationship && (
+                  <p className="mb-2 text-[10px] text-muted-foreground/70">
+                    {relationship}
+                  </p>
                 )}
 
                 <div className="mb-1.5 flex items-baseline justify-between text-[11px] tabular-nums text-muted-foreground">
@@ -151,23 +103,23 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr }: Props) {
                   </span>
                 </div>
 
-                <div className="flex h-1.5 overflow-hidden rounded-full bg-muted/40 transition-opacity group-hover:opacity-95">
+                <div className="flex h-1.5 overflow-hidden rounded-full bg-muted/40">
                   <div
                     className={`h-full ${
-                      row.leader === "away" ? bar.lead : bar.trail
+                      row.leader === "away" ? "bg-accent-cool/80" : "bg-accent-cool/35"
                     }`}
                     style={{ width: `${away}%` }}
                   />
                   <div
                     className={`h-full ${
-                      row.leader === "home" ? bar.lead : bar.trail
+                      row.leader === "home" ? "bg-primary/80" : "bg-primary/35"
                     }`}
                     style={{ width: `${home}%` }}
                   />
                 </div>
 
                 <p
-                  className="mt-2 text-[10px] text-muted-foreground/70"
+                  className="mt-2 text-[10px] text-muted-foreground/60"
                   title={`${row.metric_count} metrics included in this category score`}
                 >
                   {row.metric_count} metrics
