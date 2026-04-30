@@ -1144,6 +1144,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
 
       {/* ── Matchup Lean ── */}
       {matchup_lean && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="matchup-lean"
+          title="Matchup Lean / Confidence"
+          body="Matchup Lean is the backend's directional read. Confidence tells you how strong or cautious that read should feel."
+        />
+      )}
+      {matchup_lean && (
         <Card className="mb-6 border-border bg-card border-t-[3px] border-t-accent-cool shadow-[0_0_0_1px_hsl(var(--accent-cool)/0.08)] dark:border-t-accent-cool">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
