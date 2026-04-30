@@ -984,6 +984,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
   const hasFinalScore = !!final_score;
   const coreAreaContextText = getCoreAreaContextText(matchup_lean?.core_area_context);
 
+  // QA-only: when the "Section Guided" intro variant is active, show
+  // per-section guidance instead of the page-level intro.
+  const [sectionGuidesOn, setSectionGuidesOn] = useState<boolean>(() => isSectionGuidedVariant());
+  useEffect(() => {
+    const sync = () => setSectionGuidesOn(isSectionGuidedVariant());
+    window.addEventListener("gamelens:matchup-intro-reopen", sync);
+    return () => window.removeEventListener("gamelens:matchup-intro-reopen", sync);
+  }, []);
 
   return (
     <>
