@@ -1153,7 +1153,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         />
       )}
       {game_profile && game_profile.length > 0 && (
-        <Card className="mb-6 border-border bg-card">
+        <Card data-tour="game-profile" className="mb-6 border-border bg-card">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold tracking-tight text-foreground">Game Profile</h3>
@@ -1224,11 +1224,13 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         />
       )}
       {details.core_area_comparison && details.core_area_comparison.length > 0 && (
-        <CoreAreaAdvantage
-          rows={details.core_area_comparison}
-          awayAbbr={awayTeam.abbr}
-          homeAbbr={homeTeam.abbr}
-        />
+        <div data-tour="core-area-advantage">
+          <CoreAreaAdvantage
+            rows={details.core_area_comparison}
+            awayAbbr={awayTeam.abbr}
+            homeAbbr={homeTeam.abbr}
+          />
+        </div>
       )}
 
       {/* ── Matchup Lean ── */}
@@ -1241,7 +1243,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         />
       )}
       {matchup_lean && (
-        <Card className="mb-6 border-border bg-card border-t-[3px] border-t-accent-cool shadow-[0_0_0_1px_hsl(var(--accent-cool)/0.08)] dark:border-t-accent-cool">
+        <Card data-tour="matchup-lean" className="mb-6 border-border bg-card border-t-[3px] border-t-accent-cool shadow-[0_0_0_1px_hsl(var(--accent-cool)/0.08)] dark:border-t-accent-cool">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold tracking-tight text-foreground">Matchup Lean</h3>
@@ -1303,15 +1305,17 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         />
       )}
       {(header.game_status === "Final" || header.game_status === "Final/OT") && details.model_outcome && (
-        <ModelTrustCard
-          outcome={details.model_outcome}
-          lean={matchup_lean}
-          teamComparison={team_comparison}
-          gameProfile={game_profile}
-          modelTrust={details.model_trust ?? null}
-          awayTeam={awayTeam}
-          homeTeam={homeTeam}
-        />
+        <div data-tour="model-trust">
+          <ModelTrustCard
+            outcome={details.model_outcome}
+            lean={matchup_lean}
+            teamComparison={team_comparison}
+            gameProfile={game_profile}
+            modelTrust={details.model_trust ?? null}
+            awayTeam={awayTeam}
+            homeTeam={homeTeam}
+          />
+        </div>
       )}
 
       {/* ── Team Comparison ── */}
@@ -1324,7 +1328,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
         />
       )}
       {team_comparison && team_comparison.length > 0 && (
-        <Card className="mb-10 border-border/80 bg-gradient-to-b from-card to-card/60 shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_20px_40px_-24px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
+        <Card data-tour="team-comparison" className="mb-10 border-border/80 bg-gradient-to-b from-card to-card/60 shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_20px_40px_-24px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
           <CardContent className="p-7 sm:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
