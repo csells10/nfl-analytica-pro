@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, X, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { clearAllSectionGuideDismissals } from "@/components/SectionGuide";
 
 /**
  * First-entry helper popup for the Matchup detail page.
