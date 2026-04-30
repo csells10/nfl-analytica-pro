@@ -19,7 +19,8 @@ export type MatchupIntroVariant =
   | "compact-coach-mark"
   | "step-mini-guide"
   | "inline-welcome-banner"
-  | "section-guided-onboarding";
+  | "section-guided-onboarding"
+  | "section-spotlight-tour";
 
 export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
   id: MatchupIntroVariant;
@@ -29,7 +30,11 @@ export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
   { id: "step-mini-guide", label: "Step Mini Guide" },
   { id: "inline-welcome-banner", label: "Inline Welcome Banner" },
   { id: "section-guided-onboarding", label: "Section Guided" },
+  { id: "section-spotlight-tour", label: "Section Spotlight Tour" },
 ];
+
+/** localStorage key flagging that the spotlight tour has been completed/dismissed. */
+export const SECTION_SPOTLIGHT_TOUR_SEEN_KEY = "hasSeenMatchupSectionSpotlightTour";
 
 const DEFAULT_VARIANT: MatchupIntroVariant = "compact-coach-mark";
 const VARIANT_STORAGE_KEY = "matchupIntroVariant";
@@ -40,12 +45,17 @@ function isVariant(v: string | null): v is MatchupIntroVariant {
     v === "compact-coach-mark" ||
     v === "step-mini-guide" ||
     v === "inline-welcome-banner" ||
-    v === "section-guided-onboarding"
+    v === "section-guided-onboarding" ||
+    v === "section-spotlight-tour"
   );
 }
 
 export function isSectionGuidedVariant(): boolean {
   return resolveVariant() === "section-guided-onboarding";
+}
+
+export function isSectionSpotlightVariant(): boolean {
+  return resolveVariant() === "section-spotlight-tour";
 }
 
 function resolveVariant(): MatchupIntroVariant {
