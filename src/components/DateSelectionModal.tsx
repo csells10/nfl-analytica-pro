@@ -169,20 +169,6 @@ export default function DateSelectionModal({
           </span>
         </div>
 
-        <div className="mt-5 flex items-center justify-end gap-2">
-          <button
-            onClick={onDismiss}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
-          >
-            Skip for now
-          </button>
-          <button
-            onClick={onDismiss}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-          >
-            Got it
-          </button>
-        </div>
       </div>
     </div>
   );

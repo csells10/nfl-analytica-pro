@@ -194,7 +194,13 @@ export default function Slate() {
             <label className="block mb-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Game date
             </label>
-            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+            <Popover
+              open={datePickerOpen}
+              onOpenChange={(open) => {
+                setDatePickerOpen(open);
+                if (open && overlayOpen) completeOnboarding();
+              }}
+            >
               <PopoverTrigger asChild>
                 <Button
                   data-onboarding="game-date"
