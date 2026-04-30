@@ -1056,6 +1056,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
 
       {/* ── Game Profile ── */}
       {game_profile && game_profile.length > 0 && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="game-profile"
+          title="Game Profile"
+          body="Game Profile highlights the main matchup signals, like pressure, scoring efficiency, and turnover risk."
+        />
+      )}
+      {game_profile && game_profile.length > 0 && (
         <Card className="mb-6 border-border bg-card">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
