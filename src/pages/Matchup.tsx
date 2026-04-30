@@ -1127,6 +1127,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
 
       {/* ── Core Area Advantage ── */}
       {details.core_area_comparison && details.core_area_comparison.length > 0 && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="core-area-advantage"
+          title="Core Area Advantage"
+          body="Core Areas group related metrics into bigger team strengths so you can see where each side has the edge."
+        />
+      )}
+      {details.core_area_comparison && details.core_area_comparison.length > 0 && (
         <CoreAreaAdvantage
           rows={details.core_area_comparison}
           awayAbbr={awayTeam.abbr}
