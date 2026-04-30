@@ -38,6 +38,7 @@ import {
 } from "@/components/MatchupIntroDialog";
 import { MatchupIntroQASelector } from "@/components/MatchupIntroQASelector";
 import { SectionGuide } from "@/components/SectionGuide";
+import { Activity, Layers, Compass, Columns, ShieldCheck } from "lucide-react";
 import SectionSpotlightTour, {
   type SpotlightTourStep,
 } from "@/components/SectionSpotlightTour";
@@ -1045,6 +1046,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       title: "Game Profile",
       body:
         "Game Profile highlights the main matchup signals, like pressure, scoring efficiency, and turnover risk.",
+      icon: Activity,
       available: !!(game_profile && game_profile.length > 0),
     },
     {
@@ -1053,6 +1055,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       title: "Core Area Advantage",
       body:
         "Core Areas group related metrics into bigger team strengths so you can see where each side has the edge.",
+      icon: Layers,
       available: !!(details.core_area_comparison && details.core_area_comparison.length > 0),
     },
     {
@@ -1061,6 +1064,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       title: "Matchup Lean / Confidence",
       body:
         "Matchup Lean is the backend's directional read. Confidence tells you how strong or cautious that read should feel.",
+      icon: Compass,
       available: !!matchup_lean,
     },
     {
@@ -1068,6 +1072,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       targetSelector: "[data-tour='team-comparison']",
       title: "Team Comparison",
       body: "Team Comparison shows the metric-level gaps behind the matchup read.",
+      icon: Columns,
       available: !!(team_comparison && team_comparison.length > 0),
     },
     {
@@ -1076,6 +1081,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       title: "Model Trust / Outcome",
       body:
         "After the game, Model Trust reviews whether the model was right, close, or missed — and why.",
+      icon: ShieldCheck,
       available:
         (header.game_status === "Final" || header.game_status === "Final/OT") &&
         !!details.model_outcome,
