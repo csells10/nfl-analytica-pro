@@ -10,7 +10,7 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth();
 
   return (
-    <AppShell>
+    <AppShell showGuide={false}>
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
           <h1 className="text-xl font-bold text-foreground">Settings</h1>

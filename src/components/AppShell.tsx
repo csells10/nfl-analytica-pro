@@ -18,7 +18,7 @@ export function openGuideTutorial() {
   window.dispatchEvent(new CustomEvent(GUIDE_EVENT));
 }
 
-const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode }>(function AppShell({ children }, ref) {
+const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGuide?: boolean }>(function AppShell({ children, showGuide = true }, ref) {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
@@ -73,24 +73,26 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode }>(funct
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:block">{user?.email}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleGuideClick}
-              aria-label="Open guide"
-              title="Show the guide"
-              className={`relative h-8 w-8 text-muted-foreground hover:text-foreground ${
-                pulseGuide ? "animate-pulse text-primary" : ""
-              }`}
-            >
-              <HelpCircle className="h-4 w-4" />
-              {pulseGuide && (
-                <span className="pointer-events-none absolute -right-0.5 -top-0.5 inline-flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/50" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                </span>
-              )}
-            </Button>
+            {showGuide && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleGuideClick}
+                aria-label="Open guide"
+                title="Show the guide"
+                className={`relative h-8 w-8 text-muted-foreground hover:text-foreground ${
+                  pulseGuide ? "animate-pulse text-primary" : ""
+                }`}
+              >
+                <HelpCircle className="h-4 w-4" />
+                {pulseGuide && (
+                  <span className="pointer-events-none absolute -right-0.5 -top-0.5 inline-flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/50" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                  </span>
+                )}
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={toggle} className="h-8 w-8 text-muted-foreground hover:text-foreground">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>

@@ -4,7 +4,7 @@ import { Construction } from "lucide-react";
 
 export default function Placeholder({ title }: { title: string }) {
   return (
-    <AppShell>
+    <AppShell showGuide={false}>
       <div className="space-y-6">
         <h1 className="text-xl font-bold text-foreground">{title}</h1>
         <Card className="border-border bg-card">
