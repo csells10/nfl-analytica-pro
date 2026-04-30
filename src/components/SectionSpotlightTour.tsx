@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { Sparkles, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * Calendar-style spotlight tour that walks the user through a sequence of
- * page sections. Each step dims the rest of the page, draws a glowing ring
- * around the active section, smooth-scrolls to it, and shows a branded
- * explanation card with a `Next` / `Finish` action.
+ * page sections. Each step dims the rest of the page (NOT the active
+ * section), draws a glowing ring around the active section, gently
+ * scrolls to it, and shows a branded explanation card with `Next` /
+ * `Finish`.
  *
  * - Backdrop is non-interactive (clicks do not advance or dismiss).
  * - Only the explicit `Next` / `Finish` button and the close `X` act on the tour.
  * - Steps with `available === false` are skipped.
+ * - The dim layer is drawn as 4 rectangles around the spotlight, leaving
+ *   the focused section fully visible (no darkening, no blur over it).
  */
 
 export interface SpotlightTourStep {
@@ -20,6 +23,8 @@ export interface SpotlightTourStep {
   targetSelector: string;
   title: string;
   body: string;
+  /** Optional icon for this step. Falls back to Sparkles. */
+  icon?: LucideIcon;
   /** When false, the step is skipped entirely. Defaults to true. */
   available?: boolean;
 }
@@ -43,6 +48,33 @@ interface Rect {
 const PAD = 10;
 const DESKTOP_GAP = 24;
 const DESKTOP_CARD_WIDTH = 360;
+// Calmer pacing — gentle scroll + settle window before measuring.
+const SETTLE_MS = 1100;
+const SCROLL_DURATION_MS = 900;
+
+/**
+ * Custom slow smooth-scroll. Native `scrollIntoView({ behavior: "smooth" })`
+ * is too fast in most browsers and can't be tuned. We animate window
+ * scrollY ourselves so the tour feels deliberate, not snappy.
+ */
+function gentleScrollToCenter(el: HTMLElement, durationMs: number) {
+  const rect = el.getBoundingClientRect();
+  const targetY =
+    window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
+  const startY = window.scrollY;
+  const delta = targetY - startY;
+  if (Math.abs(delta) < 2) return;
+  const start = performance.now();
+  // easeInOutCubic — calm acceleration and deceleration
+  const ease = (t: number) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const step = (now: number) => {
+    const t = Math.min(1, (now - start) / durationMs);
+    window.scrollTo(0, startY + delta * ease(t));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 
 export default function SectionSpotlightTour({ open, steps, onClose, onComplete }: Props) {
   const isMobile = useIsMobile();
@@ -59,8 +91,9 @@ export default function SectionSpotlightTour({ open, steps, onClose, onComplete 
   const activeStep = visibleSteps[activeIndex];
   const total = visibleSteps.length;
   const isLast = activeIndex >= total - 1;
+  const StepIcon = activeStep?.icon ?? Sparkles;
 
-  // Smooth-scroll the active section into view, then measure its rect.
+  // Gently scroll the active section into view, then measure its rect.
   useLayoutEffect(() => {
     if (!open || !activeStep) return;
     let cancelled = false;
@@ -69,7 +102,7 @@ export default function SectionSpotlightTour({ open, steps, onClose, onComplete 
     const el = document.querySelector(activeStep.targetSelector) as HTMLElement | null;
     if (!el) return;
 
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    gentleScrollToCenter(el, SCROLL_DURATION_MS);
 
     const measure = () => {
       if (cancelled) return;
@@ -79,8 +112,8 @@ export default function SectionSpotlightTour({ open, steps, onClose, onComplete 
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
 
-    // Wait for smooth scroll to settle, then measure. Re-measure on scroll/resize.
-    const settleId = window.setTimeout(measure, 480);
+    // Wait for the gentle scroll to settle, then measure. Re-measure on scroll/resize.
+    const settleId = window.setTimeout(measure, SETTLE_MS);
     const onScrollOrResize = () => {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(measure);
@@ -144,32 +177,78 @@ export default function SectionSpotlightTour({ open, steps, onClose, onComplete 
     );
   }
 
+  // Dim the page using 4 rectangles around the spotlight so the focus
+  // area itself stays bright and readable. Calm, slower transitions.
+  const dimClass =
+    "pointer-events-none absolute bg-background/75 backdrop-blur-sm transition-all duration-700 ease-out";
+
   return (
     <div
-      className="fixed inset-0 z-50 animate-in fade-in-0 duration-200"
+      className="fixed inset-0 z-50 animate-in fade-in-0 duration-500"
       role="dialog"
       aria-modal="true"
       aria-labelledby="spotlight-tour-title"
     >
-      {/* Dimmed backdrop. Non-interactive: does not dismiss on click. */}
-      <div className="pointer-events-none absolute inset-0 bg-background/75 backdrop-blur-sm" />
+      {/* Dim layer — drawn as 4 rects around the spotlight so the focused
+          section is NOT darkened or blurred. Falls back to a single full
+          overlay until we've measured. */}
+      {spotlight ? (
+        <>
+          {/* top */}
+          <div
+            className={dimClass}
+            style={{ top: 0, left: 0, right: 0, height: Math.max(0, spotlight.top) }}
+          />
+          {/* bottom */}
+          <div
+            className={dimClass}
+            style={{
+              top: spotlight.top + spotlight.height,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+          {/* left */}
+          <div
+            className={dimClass}
+            style={{
+              top: spotlight.top,
+              left: 0,
+              width: Math.max(0, spotlight.left),
+              height: spotlight.height,
+            }}
+          />
+          {/* right */}
+          <div
+            className={dimClass}
+            style={{
+              top: spotlight.top,
+              left: spotlight.left + spotlight.width,
+              right: 0,
+              height: spotlight.height,
+            }}
+          />
+        </>
+      ) : (
+        <div className="pointer-events-none absolute inset-0 bg-background/75 backdrop-blur-sm" />
+      )}
 
       {/* Spotlight ring around the active section */}
       {spotlight && (
         <>
           <div
-            className="pointer-events-none absolute rounded-xl ring-2 ring-primary/70 transition-all duration-300"
+            className="pointer-events-none absolute rounded-xl ring-2 ring-primary/70 transition-all duration-700 ease-out"
             style={{
               top: spotlight.top,
               left: spotlight.left,
               width: spotlight.width,
               height: spotlight.height,
-              boxShadow:
-                "0 0 0 9999px hsl(var(--background) / 0.72), 0 0 28px hsl(var(--primary) / 0.35)",
+              boxShadow: "0 0 28px hsl(var(--primary) / 0.35)",
             }}
           />
           <div
-            className="pointer-events-none absolute rounded-xl animate-pulse"
+            className="pointer-events-none absolute rounded-xl animate-pulse transition-all duration-700 ease-out"
             style={{
               top: spotlight.top - 4,
               left: spotlight.left - 4,
@@ -187,7 +266,8 @@ export default function SectionSpotlightTour({ open, steps, onClose, onComplete 
           "absolute rounded-2xl border border-border/60 bg-card",
           "shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]",
           "ring-1 ring-primary/10",
-          "animate-in fade-in-0 zoom-in-95 duration-300",
+          "animate-in fade-in-0 zoom-in-95 duration-500",
+          "transition-all ease-out",
           isMobile
             ? "inset-x-3 bottom-3 max-h-[44vh] overflow-y-auto"
             : "w-[360px]",
@@ -201,7 +281,7 @@ export default function SectionSpotlightTour({ open, steps, onClose, onComplete 
         <div className="p-5 pr-12">
           <div className="mb-3 flex items-center gap-2">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-primary/20">
-              <Sparkles className="h-3.5 w-3.5" />
+              <StepIcon className="h-3.5 w-3.5" />
             </span>
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               GameLens · Guided tour
@@ -228,7 +308,7 @@ export default function SectionSpotlightTour({ open, steps, onClose, onComplete 
                 <span
                   key={i}
                   className={cn(
-                    "h-1.5 rounded-full transition-all",
+                    "h-1.5 rounded-full transition-all duration-500",
                     i === activeIndex
                       ? "w-5 bg-primary"
                       : "w-1.5 bg-muted-foreground/30",
