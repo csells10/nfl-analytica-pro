@@ -147,9 +147,10 @@ export function MatchupIntroDialog() {
 
   if (!open || !variant) return null;
 
-  // Section-guided variant suppresses the page-level intro entirely;
-  // per-section <SectionGuide /> components handle UX.
+  // Section-guided and section-spotlight-tour variants suppress the page-level
+  // intro entirely; the Matchup page renders their UX directly.
   if (variant === "section-guided-onboarding") return null;
+  if (variant === "section-spotlight-tour") return null;
 
   if (variant === "compact-coach-mark") {
     return <CompactCoachMark isMobile={isMobile} onDismiss={dismiss} />;
