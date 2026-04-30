@@ -995,11 +995,92 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
   // QA-only: when the "Section Guided" intro variant is active, show
   // per-section guidance instead of the page-level intro.
   const [sectionGuidesOn, setSectionGuidesOn] = useState<boolean>(() => isSectionGuidedVariant());
+  // QA-only: spotlight tour. Open on first entry (or via QA Reset) when the
+  // `section-spotlight-tour` variant is active.
+  const [tourOpen, setTourOpen] = useState<boolean>(false);
+
   useEffect(() => {
-    const sync = () => setSectionGuidesOn(isSectionGuidedVariant());
+    const sync = () => {
+      setSectionGuidesOn(isSectionGuidedVariant());
+      // Reopen the tour if the user picked the spotlight variant or hit Reset.
+      if (isSectionSpotlightVariant()) {
+        try {
+          if (localStorage.getItem(SECTION_SPOTLIGHT_TOUR_SEEN_KEY) !== "true") {
+            setTourOpen(true);
+          }
+        } catch {
+          setTourOpen(true);
+        }
+      } else {
+        setTourOpen(false);
+      }
+    };
+    // Initial check on mount.
+    if (isSectionSpotlightVariant()) {
+      try {
+        if (localStorage.getItem(SECTION_SPOTLIGHT_TOUR_SEEN_KEY) !== "true") {
+          setTourOpen(true);
+        }
+      } catch {
+        setTourOpen(true);
+      }
+    }
     window.addEventListener("gamelens:matchup-intro-reopen", sync);
     return () => window.removeEventListener("gamelens:matchup-intro-reopen", sync);
   }, []);
+
+  const markTourSeenAndClose = () => {
+    try {
+      localStorage.setItem(SECTION_SPOTLIGHT_TOUR_SEEN_KEY, "true");
+    } catch {
+      /* ignore */
+    }
+    setTourOpen(false);
+  };
+
+  const tourSteps: SpotlightTourStep[] = [
+    {
+      key: "game-profile",
+      targetSelector: "[data-tour='game-profile']",
+      title: "Game Profile",
+      body:
+        "Game Profile highlights the main matchup signals, like pressure, scoring efficiency, and turnover risk.",
+      available: !!(game_profile && game_profile.length > 0),
+    },
+    {
+      key: "core-area-advantage",
+      targetSelector: "[data-tour='core-area-advantage']",
+      title: "Core Area Advantage",
+      body:
+        "Core Areas group related metrics into bigger team strengths so you can see where each side has the edge.",
+      available: !!(details.core_area_comparison && details.core_area_comparison.length > 0),
+    },
+    {
+      key: "matchup-lean",
+      targetSelector: "[data-tour='matchup-lean']",
+      title: "Matchup Lean / Confidence",
+      body:
+        "Matchup Lean is the backend's directional read. Confidence tells you how strong or cautious that read should feel.",
+      available: !!matchup_lean,
+    },
+    {
+      key: "team-comparison",
+      targetSelector: "[data-tour='team-comparison']",
+      title: "Team Comparison",
+      body: "Team Comparison shows the metric-level gaps behind the matchup read.",
+      available: !!(team_comparison && team_comparison.length > 0),
+    },
+    {
+      key: "model-trust",
+      targetSelector: "[data-tour='model-trust']",
+      title: "Model Trust / Outcome",
+      body:
+        "After the game, Model Trust reviews whether the model was right, close, or missed — and why.",
+      available:
+        (header.game_status === "Final" || header.game_status === "Final/OT") &&
+        !!details.model_outcome,
+    },
+  ];
 
   return (
     <>
