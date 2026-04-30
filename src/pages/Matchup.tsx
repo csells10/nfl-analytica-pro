@@ -38,7 +38,7 @@ import {
 } from "@/components/MatchupIntroDialog";
 import { MatchupIntroQASelector } from "@/components/MatchupIntroQASelector";
 import { SectionGuide } from "@/components/SectionGuide";
-import { Activity, Layers, Compass, Columns, ShieldCheck } from "lucide-react";
+import { Layers, Compass, Columns } from "lucide-react";
 import SectionSpotlightTour, {
   type SpotlightTourStep,
 } from "@/components/SectionSpotlightTour";
