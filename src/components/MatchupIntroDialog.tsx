@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, X, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { clearAllSectionGuideDismissals } from "@/components/SectionGuide";
 
 /**
  * First-entry helper popup for the Matchup detail page.
@@ -17,7 +18,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export type MatchupIntroVariant =
   | "compact-coach-mark"
   | "step-mini-guide"
-  | "inline-welcome-banner";
+  | "inline-welcome-banner"
+  | "section-guided-onboarding";
 
 export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
   id: MatchupIntroVariant;
@@ -26,6 +28,7 @@ export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
   { id: "compact-coach-mark", label: "Compact Coach Mark" },
   { id: "step-mini-guide", label: "Step Mini Guide" },
   { id: "inline-welcome-banner", label: "Inline Welcome Banner" },
+  { id: "section-guided-onboarding", label: "Section Guided" },
 ];
 
 const DEFAULT_VARIANT: MatchupIntroVariant = "compact-coach-mark";
@@ -36,8 +39,13 @@ function isVariant(v: string | null): v is MatchupIntroVariant {
   return (
     v === "compact-coach-mark" ||
     v === "step-mini-guide" ||
-    v === "inline-welcome-banner"
+    v === "inline-welcome-banner" ||
+    v === "section-guided-onboarding"
   );
+}
+
+export function isSectionGuidedVariant(): boolean {
+  return resolveVariant() === "section-guided-onboarding";
 }
 
 function resolveVariant(): MatchupIntroVariant {
@@ -77,6 +85,9 @@ export function resetMatchupIntro() {
   } catch {
     /* ignore */
   }
+  // Also clear per-section guide dismissals so the section-guided variant
+  // re-shows immediately on reset.
+  clearAllSectionGuideDismissals();
   window.dispatchEvent(
     new CustomEvent<MatchupIntroVariant>(INTRO_REOPEN_EVENT, { detail: current }),
   );
@@ -123,6 +134,10 @@ export function MatchupIntroDialog() {
   };
 
   if (!open || !variant) return null;
+
+  // Section-guided variant suppresses the page-level intro entirely;
+  // per-section <SectionGuide /> components handle UX.
+  if (variant === "section-guided-onboarding") return null;
 
   if (variant === "compact-coach-mark") {
     return <CompactCoachMark isMobile={isMobile} onDismiss={dismiss} />;

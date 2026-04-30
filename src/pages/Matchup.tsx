@@ -30,8 +30,9 @@ import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
 import { MatchupHelpDialog } from "@/components/MatchupHelpDialog";
-import { MatchupIntroDialog } from "@/components/MatchupIntroDialog";
+import { MatchupIntroDialog, isSectionGuidedVariant } from "@/components/MatchupIntroDialog";
 import { MatchupIntroQASelector } from "@/components/MatchupIntroQASelector";
+import { SectionGuide } from "@/components/SectionGuide";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
 
@@ -983,6 +984,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
   const hasFinalScore = !!final_score;
   const coreAreaContextText = getCoreAreaContextText(matchup_lean?.core_area_context);
 
+  // QA-only: when the "Section Guided" intro variant is active, show
+  // per-section guidance instead of the page-level intro.
+  const [sectionGuidesOn, setSectionGuidesOn] = useState<boolean>(() => isSectionGuidedVariant());
+  useEffect(() => {
+    const sync = () => setSectionGuidesOn(isSectionGuidedVariant());
+    window.addEventListener("gamelens:matchup-intro-reopen", sync);
+    return () => window.removeEventListener("gamelens:matchup-intro-reopen", sync);
+  }, []);
 
   return (
     <>
@@ -1047,6 +1056,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
 
       {/* ── Game Profile ── */}
       {game_profile && game_profile.length > 0 && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="game-profile"
+          title="Game Profile"
+          body="Game Profile highlights the main matchup signals, like pressure, scoring efficiency, and turnover risk."
+        />
+      )}
+      {game_profile && game_profile.length > 0 && (
         <Card className="mb-6 border-border bg-card">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
@@ -1110,6 +1127,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
 
       {/* ── Core Area Advantage ── */}
       {details.core_area_comparison && details.core_area_comparison.length > 0 && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="core-area-advantage"
+          title="Core Area Advantage"
+          body="Core Areas group related metrics into bigger team strengths so you can see where each side has the edge."
+        />
+      )}
+      {details.core_area_comparison && details.core_area_comparison.length > 0 && (
         <CoreAreaAdvantage
           rows={details.core_area_comparison}
           awayAbbr={awayTeam.abbr}
@@ -1118,6 +1143,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       )}
 
       {/* ── Matchup Lean ── */}
+      {matchup_lean && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="matchup-lean"
+          title="Matchup Lean / Confidence"
+          body="Matchup Lean is the backend's directional read. Confidence tells you how strong or cautious that read should feel."
+        />
+      )}
       {matchup_lean && (
         <Card className="mb-6 border-border bg-card border-t-[3px] border-t-accent-cool shadow-[0_0_0_1px_hsl(var(--accent-cool)/0.08)] dark:border-t-accent-cool">
           <CardContent className="p-5">
@@ -1173,6 +1206,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
 
       {/* ── Model Trust & Outcome ── only for finalized games ── */}
       {(header.game_status === "Final" || header.game_status === "Final/OT") && details.model_outcome && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="model-trust"
+          title="Model Trust / Outcome"
+          body="After the game, Model Trust reviews whether the model was right, close, or missed — and why."
+        />
+      )}
+      {(header.game_status === "Final" || header.game_status === "Final/OT") && details.model_outcome && (
         <ModelTrustCard
           outcome={details.model_outcome}
           lean={matchup_lean}
@@ -1185,6 +1226,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       )}
 
       {/* ── Team Comparison ── */}
+      {team_comparison && team_comparison.length > 0 && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="team-comparison"
+          title="Team Comparison"
+          body="Team Comparison shows the metric-level gaps behind the matchup read."
+        />
+      )}
       {team_comparison && team_comparison.length > 0 && (
         <Card className="mb-10 border-border/80 bg-gradient-to-b from-card to-card/60 shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_20px_40px_-24px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
           <CardContent className="p-7 sm:p-8">
