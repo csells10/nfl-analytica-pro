@@ -92,6 +92,8 @@ export function resetMatchupIntro() {
   const current = resolveVariant();
   try {
     MATCHUP_INTRO_VARIANTS.forEach((v) => localStorage.removeItem(storageKeyFor(v.id)));
+    // Spotlight tour persistence lives under its own key.
+    localStorage.removeItem(SECTION_SPOTLIGHT_TOUR_SEEN_KEY);
   } catch {
     /* ignore */
   }
