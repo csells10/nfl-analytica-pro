@@ -18,7 +18,8 @@ import { clearAllSectionGuideDismissals } from "@/components/SectionGuide";
 export type MatchupIntroVariant =
   | "compact-coach-mark"
   | "step-mini-guide"
-  | "inline-welcome-banner";
+  | "inline-welcome-banner"
+  | "section-guided-onboarding";
 
 export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
   id: MatchupIntroVariant;
@@ -27,6 +28,7 @@ export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
   { id: "compact-coach-mark", label: "Compact Coach Mark" },
   { id: "step-mini-guide", label: "Step Mini Guide" },
   { id: "inline-welcome-banner", label: "Inline Welcome Banner" },
+  { id: "section-guided-onboarding", label: "Section Guided" },
 ];
 
 const DEFAULT_VARIANT: MatchupIntroVariant = "compact-coach-mark";
