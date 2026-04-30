@@ -31,6 +31,7 @@ import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
 import { MatchupHelpDialog } from "@/components/MatchupHelpDialog";
 import { MatchupIntroDialog } from "@/components/MatchupIntroDialog";
+import { MatchupIntroQASelector } from "@/components/MatchupIntroQASelector";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
 
