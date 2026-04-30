@@ -79,21 +79,28 @@ export default function Slate() {
 
   // Initialize selected date from `?date=YYYY-MM-DD` URL param so deep links
   // and back-navigation from the Matchup page restore the previous filter.
-  const initialDate = useMemo(() => {
+  // Resolve the initial date once on mount:
+  //   1. `?date=YYYY-MM-DD` URL param (deep links / back-nav) wins.
+  //   2. Otherwise default to today so the slate loads immediately.
+  const { initialDate, dateFromUrl } = useMemo(() => {
     const raw = searchParams.get("date");
-    if (!raw) return undefined;
-    // Parse as local date to avoid timezone drift (YYYY-MM-DD).
-    const [y, m, d] = raw.split("-").map(Number);
-    if (!y || !m || !d) return undefined;
-    const parsed = new Date(y, m - 1, d);
-    return isNaN(parsed.getTime()) ? undefined : parsed;
+    if (raw) {
+      const [y, m, d] = raw.split("-").map(Number);
+      if (y && m && d) {
+        const parsed = new Date(y, m - 1, d);
+        if (!isNaN(parsed.getTime())) {
+          return { initialDate: parsed, dateFromUrl: true };
+        }
+      }
+    }
+    return { initialDate: new Date(), dateFromUrl: false };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate);
   const [overlayOpen, setOverlayOpen] = useState(() => {
     if (typeof window === "undefined") return false;
-    if (initialDate) return false;
+    if (dateFromUrl) return false;
     return localStorage.getItem(ONBOARDING_KEY) !== "true";
   });
 
