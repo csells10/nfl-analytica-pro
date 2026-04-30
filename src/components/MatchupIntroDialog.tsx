@@ -19,7 +19,8 @@ export type MatchupIntroVariant =
   | "compact-coach-mark"
   | "step-mini-guide"
   | "inline-welcome-banner"
-  | "section-guided-onboarding";
+  | "section-guided-onboarding"
+  | "section-spotlight-tour";
 
 export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
   id: MatchupIntroVariant;
@@ -29,7 +30,11 @@ export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
   { id: "step-mini-guide", label: "Step Mini Guide" },
   { id: "inline-welcome-banner", label: "Inline Welcome Banner" },
   { id: "section-guided-onboarding", label: "Section Guided" },
+  { id: "section-spotlight-tour", label: "Section Spotlight Tour" },
 ];
+
+/** localStorage key flagging that the spotlight tour has been completed/dismissed. */
+export const SECTION_SPOTLIGHT_TOUR_SEEN_KEY = "hasSeenMatchupSectionSpotlightTour";
 
 const DEFAULT_VARIANT: MatchupIntroVariant = "compact-coach-mark";
 const VARIANT_STORAGE_KEY = "matchupIntroVariant";
@@ -40,12 +45,17 @@ function isVariant(v: string | null): v is MatchupIntroVariant {
     v === "compact-coach-mark" ||
     v === "step-mini-guide" ||
     v === "inline-welcome-banner" ||
-    v === "section-guided-onboarding"
+    v === "section-guided-onboarding" ||
+    v === "section-spotlight-tour"
   );
 }
 
 export function isSectionGuidedVariant(): boolean {
   return resolveVariant() === "section-guided-onboarding";
+}
+
+export function isSectionSpotlightVariant(): boolean {
+  return resolveVariant() === "section-spotlight-tour";
 }
 
 function resolveVariant(): MatchupIntroVariant {
@@ -82,6 +92,8 @@ export function resetMatchupIntro() {
   const current = resolveVariant();
   try {
     MATCHUP_INTRO_VARIANTS.forEach((v) => localStorage.removeItem(storageKeyFor(v.id)));
+    // Spotlight tour persistence lives under its own key.
+    localStorage.removeItem(SECTION_SPOTLIGHT_TOUR_SEEN_KEY);
   } catch {
     /* ignore */
   }
@@ -135,9 +147,10 @@ export function MatchupIntroDialog() {
 
   if (!open || !variant) return null;
 
-  // Section-guided variant suppresses the page-level intro entirely;
-  // per-section <SectionGuide /> components handle UX.
+  // Section-guided and section-spotlight-tour variants suppress the page-level
+  // intro entirely; the Matchup page renders their UX directly.
   if (variant === "section-guided-onboarding") return null;
+  if (variant === "section-spotlight-tour") return null;
 
   if (variant === "compact-coach-mark") {
     return <CompactCoachMark isMobile={isMobile} onDismiss={dismiss} />;
