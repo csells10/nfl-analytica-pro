@@ -19,27 +19,33 @@ export type MatchupIntroVariant =
   | "step-mini-guide"
   | "inline-welcome-banner";
 
+export const MATCHUP_INTRO_VARIANTS: ReadonlyArray<{
+  id: MatchupIntroVariant;
+  label: string;
+}> = [
+  { id: "compact-coach-mark", label: "Compact Coach Mark" },
+  { id: "step-mini-guide", label: "Step Mini Guide" },
+  { id: "inline-welcome-banner", label: "Inline Welcome Banner" },
+];
+
 const DEFAULT_VARIANT: MatchupIntroVariant = "compact-coach-mark";
+const VARIANT_STORAGE_KEY = "matchupIntroVariant";
+const INTRO_REOPEN_EVENT = "gamelens:matchup-intro-reopen";
+
+function isVariant(v: string | null): v is MatchupIntroVariant {
+  return (
+    v === "compact-coach-mark" ||
+    v === "step-mini-guide" ||
+    v === "inline-welcome-banner"
+  );
+}
 
 function resolveVariant(): MatchupIntroVariant {
   try {
-    const url = new URL(window.location.href);
-    const fromQuery = url.searchParams.get("introVariant");
-    if (
-      fromQuery === "compact-coach-mark" ||
-      fromQuery === "step-mini-guide" ||
-      fromQuery === "inline-welcome-banner"
-    ) {
-      return fromQuery;
-    }
-    const fromStorage = localStorage.getItem("matchupIntroVariant");
-    if (
-      fromStorage === "compact-coach-mark" ||
-      fromStorage === "step-mini-guide" ||
-      fromStorage === "inline-welcome-banner"
-    ) {
-      return fromStorage;
-    }
+    const fromQuery = new URL(window.location.href).searchParams.get("introVariant");
+    if (isVariant(fromQuery)) return fromQuery;
+    const fromStorage = localStorage.getItem(VARIANT_STORAGE_KEY);
+    if (isVariant(fromStorage)) return fromStorage;
   } catch {
     /* ignore */
   }
@@ -48,6 +54,36 @@ function resolveVariant(): MatchupIntroVariant {
 
 function storageKeyFor(variant: MatchupIntroVariant) {
   return `hasSeenMatchupIntro:${variant}`;
+}
+
+/** QA helper: switch active variant and force-reopen the intro immediately. */
+export function setMatchupIntroVariant(variant: MatchupIntroVariant) {
+  try {
+    localStorage.setItem(VARIANT_STORAGE_KEY, variant);
+    localStorage.removeItem(storageKeyFor(variant));
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(
+    new CustomEvent<MatchupIntroVariant>(INTRO_REOPEN_EVENT, { detail: variant }),
+  );
+}
+
+/** QA helper: clear all dismissals and reopen the current variant. */
+export function resetMatchupIntro() {
+  const current = resolveVariant();
+  try {
+    MATCHUP_INTRO_VARIANTS.forEach((v) => localStorage.removeItem(storageKeyFor(v.id)));
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(
+    new CustomEvent<MatchupIntroVariant>(INTRO_REOPEN_EVENT, { detail: current }),
+  );
+}
+
+export function getMatchupIntroVariant(): MatchupIntroVariant {
+  return resolveVariant();
 }
 
 export function MatchupIntroDialog() {
@@ -65,6 +101,14 @@ export function MatchupIntroDialog() {
     } catch {
       setOpen(true);
     }
+
+    const onReopen = (e: Event) => {
+      const next = (e as CustomEvent<MatchupIntroVariant>).detail ?? resolveVariant();
+      setVariant(next);
+      setOpen(true);
+    };
+    window.addEventListener(INTRO_REOPEN_EVENT, onReopen);
+    return () => window.removeEventListener(INTRO_REOPEN_EVENT, onReopen);
   }, []);
 
   const dismiss = () => {
