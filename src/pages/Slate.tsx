@@ -214,6 +214,7 @@ export default function Slate() {
                 <Calendar
                   mode="single"
                   selected={selectedDate}
+                  defaultMonth={selectedDate ?? new Date()}
                   onSelect={handleSelectDate}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
