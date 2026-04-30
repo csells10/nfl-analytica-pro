@@ -2771,21 +2771,286 @@ They expire, but while active they behave like temporary signed-in credentials.
 
 ---
 
-# 🎯 Updated PM Recommended Order
+## Pregame / Postgame Data Separation
 
-Current recommended order after V1 and QA review:
+Pregame model logic must use an as-of cutoff before kickoff.
 
-1. Outcome quality labels
-2. Postgame swing factors
-3. Pregame profile weights
-4. Recent-form / rolling-window sanity check
-5. Game context flags
-6. Margin-aware confidence calibration
-7. Team Comparison formatting
-8. Auth polish / session UX only where needed
-9. League-relative Core Area scoring
-10. Historical validation dashboard
-11. Future betting decision layer
+Postgame review may use the final game box score.
+
+The same game’s final metrics must never influence its own pregame
+Matchup Lean,
+Game Profile,
+Core Area Advantage, or Confidence.
+
+---
+
+Early-Season Context + Confidence Cap
+Objective
+
+Improve GameLens behavior for Week 1 through Week 4 games, where current-season sample size is limited and season averages can be unstable or misleading.
+
+Early-season games should be handled differently from midseason, late-season, and playoff games because the model may not have enough current-year evidence to support strong confidence.
+
+Why This Matters
+
+September QA showed that GameLens was mostly cautious, which is good.
+
+However, early-season games create a unique trust issue:
+
+Week 1 and Week 2 may not have enough completed current-season games to support normal season-average confidence.
+
+This is especially important for historical QA because the full season data already exists in the database.
+
+The API must make sure it does not accidentally use future games when generating pregame logic for early-season matchups.
+
+Key Finding From September QA
+
+September was not necessarily a model failure.
+
+The better finding is:
+
+September needs early-season context because confidence and season-average metrics are fragile until enough current-year games exist.
+
+GameLens behaved responsibly in many September games by using Low Confidence, but the UI and API should make the limited sample more obvious.
+
+Early-Season Product Rule
+Early-season games should carry a context flag when current-season sample size is limited.
+
+Confidence should be capped or softened until enough completed current-season games exist.
+Suggested Confidence Guardrail
+Weeks 1–2:
+
+- Max confidence should usually be Low
+- Only allow Medium or High if there is a validated prior-season baseline and an extreme matchup edge
+
+Weeks 3–4:
+
+- Max confidence should usually be Medium
+- Only allow High if multiple signals, Core Areas, and profile weights strongly align
+
+Week 5+:
+
+- Normal confidence rules can begin
+  Suggested API Shape
+  {
+  "game_context": {
+  "season_phase": "early_regular_season",
+  "week": 1,
+  "context_flags": [
+  "early_season",
+  "limited_current_season_sample"
+  ],
+  "confidence_note": "Current-season sample is limited, so confidence is capped unless the matchup edge is extremely strong."
+  }
+  }
+  Suggested Matchup Lean Impact
+
+Early-season context should be allowed to reduce confidence.
+
+Example:
+
+{
+"matchup_lean": {
+"target_team": "NE edge",
+"confidence": "Low",
+"confidence_context": "Early-season sample is limited, so confidence is capped despite NE showing the cleaner profile."
+}
+}
+Suggested Team Comparison Label
+
+Current label:
+
+Season averages
+
+Future early-season label:
+
+Season averages — limited sample
+
+or:
+
+Early-season sample
+
+For Week 1, if using prior-season or baseline data:
+
+Pregame baseline — limited current-season data
+Data Boundary Rule
+
+Early-season games make the pregame/postgame separation rule even more important.
+
+For pregame logic:
+
+Use only games completed before the target game kickoff.
+
+For Week 1:
+
+Current-season pregame sample may be empty.
+
+Therefore the API must either:
+
+1. Use a clearly labeled prior-season baseline
+2. Use limited-sample current-season data
+3. Cap confidence
+4. Avoid presenting season averages as more certain than they are
+   Backend Rule
+   WHERE season = target_season
+   AND team IN (away_team, home_team)
+   AND game_datetime_est < target_game_datetime_est
+
+This cutoff must apply to:
+
+- Game Profile Signals
+- Core Area Advantage
+- Matchup Lean
+- Confidence
+- Pregame Profile Weights
+- Recent Form Checks
+- Team Comparison
+  Product Value
+
+This improves trust by making GameLens more honest about what it knows early in the season.
+
+Users should understand:
+
+The model may see a lean, but the sample is still thin.
+
+---
+
+# Add To Roadmap: Metric Category Consistency Audit
+
+Yes — I agree. This should be a **foundation item**, because Core Areas, Game Profile Signals, profile weights, and postgame swing factors all depend on clean metric categorization.
+
+## Recommended Roadmap Name
+
+Metric Taxonomy / Category Consistency Audit
+
+## Why It Matters
+
+Before improving weights or swing factors, we need to confirm that every metric used from `game_metric_flat` maps cleanly to the correct:
+
+- metric name
+- category
+- core area
+- raw vs derived status
+- offensive / defensive / special teams context
+- higher-is-better or lower-is-better direction
+
+## What To Check
+
+- Every active metric has exactly one canonical category
+- Every active metric has exactly one canonical core area
+- No duplicate metric names with conflicting categories
+- No missing category values
+- No missing core area values
+- No stale/fake metrics still referenced
+- `game_metric_flat` fields match the metric metadata/config
+- API Core Area logic uses the same category names as the data layer
+- Frontend labels match backend labels
+- Special Teams / Field Control metrics are only included when usable
+
+# Updated GameLens Priority Order
+
+1. Pregame / Postgame Data Separation
+
+2. ETL Observability / Run Logging
+
+3. Metric Taxonomy / Category Consistency Audit
+
+4. Outcome Quality Labels
+
+5. Postgame Swing Factors
+
+6. Pregame Profile Weights
+
+7. Recent Form / Rolling Window Sanity Check
+
+8. Game Context Flags
+
+9. Early-Season Context + Confidence Cap
+
+10. Margin-Aware Confidence Calibration
+
+11. Team Comparison Formatting / Tooltip Polish
+
+12. Auth Polish / Session UX
+
+13. League-Relative Core Area Scoring
+
+14. Historical Validation Dashboard
+
+# Recommended Near-Term Focus
+
+1. Pregame / Postgame Data Separation
+
+2. ETL Observability / Run Logging
+
+3. Metric Taxonomy / Category Consistency Audit
+
+# Why These Are First
+
+These three protect the foundation.
+
+Before GameLens gets smarter, it needs to guarantee:
+
+- Pregame logic is not seeing postgame data
+- ETL runs can be trusted and inspected
+- Metrics mean the same thing across BigQuery, Python, API logic, and frontend labels
+
+## Core Rule
+
+Metric categories should be defined once and reused everywhere.
+
+The API should not rely on slightly different category labels across:
+
+- BigQuery views
+- Python config
+- metric descriptions
+- Core Area logic
+- frontend display labels
+
+## Product Impact
+
+If metric categories are inconsistent, GameLens can accidentally tell the wrong story.
+
+Example risk:
+
+- A pressure metric gets grouped under Defensive Control
+- A scoring metric gets duplicated under Offensive Output
+- A Special Teams metric appears when there is no usable data
+- Core Area Advantage says one thing while Game Profile Signals imply another
+
+## Final Note
+
+This is not flashy, but it is important.
+
+Before we tune the model, we should make sure the model is reading the same metric language everywhere.
+
+---
+
+# Updated GameLens Priority Order
+
+1. Pregame / Postgame Data Separation
+
+2. ETL Observability / Run Logging
+
+3. Outcome Quality Labels
+
+4. Postgame Swing Factors
+
+5. Pregame Profile Weights
+
+6. Recent Form / Rolling Window Sanity Check
+
+7. Game Context Flags
+
+8. Margin-Aware Confidence Calibration
+
+9. Team Comparison Formatting / Tooltip Polish
+
+10. Auth Polish / Session UX
+
+11. League-Relative Core Area Scoring
+
+12. Historical Validation Dashboard
 
 Reasoning:
 
