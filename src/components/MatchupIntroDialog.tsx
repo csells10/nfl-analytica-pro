@@ -85,6 +85,9 @@ export function resetMatchupIntro() {
   } catch {
     /* ignore */
   }
+  // Also clear per-section guide dismissals so the section-guided variant
+  // re-shows immediately on reset.
+  clearAllSectionGuideDismissals();
   window.dispatchEvent(
     new CustomEvent<MatchupIntroVariant>(INTRO_REOPEN_EVENT, { detail: current }),
   );
