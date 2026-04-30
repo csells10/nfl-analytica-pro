@@ -39,8 +39,13 @@ function isVariant(v: string | null): v is MatchupIntroVariant {
   return (
     v === "compact-coach-mark" ||
     v === "step-mini-guide" ||
-    v === "inline-welcome-banner"
+    v === "inline-welcome-banner" ||
+    v === "section-guided-onboarding"
   );
+}
+
+export function isSectionGuidedVariant(): boolean {
+  return resolveVariant() === "section-guided-onboarding";
 }
 
 function resolveVariant(): MatchupIntroVariant {
