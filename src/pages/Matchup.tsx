@@ -1206,6 +1206,14 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
 
       {/* ── Model Trust & Outcome ── only for finalized games ── */}
       {(header.game_status === "Final" || header.game_status === "Final/OT") && details.model_outcome && (
+        <SectionGuide
+          enabled={sectionGuidesOn}
+          sectionKey="model-trust"
+          title="Model Trust / Outcome"
+          body="After the game, Model Trust reviews whether the model was right, close, or missed — and why."
+        />
+      )}
+      {(header.game_status === "Final" || header.game_status === "Final/OT") && details.model_outcome && (
         <ModelTrustCard
           outcome={details.model_outcome}
           lean={matchup_lean}
