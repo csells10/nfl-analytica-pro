@@ -1387,6 +1387,12 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           </CardContent>
         </Card>
       )}
+      <SectionSpotlightTour
+        open={tourOpen}
+        steps={tourSteps}
+        onClose={markTourSeenAndClose}
+        onComplete={markTourSeenAndClose}
+      />
     </>
   );
 }
