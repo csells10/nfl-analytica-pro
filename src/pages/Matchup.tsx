@@ -1258,8 +1258,8 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
               </span>
             </div>
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex-1 space-y-2">
+            <div className="space-y-3">
+              <div className="space-y-2">
                 {matchup_lean.target_team && (
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
@@ -1287,7 +1287,6 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                 )}
               </div>
               <MatchupReadBlock lean={matchup_lean} />
-
             </div>
           </CardContent>
         </Card>
