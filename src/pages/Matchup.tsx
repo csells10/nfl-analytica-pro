@@ -956,7 +956,7 @@ function MatchupReadBlock({ lean }: { lean: NonNullable<GameDetails["matchup_lea
           )}
           {outcomeChip && (
             <InfoTip label="How confident the model is in the actual outcome.">
-              <span className={chipBase}>{outcomeChip}</span>
+              <span className={chipBase}>{confidenceChipLabel(outcomeChip)}</span>
             </InfoTip>
           )}
         </div>
@@ -970,7 +970,7 @@ function MatchupReadBlock({ lean }: { lean: NonNullable<GameDetails["matchup_lea
           )}
           {outcomeSummary && (
             <p className="text-[12px] leading-snug text-muted-foreground/85">
-              <span className="font-semibold text-foreground/80">Outcome:</span> {outcomeSummary}
+              <span className="font-semibold text-foreground/80">Confidence:</span> {outcomeSummary}
             </p>
           )}
         </div>
@@ -978,7 +978,7 @@ function MatchupReadBlock({ lean }: { lean: NonNullable<GameDetails["matchup_lea
       {cautions.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">
-            Cautions
+            Why cautious
           </span>
           {cautions.map((c, i) => (
             <span key={i} className={cautionChip}>
