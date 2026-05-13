@@ -559,7 +559,7 @@ function ModelTrustCard({
           <h3 className="text-sm font-semibold tracking-tight text-foreground">Model Trust &amp; Outcome</h3>
         </div>
 
-        {/* 1. Result + Confidence (inline) */}
+        {/* Result */}
         <div className="flex flex-wrap items-center justify-center gap-2">
           <div
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${tone.chipBg} ${tone.chipBorder} ring-1 ${tone.ring} ${tone.glow}`}
@@ -567,16 +567,6 @@ function ModelTrustCard({
             <Icon className={`h-4 w-4 ${tone.text}`} strokeWidth={2.75} aria-hidden="true" />
             <span className={`text-sm font-bold leading-none tracking-tight ${tone.text}`}>{result}</span>
           </div>
-          {lean?.confidence && (
-            <InfoTip label={confidenceTooltip(lean.confidence)}>
-              <span
-                className={`inline-flex cursor-help items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${confStyle.bg} ${confStyle.border} ${confStyle.text}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${confStyle.dot}`} />
-                {lean.confidence} Confidence
-              </span>
-            </InfoTip>
-          )}
         </div>
 
         {/* 2. Predicted vs Actual (compact) */}
