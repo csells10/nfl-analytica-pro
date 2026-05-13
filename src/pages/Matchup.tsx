@@ -542,9 +542,6 @@ function ModelTrustCard({
   const fallbackWinnerTeam =
     fallbackWinnerSide === "away" ? awayTeam : fallbackWinnerSide === "home" ? homeTeam : null;
 
-  const tier = classifyConfidence(lean?.confidence);
-  const confStyle = CONFIDENCE_STYLE[tier];
-
   // Backend authoritative: only show when matchup_advantage exists, visible !== false,
   // and at least one side has an explicit numeric value (do not invent 0–0).
   const showAdvantage = advantageFromBackend
