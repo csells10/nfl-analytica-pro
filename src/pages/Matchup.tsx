@@ -850,6 +850,119 @@ function confidenceTooltip(level: string): string {
   return "Model confidence in this matchup.";
 }
 
+// ── v1.6 Matchup Read block: Profile + Outcome chips with graceful fallback ──
+function cautionText(c: NonNullable<NonNullable<GameDetails["matchup_lean"]>["matchup_cautions"]>[number]): string | null {
+  if (typeof c === "string") return c.trim() || null;
+  if (c && typeof c === "object") return (c.text || c.label || "").trim() || null;
+  return null;
+}
+
+function MatchupReadBlock({ lean }: { lean: NonNullable<GameDetails["matchup_lean"]> }) {
+  const profileLabel = lean.profile_strength?.label?.trim() || null;
+  const outcomeLabel = lean.outcome_confidence?.label?.trim() || null;
+  const profileSummary = lean.profile_strength?.summary?.trim() || null;
+  const outcomeSummary = lean.outcome_confidence?.summary?.trim() || null;
+  const matchupLabel = lean.matchup_label?.trim() || null;
+  const cautions = (lean.matchup_cautions ?? [])
+    .map(cautionText)
+    .filter((s): s is string => !!s);
+
+  // Resolve the two chips with fallback chain.
+  let profileChip: string | null = profileLabel;
+  let outcomeChip: string | null = outcomeLabel;
+  let singleChip: string | null = null;
+
+  if (!profileChip && !outcomeChip && matchupLabel) {
+    if (matchupLabel.includes(" / ")) {
+      const [a, b] = matchupLabel.split(" / ").map((s) => s.trim());
+      profileChip = a || null;
+      outcomeChip = b || null;
+    } else {
+      singleChip = matchupLabel;
+    }
+  }
+
+  const hasNewRead = !!(profileChip || outcomeChip || singleChip || profileSummary || outcomeSummary || cautions.length);
+
+  // Legacy fallback: render the original Confidence pill exactly as before.
+  if (!hasNewRead) {
+    if (!lean.confidence) return null;
+    return (
+      <div className="flex items-center gap-2 pt-1">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+          Confidence
+        </span>
+        <InfoTip label={confidenceTooltip(lean.confidence)}>
+          <span className="rounded-full border border-accent-cool/40 bg-accent-cool/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+            {lean.confidence}
+          </span>
+        </InfoTip>
+      </div>
+    );
+  }
+
+  const chipBase =
+    "inline-flex items-center rounded-full border border-accent-cool/40 bg-accent-cool/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground";
+  const cautionChip =
+    "inline-flex items-center rounded-full border border-border/70 bg-muted/30 px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground/90";
+
+  return (
+    <div className="rounded-md border border-border/60 bg-muted/10 px-3 py-2.5 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+          Matchup Read
+        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {singleChip && (
+            <InfoTip label="Backend matchup read.">
+              <span className={chipBase}>{singleChip}</span>
+            </InfoTip>
+          )}
+          {profileChip && (
+            <InfoTip label="How clean the matchup profile looks.">
+              <span className={chipBase}>{profileChip}</span>
+            </InfoTip>
+          )}
+          {profileChip && outcomeChip && (
+            <span className="text-[11px] text-muted-foreground/50">/</span>
+          )}
+          {outcomeChip && (
+            <InfoTip label="How confident the model is in the actual outcome.">
+              <span className={chipBase}>{outcomeChip}</span>
+            </InfoTip>
+          )}
+        </div>
+      </div>
+      {(profileSummary || outcomeSummary) && (
+        <div className="space-y-1">
+          {profileSummary && (
+            <p className="text-[12px] leading-snug text-muted-foreground/85">
+              <span className="font-semibold text-foreground/80">Profile:</span> {profileSummary}
+            </p>
+          )}
+          {outcomeSummary && (
+            <p className="text-[12px] leading-snug text-muted-foreground/85">
+              <span className="font-semibold text-foreground/80">Outcome:</span> {outcomeSummary}
+            </p>
+          )}
+        </div>
+      )}
+      {cautions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">
+            Cautions
+          </span>
+          {cautions.map((c, i) => (
+            <span key={i} className={cautionChip}>
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function formatStatGap(away: number | null | undefined, home: number | null | undefined): string | null {
   if (away == null || home == null || !isFinite(away) || !isFinite(home)) return null;
   if (away === home) return null;
@@ -1258,8 +1371,8 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
               </span>
             </div>
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex-1 space-y-2">
+            <div className="space-y-3">
+              <div className="space-y-2">
                 {matchup_lean.target_team && (
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
@@ -1286,16 +1399,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                   </p>
                 )}
               </div>
-              {matchup_lean.confidence && (
-                <div className="flex shrink-0 items-center gap-2 sm:pt-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                    Confidence
-                  </span>
-                  <span className="rounded-full border border-accent-cool/40 bg-accent-cool/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
-                    {matchup_lean.confidence}
-                  </span>
-                </div>
-              )}
+              <MatchupReadBlock lean={matchup_lean} />
             </div>
           </CardContent>
         </Card>
