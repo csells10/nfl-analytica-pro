@@ -1286,16 +1286,8 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                   </p>
                 )}
               </div>
-              {matchup_lean.confidence && (
-                <div className="flex shrink-0 items-center gap-2 sm:pt-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                    Confidence
-                  </span>
-                  <span className="rounded-full border border-accent-cool/40 bg-accent-cool/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
-                    {matchup_lean.confidence}
-                  </span>
-                </div>
-              )}
+              <MatchupReadBlock lean={matchup_lean} />
+
             </div>
           </CardContent>
         </Card>
