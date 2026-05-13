@@ -687,15 +687,15 @@ function ModelTrustCard({
             <CollapsibleTrigger className="group flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 transition-colors hover:text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <Info className="h-3 w-3" strokeWidth={2.25} />
-                How reliable was the edge?
+                What supported or challenged the read?
               </span>
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 space-y-2.5 text-[12px] text-muted-foreground/80">
               <div className="flex items-center justify-between">
-                <InfoTip label={modelTrust?.edge?.description ?? "How strongly the comparison metrics point in one direction. This is separate from model confidence."}>
+                <InfoTip label="How lopsided the visible Team Comparison stats are. Edge strength only — not overall confidence.">
                   <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                    Metric Agreement
+                    Team Comparison Support
                   </span>
                 </InfoTip>
                 <span className="font-semibold text-foreground/90">{edgeStrength}</span>
@@ -703,9 +703,9 @@ function ModelTrustCard({
               {signalAlignments.length > 0 && (
                 <div>
                   <div className="mb-1.5 flex items-center justify-between">
-                    <InfoTip label="Whether each key signal favored the predicted team or the opponent.">
+                    <InfoTip label="Whether each Game Profile signal, such as Pressure, Turnover Risk, and Scoring Efficiency, tilted toward the predicted team.">
                       <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
-                        Signal Alignment
+                        Game Profile Signals
                       </span>
                     </InfoTip>
                     {alignmentSummaryText && (
