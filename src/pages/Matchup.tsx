@@ -851,10 +851,38 @@ function confidenceTooltip(level: string): string {
 }
 
 // ── v1.6 Matchup Read block: Profile + Outcome chips with graceful fallback ──
-function cautionText(c: NonNullable<NonNullable<GameDetails["matchup_lean"]>["matchup_cautions"]>[number]): string | null {
-  if (typeof c === "string") return c.trim() || null;
-  if (c && typeof c === "object") return (c.text || c.label || "").trim() || null;
-  return null;
+
+const CAUTION_LABEL_MAP: Record<string, string> = {
+  core_area_gap_is_small: "Core areas are close",
+  core_areas_are_split: "Core areas are split",
+  core_areas_do_not_fully_confirm_lean: "Broader profile is mixed",
+  supporting_context_is_mixed_or_limited: "Supporting context is limited",
+};
+
+const HIDDEN_CAUTIONS = new Set(["strong_profile_does_not_guarantee_outcome"]);
+
+function cautionText(
+  c: NonNullable<NonNullable<GameDetails["matchup_lean"]>["matchup_cautions"]>[number],
+): string | null {
+  let raw: string | null = null;
+  if (typeof c === "string") raw = c.trim() || null;
+  else if (c && typeof c === "object") raw = (c.text || c.label || "").trim() || null;
+  if (!raw) return null;
+  if (HIDDEN_CAUTIONS.has(raw)) return null;
+  if (CAUTION_LABEL_MAP[raw]) return CAUTION_LABEL_MAP[raw];
+  // Fallback: snake_case → readable title case
+  return raw
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function confidenceChipLabel(label: string): string {
+  const short = label.trim();
+  if (/^(low|medium|moderate|high|very high|elevated|mixed)$/i.test(short)) {
+    return `${short} Confidence`;
+  }
+  return short;
 }
 
 function MatchupReadBlock({ lean }: { lean: NonNullable<GameDetails["matchup_lean"]> }) {
