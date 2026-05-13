@@ -217,6 +217,20 @@ export interface GameDetails {
       neutral_core_areas?: number | null;
       total_core_areas?: number | null;
     } | null;
+    // ── Backend v1.6 (additive, all optional): Profile vs Outcome split ──
+    profile_strength?: {
+      label?: string | null;
+      summary?: string | null;
+    } | null;
+    outcome_confidence?: {
+      label?: string | null;
+      summary?: string | null;
+    } | null;
+    matchup_label?: string | null;
+    matchup_cautions?: Array<
+      | string
+      | { text?: string | null; tone?: string | null; label?: string | null }
+    > | null;
   } | null;
   team_comparison: Array<{
     label: string;
