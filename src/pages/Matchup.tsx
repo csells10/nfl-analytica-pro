@@ -31,14 +31,9 @@ import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { MatchupSupportBadge } from "@/components/MatchupSupportBadge";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
 import { MatchupHelpDialog } from "@/components/MatchupHelpDialog";
-import {
-  MatchupIntroDialog,
-  isSectionGuidedVariant,
-  isSectionSpotlightVariant,
-  SECTION_SPOTLIGHT_TOUR_SEEN_KEY,
-} from "@/components/MatchupIntroDialog";
-import { MatchupIntroQASelector } from "@/components/MatchupIntroQASelector";
 import { SectionGuide } from "@/components/SectionGuide";
+
+const SECTION_SPOTLIGHT_TOUR_SEEN_KEY = "hasSeenMatchupSectionSpotlightTour";
 import { Layers, Compass, Columns } from "lucide-react";
 import SectionSpotlightTour, {
   type SpotlightTourStep,
@@ -1035,9 +1030,8 @@ export default function Matchup() {
   return (
     <AppShell>
       <MatchupHelpDialog />
-      <MatchupIntroDialog />
       <div className="mx-auto max-w-4xl pt-1 pb-8">
-        <MatchupIntroQASelector />
+
         <Button
           variant="ghost"
           size="sm"
@@ -1122,41 +1116,23 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
   const hasFinalScore = !!final_score;
   const coreAreaContextText = getCoreAreaContextText(matchup_lean?.core_area_context);
 
-  // QA-only: when the "Section Guided" intro variant is active, show
-  // per-section guidance instead of the page-level intro.
-  const [sectionGuidesOn, setSectionGuidesOn] = useState<boolean>(() => isSectionGuidedVariant());
-  // QA-only: spotlight tour. Open on first entry (or via QA Reset) when the
-  // `section-spotlight-tour` variant is active.
+  // Section-guided per-section guidance is currently disabled in production.
+  const [sectionGuidesOn] = useState<boolean>(false);
+  // Spotlight tour: auto-opens on first visit; re-opens any time the
+  // header "?" button dispatches `gamelens:open-guide`.
   const [tourOpen, setTourOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    const sync = () => {
-      setSectionGuidesOn(isSectionGuidedVariant());
-      // Reopen the tour if the user picked the spotlight variant or hit Reset.
-      if (isSectionSpotlightVariant()) {
-        try {
-          if (localStorage.getItem(SECTION_SPOTLIGHT_TOUR_SEEN_KEY) !== "true") {
-            setTourOpen(true);
-          }
-        } catch {
-          setTourOpen(true);
-        }
-      } else {
-        setTourOpen(false);
-      }
-    };
-    // Initial check on mount.
-    if (isSectionSpotlightVariant()) {
-      try {
-        if (localStorage.getItem(SECTION_SPOTLIGHT_TOUR_SEEN_KEY) !== "true") {
-          setTourOpen(true);
-        }
-      } catch {
+    try {
+      if (localStorage.getItem(SECTION_SPOTLIGHT_TOUR_SEEN_KEY) !== "true") {
         setTourOpen(true);
       }
+    } catch {
+      setTourOpen(true);
     }
-    window.addEventListener("gamelens:matchup-intro-reopen", sync);
-    return () => window.removeEventListener("gamelens:matchup-intro-reopen", sync);
+    const onOpenGuide = () => setTourOpen(true);
+    window.addEventListener("gamelens:open-guide", onOpenGuide);
+    return () => window.removeEventListener("gamelens:open-guide", onOpenGuide);
   }, []);
 
   const markTourSeenAndClose = () => {
