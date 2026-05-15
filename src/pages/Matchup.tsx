@@ -1144,20 +1144,56 @@ function isUsableDriverLabel(s: string, parentLabel: string): boolean {
 
 type DriverTone = "moderate" | "elevated" | "neutral";
 
-function resolveDriverTone(
-  summary: string,
-  summaryLabel: string | null | undefined,
-): DriverTone {
-  const lbl = (summaryLabel ?? "").toLowerCase();
-  if (lbl) {
-    if (/\b(strong|clear|elevated|high)\b/.test(lbl)) return "elevated";
-    if (/\b(slight|moderate)\b/.test(lbl)) return "moderate";
-    if (/\b(neutral|even|no clear|mixed)\b/.test(lbl)) return "neutral";
+type ParentSignal =
+  | "Pressure"
+  | "Turnover Risk"
+  | "Scoring Efficiency"
+  | "Explosiveness"
+  | "Defensive Stability"
+  | "Tempo";
+
+const PARENT_SIGNAL_KEYWORDS: Array<{ signal: ParentSignal; pattern: RegExp }> = [
+  { signal: "Pressure", pattern: /\b(pressure|pass rush|sack|qb hit|hurry|blitz)\b/ },
+  { signal: "Turnover Risk", pattern: /\b(turnover|takeaway|giveaway|interception|int rate|fumble)\b/ },
+  {
+    signal: "Scoring Efficiency",
+    pattern: /\b(scoring|red zone|red-zone|drive conversion|points per drive|offensive rhythm|passing game|third down|3rd down|goal[- ]to[- ]go)\b/,
+  },
+  { signal: "Explosiveness", pattern: /\b(explosive|big play|yards per play|ypp|chunk)\b/ },
+  {
+    signal: "Defensive Stability",
+    pattern: /\b(run defense|rush defense|yards allowed|defensive efficiency|epa allowed)\b/,
+  },
+  { signal: "Tempo", pattern: /\b(tempo|pace|seconds per play|plays per game)\b/ },
+];
+
+function mapToParentSignal(name: string, driverLabels: string[]): ParentSignal | null {
+  const candidates = [name, ...driverLabels.slice(0, 2)]
+    .map((s) => (s ?? "").toLowerCase().trim())
+    .filter(Boolean);
+  for (const c of candidates) {
+    for (const { signal, pattern } of PARENT_SIGNAL_KEYWORDS) {
+      if (pattern.test(c)) return signal;
+    }
   }
-  const s = summary.toLowerCase();
-  if (/\bneutral\b|\beven\b|no clear|\bmixed\b/.test(s)) return "neutral";
-  if (/slightly leans|\bslight lean\b/.test(s)) return "moderate";
-  if (/leans toward|\bclear lean\b|\bstrong lean\b/.test(s)) return "elevated";
+  return null;
+}
+
+function toneFromParentLevel(
+  gameProfile: GameDetails["game_profile"],
+  parent: ParentSignal | null,
+): DriverTone {
+  if (!parent || !gameProfile) return "neutral";
+  const parentKeywords = PARENT_SIGNAL_KEYWORDS.find((k) => k.signal === parent)?.pattern;
+  if (!parentKeywords) return "neutral";
+  const tile = gameProfile.find((row) => {
+    const cat = (row?.category ?? "").toLowerCase();
+    return cat === parent.toLowerCase() || parentKeywords.test(cat);
+  });
+  if (!tile) return "neutral";
+  const level = (tile.level ?? "").toLowerCase();
+  if (/\b(elevated|high)\b/.test(level)) return "elevated";
+  if (/\bmoderate\b/.test(level)) return "moderate";
   return "neutral";
 }
 
@@ -1169,8 +1205,10 @@ const TONE_CLASSES: Record<DriverTone, { border: string; label: string }> = {
 
 function ProfileDrivers({
   summaries,
+  gameProfile,
 }: {
   summaries: NonNullable<NonNullable<GameDetails["matchup_breakdown"]>["category_summaries"]>;
+  gameProfile: GameDetails["game_profile"];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -1178,8 +1216,6 @@ function ProfileDrivers({
     .map((s) => {
       const label = (s?.name ?? s?.category ?? "").trim();
       const summary = (s?.summary ?? "").trim();
-      const summaryLabel = (s as { summary_label?: string | null })?.summary_label ?? null;
-      const tone = resolveDriverTone(summary, summaryLabel);
       const rawDrivers = Array.isArray(s?.drivers) ? s!.drivers! : [];
       const keyInputs: string[] = [];
       const seen = new Set<string>();
@@ -1193,6 +1229,8 @@ function ProfileDrivers({
         keyInputs.push(candidate);
         if (keyInputs.length >= 2) break;
       }
+      const parent = mapToParentSignal(label, keyInputs);
+      const tone = toneFromParentLevel(gameProfile, parent);
       return { label, summary, tone, keyInputs };
     })
     .filter((it) => it.summary && isUsableDriverSummary(it.summary))
@@ -1462,7 +1500,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
               })}
             </div>
             {details.matchup_breakdown?.category_summaries && details.matchup_breakdown.category_summaries.length > 0 && (
-              <ProfileDrivers summaries={details.matchup_breakdown.category_summaries} />
+              <ProfileDrivers summaries={details.matchup_breakdown.category_summaries} gameProfile={game_profile} />
             )}
           </CardContent>
         </Card>
