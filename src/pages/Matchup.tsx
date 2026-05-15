@@ -1129,6 +1129,44 @@ function isUsableDriverSummary(s: string): boolean {
   return !PROFILE_DRIVERS_BLOCKLIST.some((phrase) => lower.includes(phrase));
 }
 
+function isUsableDriverLabel(s: string, parentLabel: string): boolean {
+  const trimmed = s.trim();
+  if (!trimmed || trimmed.length > 40) return false;
+  if (trimmed.includes("_")) return false;
+  if (trimmed.toLowerCase() === parentLabel.trim().toLowerCase()) return false;
+  const lower = trimmed.toLowerCase();
+  if (PROFILE_DRIVERS_BLOCKLIST.some((p) => lower.includes(p))) return false;
+  // Must look like a human phrase: contains a space OR an uppercase past index 0.
+  const hasSpace = /\s/.test(trimmed);
+  const hasMidUpper = /[A-Z]/.test(trimmed.slice(1));
+  return hasSpace || hasMidUpper;
+}
+
+type DriverTone = "moderate" | "elevated" | "neutral";
+
+function resolveDriverTone(
+  summary: string,
+  summaryLabel: string | null | undefined,
+): DriverTone {
+  const lbl = (summaryLabel ?? "").toLowerCase();
+  if (lbl) {
+    if (/\b(strong|clear|elevated|high)\b/.test(lbl)) return "elevated";
+    if (/\b(slight|moderate)\b/.test(lbl)) return "moderate";
+    if (/\b(neutral|even|no clear|mixed)\b/.test(lbl)) return "neutral";
+  }
+  const s = summary.toLowerCase();
+  if (/\bneutral\b|\beven\b|no clear|\bmixed\b/.test(s)) return "neutral";
+  if (/slightly leans|\bslight lean\b/.test(s)) return "moderate";
+  if (/leans toward|\bclear lean\b|\bstrong lean\b/.test(s)) return "elevated";
+  return "neutral";
+}
+
+const TONE_CLASSES: Record<DriverTone, { border: string; label: string }> = {
+  moderate: { border: "border-level-moderate/60", label: "text-level-moderate/90" },
+  elevated: { border: "border-level-elevated/60", label: "text-level-elevated/90" },
+  neutral: { border: "border-border/50", label: "text-foreground/75" },
+};
+
 function ProfileDrivers({
   summaries,
 }: {
@@ -1140,7 +1178,22 @@ function ProfileDrivers({
     .map((s) => {
       const label = (s?.name ?? s?.category ?? "").trim();
       const summary = (s?.summary ?? "").trim();
-      return { label, summary };
+      const summaryLabel = (s as { summary_label?: string | null })?.summary_label ?? null;
+      const tone = resolveDriverTone(summary, summaryLabel);
+      const rawDrivers = Array.isArray(s?.drivers) ? s!.drivers! : [];
+      const keyInputs: string[] = [];
+      const seen = new Set<string>();
+      for (const d of rawDrivers) {
+        if (typeof d === "string") continue;
+        const candidate = (d?.label ?? "").trim();
+        if (!candidate || !isUsableDriverLabel(candidate, label)) continue;
+        const key = candidate.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        keyInputs.push(candidate);
+        if (keyInputs.length >= 2) break;
+      }
+      return { label, summary, tone, keyInputs };
     })
     .filter((it) => it.summary && isUsableDriverSummary(it.summary))
     .slice(0, 4);
@@ -1153,7 +1206,7 @@ function ProfileDrivers({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-md py-1.5 text-left text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+        className="flex w-full items-center justify-between gap-2 rounded-md py-1.5 text-left text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground outline-none focus-visible:ring-1 focus-visible:ring-muted-foreground/40"
       >
         <span>What&rsquo;s shaping this matchup</span>
         <ChevronDown
@@ -1166,19 +1219,27 @@ function ProfileDrivers({
           <p className="mb-3 text-[11px] text-muted-foreground/70">
             Context behind the signals above.
           </p>
-          <ul className="space-y-3 border-l border-border/40 pl-3">
-            {items.map((it, i) => (
-              <li key={`${it.label}-${i}`}>
-                {it.label && (
-                  <p className="text-[11px] uppercase tracking-[0.1em] text-foreground/75">
-                    {it.label}
+          <ul className="space-y-3">
+            {items.map((it, i) => {
+              const tc = TONE_CLASSES[it.tone];
+              return (
+                <li key={`${it.label}-${i}`} className={`border-l-2 pl-3 ${tc.border}`}>
+                  {it.label && (
+                    <p className={`text-[11px] uppercase tracking-[0.1em] ${tc.label}`}>
+                      {it.label}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
+                    {it.summary}
                   </p>
-                )}
-                <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
-                  {it.summary}
-                </p>
-              </li>
-            ))}
+                  {it.keyInputs.length > 0 && (
+                    <p className="mt-1 text-[11.5px] text-muted-foreground/80">
+                      Key inputs: {it.keyInputs.join(", ")}.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
