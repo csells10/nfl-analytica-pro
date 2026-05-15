@@ -304,6 +304,26 @@ export interface GameDetails {
     } | null;
     learning_label?: string | { text?: string | null; tone?: string | null } | null;
   } | null;
+  // Backend (additive, optional). Surfaced as a small "What's shaping this matchup"
+  // subsection inside the Game Profile card. `drivers` is typed for completeness
+  // but is NOT rendered in v1.7.7. `claim_language_context` (if present in the
+  // payload) is intentionally not typed and never rendered.
+  matchup_breakdown?: {
+    category_summaries?: Array<{
+      name?: string | null;
+      category?: string | null;
+      summary?: string | null;
+      drivers?: Array<
+        | string
+        | {
+            sentence?: string | null;
+            label?: string | null;
+            gap?: string | null;
+            team?: string | null;
+          }
+      > | null;
+    }> | null;
+  } | null;
 }
 
 async function fetchGameDetails(gameId: string): Promise<GameDetails> {
