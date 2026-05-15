@@ -1107,6 +1107,85 @@ function getCoreAreaContextText(
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// Profile drivers — "What's shaping this matchup"
+// Small collapsed subsection rendered inside the Game Profile card.
+// UI-only: filters & wording happen here; never alters backend data.
+// ─────────────────────────────────────────────────────────────
+
+const PROFILE_DRIVERS_BLOCKLIST = [
+  "should win",
+  "will win",
+  "will cover",
+  "lock",
+  "best bet",
+  "guaranteed",
+];
+
+function isUsableDriverSummary(s: string): boolean {
+  const trimmed = s.trim();
+  if (!trimmed) return false;
+  const lower = trimmed.toLowerCase();
+  return !PROFILE_DRIVERS_BLOCKLIST.some((phrase) => lower.includes(phrase));
+}
+
+function ProfileDrivers({
+  summaries,
+}: {
+  summaries: NonNullable<NonNullable<GameDetails["matchup_breakdown"]>["category_summaries"]>;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const items = summaries
+    .map((s) => {
+      const label = (s?.name ?? s?.category ?? "").trim();
+      const summary = (s?.summary ?? "").trim();
+      return { label, summary };
+    })
+    .filter((it) => it.summary && isUsableDriverSummary(it.summary))
+    .slice(0, 4);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mt-5 border-t border-border/40 pt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 rounded-md py-1.5 text-left text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+      >
+        <span>What&rsquo;s shaping this matchup</span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+      {open && (
+        <div className="mt-2">
+          <p className="mb-3 text-[11px] text-muted-foreground/70">
+            Context behind the signals above.
+          </p>
+          <ul className="space-y-3 border-l border-border/40 pl-3">
+            {items.map((it, i) => (
+              <li key={`${it.label}-${i}`}>
+                {it.label && (
+                  <p className="text-[11px] uppercase tracking-[0.1em] text-foreground/75">
+                    {it.label}
+                  </p>
+                )}
+                <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
+                  {it.summary}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: string }) {
   const { header, final_score, game_profile, matchup_lean, team_comparison } = details;
   const awayTeam = teamFromApi(header.away_team);
