@@ -31,14 +31,9 @@ import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { MatchupSupportBadge } from "@/components/MatchupSupportBadge";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
 import { MatchupHelpDialog } from "@/components/MatchupHelpDialog";
-import {
-  MatchupIntroDialog,
-  isSectionGuidedVariant,
-  isSectionSpotlightVariant,
-  SECTION_SPOTLIGHT_TOUR_SEEN_KEY,
-} from "@/components/MatchupIntroDialog";
-import { MatchupIntroQASelector } from "@/components/MatchupIntroQASelector";
 import { SectionGuide } from "@/components/SectionGuide";
+
+const SECTION_SPOTLIGHT_TOUR_SEEN_KEY = "hasSeenMatchupSectionSpotlightTour";
 import { Layers, Compass, Columns } from "lucide-react";
 import SectionSpotlightTour, {
   type SpotlightTourStep,
