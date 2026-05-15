@@ -1482,7 +1482,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                 return (
                   <div
                     key={r.label}
-                    className={`-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md py-3 transition-all duration-150 hover:bg-muted/40 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.12)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)] ${rowSideCls}`}
+                    className={`-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-all duration-150 hover:bg-muted/40 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.12)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)] ${rowBgCls}`}
                   >
                     <div className={`flex flex-wrap items-center justify-start gap-x-2 gap-y-1 text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
                       <span>{formatNumber(r.away, r.label)}</span>
