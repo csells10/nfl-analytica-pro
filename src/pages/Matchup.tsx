@@ -1474,15 +1474,18 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                 const winnerAbbr =
                   adv === "away" ? awayTeam.abbr : adv === "home" ? homeTeam.abbr : null;
                 const rowBgCls = supportAllowed
-                  ? "bg-[hsl(var(--accent-cool)/0.04)] dark:bg-[hsl(var(--accent-cool)/0.07)]"
+                  ? "bg-[hsl(var(--accent-cool)/0.03)] dark:bg-[hsl(var(--accent-cool)/0.05)]"
                   : "";
+                const rowHoverCls = supportAllowed
+                  ? "hover:bg-muted/30"
+                  : "hover:bg-muted/40 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.12)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]";
                 const labelCls = supportAllowed
                   ? "text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/80"
                   : "text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
                 return (
                   <div
                     key={r.label}
-                    className={`-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-all duration-150 hover:bg-muted/40 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.12)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)] ${rowBgCls}`}
+                    className={`-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-all duration-150 ${rowHoverCls} ${rowBgCls}`}
                   >
                     <div className={`flex flex-wrap items-center justify-start gap-x-2 gap-y-1 text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
                       <span>{formatNumber(r.away, r.label)}</span>
