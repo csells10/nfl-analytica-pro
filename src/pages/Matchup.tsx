@@ -1030,9 +1030,8 @@ export default function Matchup() {
   return (
     <AppShell>
       <MatchupHelpDialog />
-      <MatchupIntroDialog />
       <div className="mx-auto max-w-4xl pt-1 pb-8">
-        <MatchupIntroQASelector />
+
         <Button
           variant="ghost"
           size="sm"
