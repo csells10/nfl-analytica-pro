@@ -28,6 +28,7 @@ import {
 import { useGameDetails, userMessageForError, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
+import { MatchupSupportBadge } from "@/components/MatchupSupportBadge";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
 import { MatchupHelpDialog } from "@/components/MatchupHelpDialog";
 import {
@@ -1499,9 +1500,12 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                     <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
                       {formatNumber(r.away, r.label)}
                     </span>
-                    <span className="px-3 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      {r.label}
-                    </span>
+                    <div className="flex flex-col items-center gap-1 px-3">
+                      <span className="text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        {r.label}
+                      </span>
+                      <MatchupSupportBadge allowed={r.language_support?.language_boost_allowed} />
+                    </div>
                     <span className={`text-right font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("home")}`}>
                       {formatNumber(r.home, r.label)}
                     </span>
