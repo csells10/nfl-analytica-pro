@@ -1400,6 +1400,9 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                 );
               })}
             </div>
+            {details.matchup_breakdown?.category_summaries && details.matchup_breakdown.category_summaries.length > 0 && (
+              <ProfileDrivers summaries={details.matchup_breakdown.category_summaries} />
+            )}
           </CardContent>
         </Card>
       )}
