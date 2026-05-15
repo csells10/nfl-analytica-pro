@@ -1230,13 +1230,67 @@ function ProfileDrivers({
         if (keyInputs.length >= 2) break;
       }
       const parent = mapToParentSignal(label, keyInputs);
-      const tone = toneFromParentLevel(gameProfile, parent);
-      return { label, summary, tone, keyInputs };
+      return { label, summary, parent, keyInputs };
     })
     .filter((it) => it.summary && isUsableDriverSummary(it.summary))
-    .slice(0, 4);
+    .slice(0, 6);
 
   if (items.length === 0) return null;
+
+  // Build groups in first-seen order. Unmapped rows (or rows whose parent
+  // tile is missing from game_profile) collect into "Other matchup context".
+  type GroupKey = ParentSignal | "__other__";
+  const groupOrder: GroupKey[] = [];
+  const groupMap = new Map<
+    GroupKey,
+    {
+      key: GroupKey;
+      parent: ParentSignal | null;
+      tone: DriverTone;
+      level: string;
+      tiltText: string;
+      rows: typeof items;
+    }
+  >();
+
+  const findTile = (parent: ParentSignal | null) => {
+    if (!parent || !gameProfile) return null;
+    const pat = PARENT_SIGNAL_KEYWORDS.find((k) => k.signal === parent)?.pattern;
+    return (
+      gameProfile.find((row) => {
+        const cat = (row?.category ?? "").toLowerCase();
+        return cat === parent.toLowerCase() || (pat ? pat.test(cat) : false);
+      }) ?? null
+    );
+  };
+
+  for (const it of items) {
+    const tile = findTile(it.parent);
+    const key: GroupKey = it.parent && tile ? it.parent : "__other__";
+    if (!groupMap.has(key)) {
+      groupOrder.push(key);
+      const tone =
+        key === "__other__" ? "neutral" : toneFromParentLevel(gameProfile, it.parent);
+      groupMap.set(key, {
+        key,
+        parent: key === "__other__" ? null : (it.parent as ParentSignal),
+        tone,
+        level: key === "__other__" ? "" : (tile?.level ?? "").trim(),
+        tiltText:
+          key === "__other__"
+            ? ""
+            : ((tile?.tilt_text ?? tile?.tilt ?? "") as string).trim(),
+        rows: [],
+      });
+    }
+    groupMap.get(key)!.rows.push(it);
+  }
+
+  const groups = groupOrder
+    .map((k) => groupMap.get(k)!)
+    .filter((g) => g.rows.length > 0);
+
+  if (groups.length === 0) return null;
 
   return (
     <div className="mt-5 border-t border-border/40 pt-3">
@@ -1257,28 +1311,55 @@ function ProfileDrivers({
           <p className="mb-3 text-[11px] text-muted-foreground/70">
             Context behind the signals above.
           </p>
-          <ul className="space-y-3">
-            {items.map((it, i) => {
-              const tc = TONE_CLASSES[it.tone];
+          <div className="space-y-4">
+            {groups.map((g, gi) => {
+              const tc = TONE_CLASSES[g.tone];
+              const headerLabel =
+                g.key === "__other__" ? "Other matchup context" : (g.parent as string);
+              const subLine =
+                g.key === "__other__"
+                  ? ""
+                  : [g.level, g.tiltText].filter(Boolean).join(" · ");
               return (
-                <li key={`${it.label}-${i}`} className={`border-l-2 pl-3 ${tc.border}`}>
-                  {it.label && (
-                    <p className={`text-[11px] uppercase tracking-[0.1em] ${tc.label}`}>
-                      {it.label}
-                    </p>
-                  )}
-                  <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
-                    {it.summary}
+                <div
+                  key={`${String(g.key)}-${gi}`}
+                  className={`border-l-2 pl-3 ${tc.border}`}
+                >
+                  <p
+                    className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${
+                      g.key === "__other__" ? "text-foreground/70" : tc.label
+                    }`}
+                  >
+                    {headerLabel}
                   </p>
-                  {it.keyInputs.length > 0 && (
-                    <p className="mt-1 text-[11.5px] text-muted-foreground/80">
-                      Key inputs: {it.keyInputs.join(", ")}.
+                  {subLine && (
+                    <p className="mt-0.5 text-[11.5px] text-muted-foreground/80">
+                      {subLine}
                     </p>
                   )}
-                </li>
+                  <ul className="mt-2 space-y-2.5">
+                    {g.rows.map((it, i) => (
+                      <li key={`${it.label}-${i}`}>
+                        {it.label && (
+                          <p className="text-[11px] uppercase tracking-[0.08em] text-foreground/70">
+                            {it.label}
+                          </p>
+                        )}
+                        <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
+                          {it.summary}
+                        </p>
+                        {it.keyInputs.length > 0 && (
+                          <p className="mt-1 text-[11.5px] text-muted-foreground/80">
+                            Key inputs: {it.keyInputs.join(", ")}.
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               );
             })}
-          </ul>
+          </div>
         </div>
       )}
     </div>
