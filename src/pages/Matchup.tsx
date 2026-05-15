@@ -1205,8 +1205,10 @@ const TONE_CLASSES: Record<DriverTone, { border: string; label: string }> = {
 
 function ProfileDrivers({
   summaries,
+  gameProfile,
 }: {
   summaries: NonNullable<NonNullable<GameDetails["matchup_breakdown"]>["category_summaries"]>;
+  gameProfile: GameDetails["game_profile"];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -1214,8 +1216,6 @@ function ProfileDrivers({
     .map((s) => {
       const label = (s?.name ?? s?.category ?? "").trim();
       const summary = (s?.summary ?? "").trim();
-      const summaryLabel = (s as { summary_label?: string | null })?.summary_label ?? null;
-      const tone = resolveDriverTone(summary, summaryLabel);
       const rawDrivers = Array.isArray(s?.drivers) ? s!.drivers! : [];
       const keyInputs: string[] = [];
       const seen = new Set<string>();
@@ -1229,6 +1229,8 @@ function ProfileDrivers({
         keyInputs.push(candidate);
         if (keyInputs.length >= 2) break;
       }
+      const parent = mapToParentSignal(label, keyInputs);
+      const tone = toneFromParentLevel(gameProfile, parent);
       return { label, summary, tone, keyInputs };
     })
     .filter((it) => it.summary && isUsableDriverSummary(it.summary))
