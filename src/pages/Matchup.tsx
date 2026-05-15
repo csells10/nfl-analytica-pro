@@ -1492,23 +1492,31 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                     : adv === "even"
                     ? "text-foreground/75"
                     : "text-foreground/45";
+                const supportAllowed = r.language_support?.language_boost_allowed === true;
+                const showAwayBadge = supportAllowed && adv === "away";
+                const showHomeBadge = supportAllowed && adv === "home";
+                const winnerAbbr =
+                  adv === "away" ? awayTeam.abbr : adv === "home" ? homeTeam.abbr : null;
                 return (
                   <div
                     key={r.label}
                     className="-mx-2 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-md px-2 py-3 transition-all duration-150 hover:bg-muted/40 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.12)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]"
                   >
-                    <span className={`text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
-                      {formatNumber(r.away, r.label)}
-                    </span>
-                    <div className="flex flex-col items-center gap-1 px-3">
-                      <span className="text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        {r.label}
-                      </span>
-                      <MatchupSupportBadge allowed={r.language_support?.language_boost_allowed} />
+                    <div className={`flex flex-wrap items-center justify-start gap-x-2 gap-y-1 text-left font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("away")}`}>
+                      <span>{formatNumber(r.away, r.label)}</span>
+                      {showAwayBadge && (
+                        <MatchupSupportBadge allowed={supportAllowed} teamAbbr={winnerAbbr} />
+                      )}
                     </div>
-                    <span className={`text-right font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("home")}`}>
-                      {formatNumber(r.home, r.label)}
+                    <span className="text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      {r.label}
                     </span>
+                    <div className={`flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-right font-mono text-sm tabular-nums transition-colors duration-150 ${valueCls("home")}`}>
+                      {showHomeBadge && (
+                        <MatchupSupportBadge allowed={supportAllowed} teamAbbr={winnerAbbr} />
+                      )}
+                      <span>{formatNumber(r.home, r.label)}</span>
+                    </div>
                   </div>
                 );
               })}
