@@ -1029,7 +1029,7 @@ export default function Matchup() {
 
   return (
     <AppShell>
-      <MatchupHelpDialog />
+      
       <div className="mx-auto max-w-4xl pt-1 pb-8">
 
         <Button
