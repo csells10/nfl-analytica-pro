@@ -28,6 +28,7 @@ import {
 import { useGameDetails, userMessageForError, type GameDetails } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
+import { MatchupSupportBadge } from "@/components/MatchupSupportBadge";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
 import { MatchupHelpDialog } from "@/components/MatchupHelpDialog";
 import {
