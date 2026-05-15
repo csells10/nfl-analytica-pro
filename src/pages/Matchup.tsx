@@ -1473,17 +1473,9 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                 const showHomeBadge = supportAllowed && adv === "home";
                 const winnerAbbr =
                   adv === "away" ? awayTeam.abbr : adv === "home" ? homeTeam.abbr : null;
-                const supportedSide: "away" | "home" | null = supportAllowed
-                  ? adv === "away" || adv === "home"
-                    ? adv
-                    : null
-                  : null;
-                const rowSideCls =
-                  supportedSide === "away"
-                    ? "border-l-2 border-l-[hsl(var(--accent-cool)/0.45)] pl-[calc(0.5rem-2px)] pr-2"
-                    : supportedSide === "home"
-                    ? "border-r-2 border-r-[hsl(var(--accent-cool)/0.45)] pr-[calc(0.5rem-2px)] pl-2"
-                    : "px-2";
+                const rowBgCls = supportAllowed
+                  ? "bg-[hsl(var(--accent-cool)/0.04)] dark:bg-[hsl(var(--accent-cool)/0.07)]"
+                  : "";
                 const labelCls = supportAllowed
                   ? "text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/80"
                   : "text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
