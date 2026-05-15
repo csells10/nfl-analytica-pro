@@ -26,8 +26,9 @@ export function MatchupSupportBadge({
   const abbr = (teamAbbr ?? "").trim();
   if (!abbr) return null;
 
-  const label = `${abbr} edge supported`;
-  const tip = `${abbr} leads this stat, and other matchup signs support the same side. This does not guarantee the result.`;
+  const label = "Fits matchup";
+  const tip = "This stat edge lines up with the broader pregame matchup. It does not guarantee the result.";
+  void abbr;
 
   return (
     <Tooltip delayDuration={120}>
