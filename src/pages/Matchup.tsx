@@ -1476,9 +1476,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                 const rowBgCls = supportAllowed
                   ? "bg-[hsl(var(--accent-cool)/0.03)] dark:bg-[hsl(var(--accent-cool)/0.05)]"
                   : "";
-                const rowHoverCls = supportAllowed
-                  ? "hover:bg-muted/30"
-                  : "hover:bg-muted/40 hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.12)] dark:hover:bg-muted/40 dark:hover:shadow-[inset_0_0_0_1px_hsl(var(--accent-cool)/0.32)]";
+                const rowHoverCls = "hover:bg-muted/30";
                 const labelCls = supportAllowed
                   ? "text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/80"
                   : "text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
