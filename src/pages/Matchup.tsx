@@ -30,7 +30,7 @@ import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { MatchupSupportBadge } from "@/components/MatchupSupportBadge";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
-import { MatchupHelpDialog } from "@/components/MatchupHelpDialog";
+
 import { SectionGuide } from "@/components/SectionGuide";
 
 const SECTION_SPOTLIGHT_TOUR_SEEN_KEY = "hasSeenMatchupSectionSpotlightTour";
