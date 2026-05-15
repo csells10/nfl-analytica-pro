@@ -26,7 +26,7 @@ export function MatchupSupportBadge({
   const abbr = (teamAbbr ?? "").trim();
   if (!abbr) return null;
 
-  const label = `${abbr} edge backed`;
+  const label = `${abbr} edge supported`;
   const tip = `${abbr} leads this stat, and other matchup signs support the same side. This does not guarantee the result.`;
 
   return (
