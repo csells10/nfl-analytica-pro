@@ -1602,6 +1602,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
             rows={details.core_area_comparison}
             awayAbbr={awayTeam.abbr}
             homeAbbr={homeTeam.abbr}
+            summaries={details.matchup_breakdown?.core_area_summaries ?? undefined}
           />
         </div>
       )}
