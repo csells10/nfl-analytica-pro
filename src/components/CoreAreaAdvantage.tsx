@@ -1,10 +1,19 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Info } from "lucide-react";
 import type { GameDetails } from "@/lib/nfl-api";
+
+type CoreAreaSummary = NonNullable<
+  NonNullable<GameDetails["matchup_breakdown"]>["core_area_summaries"]
+>[number];
 
 interface Props {
   rows: NonNullable<GameDetails["core_area_comparison"]>;
   awayAbbr: string;
   homeAbbr: string;
+  summaries?: NonNullable<
+    NonNullable<GameDetails["matchup_breakdown"]>["core_area_summaries"]
+  > | null;
 }
 
 const pct = (n: number) =>
@@ -23,7 +32,63 @@ const RELATIONSHIP_LABEL: Record<string, string> = {
   "field control": "Field position context",
 };
 
-export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr }: Props) {
+const normKey = (s: string | null | undefined) =>
+  (s ?? "").trim().toLowerCase();
+
+const JARGON_TOKENS = ["claim", "language_support", "lens_tag", "code:", "index:", "score:"];
+const NOISE_RE = /^(n\/?a|tbd|none|no data|no summary|—|-)$/i;
+
+function findSummary(
+  coreArea: string,
+  summaries: CoreAreaSummary[] | null | undefined,
+): CoreAreaSummary | null {
+  if (!summaries || summaries.length === 0) return null;
+  const key = normKey(coreArea);
+  return (
+    summaries.find((s) => normKey(s.core_area) === key) ??
+    summaries.find((s) => normKey(s.name) === key) ??
+    null
+  );
+}
+
+function isUsableSummary(s: CoreAreaSummary | null): s is CoreAreaSummary {
+  if (!s) return false;
+  const text = (s.summary ?? "").trim();
+  if (text.length < 16 || text.length > 240) return false;
+  if (NOISE_RE.test(text)) return false;
+  const lower = text.toLowerCase();
+  if (JARGON_TOKENS.some((t) => lower.includes(t))) return false;
+  return true;
+}
+
+function buildTitle(s: CoreAreaSummary, coreArea: string): string {
+  const team = (s.leader_team ?? "").trim();
+  const safeTeam =
+    team.length > 0 && team.length <= 24 && /^[A-Za-z][A-Za-z .'-]*$/.test(team);
+  if ((s.leader === "away" || s.leader === "home") && safeTeam) {
+    return `Why ${coreArea} leans ${team}`;
+  }
+  if (s.leader === "neutral") return "Why this area is even";
+  return "Why this area matters";
+}
+
+function pickDriverLabels(s: CoreAreaSummary): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const d of s.drivers ?? []) {
+    if (out.length >= 2) break;
+    const raw = typeof d === "string" ? d : (d?.label ?? "");
+    const label = (raw ?? "").trim();
+    if (!label || label.length > 40) continue;
+    const k = label.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(label);
+  }
+  return out;
+}
+
+export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr, summaries }: Props) {
   if (!rows || rows.length === 0) return null;
 
   return (
@@ -56,6 +121,11 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr }: Props) {
 
             const relationship = RELATIONSHIP_LABEL[row.core_area.toLowerCase()];
 
+            const matched = findSummary(row.core_area, summaries);
+            const usable = isUsableSummary(matched) ? matched : null;
+            const title = usable ? buildTitle(usable, row.core_area) : "";
+            const driverLabels = usable ? pickDriverLabels(usable) : [];
+
             return (
               <div
                 key={row.core_area}
@@ -65,15 +135,47 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr }: Props) {
                   <span className="text-xs font-medium text-foreground">
                     {row.core_area}
                   </span>
-                  <span
-                    className={`text-[10px] uppercase tracking-[0.1em] ${
-                      isNeutral
-                        ? "text-muted-foreground"
-                        : "font-semibold text-foreground"
-                    }`}
-                  >
-                    {edgeLabel}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {usable && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={`Why ${row.core_area} matters`}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted/30 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/50"
+                          >
+                            <Info className="h-3 w-3" aria-hidden="true" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="end"
+                          side="bottom"
+                          className="w-72 border-border bg-popover p-3"
+                        >
+                          <p className="mb-1.5 text-xs font-medium text-foreground">
+                            {title}
+                          </p>
+                          <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+                            {usable.summary!.trim()}
+                          </p>
+                          {driverLabels.length > 0 && (
+                            <p className="mt-2 text-[10.5px] text-muted-foreground/80">
+                              Key inputs: {driverLabels.join(", ")}.
+                            </p>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                    <span
+                      className={`text-[10px] uppercase tracking-[0.1em] ${
+                        isNeutral
+                          ? "text-muted-foreground"
+                          : "font-semibold text-foreground"
+                      }`}
+                    >
+                      {edgeLabel}
+                    </span>
+                  </div>
                 </div>
 
                 {relationship && (
