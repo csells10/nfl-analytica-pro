@@ -323,6 +323,25 @@ export interface GameDetails {
           }
       > | null;
     }> | null;
+    // v1.7.12 (additive, optional): per-core-area backend narration. Rendered
+    // on demand via a small "Why?" popover inside Core Area Advantage tiles.
+    // Never auto-displayed; missing/unsafe entries fall back silently.
+    core_area_summaries?: Array<{
+      core_area?: string | null;
+      name?: string | null;
+      summary?: string | null;
+      leader?: "away" | "home" | "neutral" | string | null;
+      leader_team?: string | null;
+      drivers?: Array<
+        | string
+        | {
+            sentence?: string | null;
+            label?: string | null;
+            gap?: string | null;
+            team?: string | null;
+          }
+      > | null;
+    }> | null;
   } | null;
 }
 
