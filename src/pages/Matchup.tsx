@@ -416,6 +416,13 @@ function ModelTrustCard({
   const awayAdvBackend = typeof ma?.away === "number" ? ma.away : null;
   const homeAdvBackend = typeof ma?.home === "number" ? ma.home : null;
 
+  // v1.7.16: fallback-only filter that excludes rows backend marks near-even.
+  // Mirrors the v1.7.15 Team Comparison visual restraint. Does not mutate
+  // row.better; only used when backend matchup_advantage / edge.strength are
+  // absent and the frontend must derive counts itself.
+  const isNearEvenRow = (r: { comparison_strength?: string | null }) =>
+    (r?.comparison_strength ?? "").toString().trim().toLowerCase() === "near_even";
+
   let awayPts = 0;
   let homePts = 0;
   if (advantageFromBackend) {
@@ -423,6 +430,7 @@ function ModelTrustCard({
     homePts = homeAdvBackend ?? 0;
   } else {
     (teamComparison ?? []).forEach((r) => {
+      if (isNearEvenRow(r)) return;
       if (r.better === "away") awayPts += 1;
       else if (r.better === "home") homePts += 1;
     });
@@ -434,7 +442,16 @@ function ModelTrustCard({
     const s = modelTrust.edge.strength;
     edgeStrength = s.charAt(0).toUpperCase() + s.slice(1);
   } else {
-    const winDiff = Math.abs(awayPts - homePts);
+    // v1.7.16: fallback win-diff excludes near-even rows so it stays in sync
+    // with the visible Team Comparison.
+    let awayDecisive = 0;
+    let homeDecisive = 0;
+    (teamComparison ?? []).forEach((r) => {
+      if (isNearEvenRow(r)) return;
+      if (r.better === "away") awayDecisive += 1;
+      else if (r.better === "home") homeDecisive += 1;
+    });
+    const winDiff = Math.abs(awayDecisive - homeDecisive);
     edgeStrength = winDiff >= 3 ? "Strong" : winDiff >= 2 ? "Moderate" : "Low";
   }
 
@@ -655,7 +672,12 @@ function ModelTrustCard({
         {/* 4. Matchup Advantage */}
         {showAdvantage && (
           <div className="mt-4">
-            <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+            <InfoTip
+              label={
+                modelTrust?.matchup_advantage?.tooltip?.trim() ||
+                "Shows how many matchup factors favored each team across stats and key signals."
+              }
+            >
               <p className="mb-2 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60 underline decoration-dotted decoration-muted-foreground/25 underline-offset-4">
                 Matchup Advantage
               </p>
@@ -689,7 +711,12 @@ function ModelTrustCard({
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 space-y-2.5 text-[12px] text-muted-foreground/80">
               <div className="flex items-center justify-between">
-                <InfoTip label="How lopsided the visible Team Comparison stats are. Edge strength only — not overall confidence.">
+                <InfoTip
+                  label={
+                    modelTrust?.edge?.tooltip?.trim() ||
+                    "How lopsided the visible Team Comparison stats are. Edge strength only — not overall confidence."
+                  }
+                >
                   <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
                     Team Comparison Support
                   </span>
