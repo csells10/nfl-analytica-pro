@@ -860,9 +860,9 @@ const InfoTip = forwardRef<
 
 function confidenceTooltip(level: string): string {
   const v = level.toLowerCase();
-  if (v.includes("high")) return "Clear advantage across multiple factors.";
-  if (v.includes("med")) return "Some edge, but not fully consistent.";
-  if (v.includes("low")) return "Very small edge or uncertain matchup.";
+  if (v.includes("high")) return "Multiple factors point the same way.";
+  if (v.includes("med")) return "Some edge, with support still measured.";
+  if (v.includes("low")) return "Small edge, mixed read, or uncertain matchup.";
   return "Model confidence in this matchup.";
 }
 
