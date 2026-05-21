@@ -161,9 +161,16 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr, summaries }: Props
               displaySummaryRaw.length <= 240 &&
               !NOISE_RE.test(displaySummaryRaw) &&
               !JARGON_TOKENS.some((t) => displaySummaryRaw.toLowerCase().includes(t));
+            const usableBackendSummary = usable?.summary?.trim() || "";
+            // v1.7.17: avoid "Supports …" relationship fallback when the tile
+            // reads as near-even / neutral and no backend caption is present.
+            const softenedRelationship =
+              isDisplayNeutral && relationship
+                ? `${row.core_area} context`
+                : relationship || "";
             const captionText = displaySummaryUsable
               ? displaySummaryRaw
-              : usable?.summary?.trim() || relationship || "";
+              : usableBackendSummary || softenedRelationship;
 
             return (
               <div
