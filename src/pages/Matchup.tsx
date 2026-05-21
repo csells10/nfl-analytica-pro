@@ -544,8 +544,14 @@ function ModelTrustCard({
   const hasBackendReasoning = !!(reasoningHeadline || reasoningSummary || (reasoningDrivers && reasoningDrivers.length > 0));
 
   // Fallback reasoning rows (only used if backend reasoning is absent)
+  // v1.7.17: exclude near-even rows from fallback reasoning bullets so the
+  // frontend doesn't claim an edge that v1.7.15 already neutralised visually.
   const fallbackTopComparisons = (teamComparison ?? [])
     .filter((r) => r.better === "away" || r.better === "home")
+    .filter(
+      (r) =>
+        (r.comparison_strength ?? "").toString().trim().toLowerCase() !== "near_even",
+    )
     .slice(0, 2);
   const fallbackTopProfile = (gameProfile ?? [])
     .slice()
