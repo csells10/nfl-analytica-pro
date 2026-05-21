@@ -126,6 +126,45 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr, summaries }: Props
             const title = usable ? buildTitle(usable, row.core_area) : "";
             const driverLabels = usable ? pickDriverLabels(usable) : [];
 
+            // v1.7.14: prefer backend-translated display fields for the tile
+            // header label. Falls back to legacy `leader`-derived label.
+            const STRENGTH_MAP: Record<string, string> = {
+              near_even: "Near Even",
+              lean: "Lean",
+              edge: "Edge",
+              strong_edge: "Strong Edge",
+            };
+            const rawStrength = (matched?.display_strength ?? "").toString().trim().toLowerCase();
+            const mappedStrength = STRENGTH_MAP[rawStrength];
+            const leaderTeamRaw = (matched?.leader_team ?? "").trim();
+            const safeLeaderTeam =
+              leaderTeamRaw.length > 0 &&
+              leaderTeamRaw.length <= 24 &&
+              /^[A-Za-z][A-Za-z .'-]*$/.test(leaderTeamRaw);
+            const directionalStrength =
+              rawStrength === "lean" || rawStrength === "edge" || rawStrength === "strong_edge";
+
+            let displayEdgeLabel = edgeLabel;
+            let isDisplayNeutral = isNeutral;
+            if (directionalStrength && safeLeaderTeam && mappedStrength) {
+              displayEdgeLabel = `${leaderTeamRaw} ${mappedStrength}`;
+              isDisplayNeutral = false;
+            } else if (rawStrength === "near_even") {
+              displayEdgeLabel = "Near Even";
+              isDisplayNeutral = true;
+            }
+
+            // Caption precedence: display_summary -> existing summary -> relationship label
+            const displaySummaryRaw = (matched?.display_summary ?? "").trim();
+            const displaySummaryUsable =
+              displaySummaryRaw.length >= 16 &&
+              displaySummaryRaw.length <= 240 &&
+              !NOISE_RE.test(displaySummaryRaw) &&
+              !JARGON_TOKENS.some((t) => displaySummaryRaw.toLowerCase().includes(t));
+            const captionText = displaySummaryUsable
+              ? displaySummaryRaw
+              : usable?.summary?.trim() || relationship || "";
+
             return (
               <div
                 key={row.core_area}
@@ -147,6 +186,7 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr, summaries }: Props
                             <Info className="h-3 w-3" aria-hidden="true" />
                           </button>
                         </PopoverTrigger>
+
                         <PopoverContent
                           align="end"
                           side="bottom"
@@ -168,21 +208,22 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr, summaries }: Props
                     )}
                     <span
                       className={`text-[10px] uppercase tracking-[0.1em] ${
-                        isNeutral
+                        isDisplayNeutral
                           ? "text-muted-foreground"
                           : "font-semibold text-foreground"
                       }`}
                     >
-                      {edgeLabel}
+                      {displayEdgeLabel}
                     </span>
                   </div>
                 </div>
 
-                {relationship && (
+                {captionText && (
                   <p className="mb-2 text-[10px] text-muted-foreground/70">
-                    {relationship}
+                    {captionText}
                   </p>
                 )}
+
 
                 <div className="mb-1.5 flex items-baseline justify-between text-[11px] tabular-nums text-muted-foreground">
                   <span

@@ -337,6 +337,24 @@ export interface GameDetails {
       summary?: string | null;
       leader?: "away" | "home" | "neutral" | string | null;
       leader_team?: string | null;
+      // v1.7.14 (additive, optional): product-safe display fields used by the
+      // Core Area Advantage tile header/caption. Raw diagnostic fields
+      // (`leader_source`, `driver_alignment`, `broad_score_gap`,
+      // `headline_driver_leader`) are typed for completeness but must NEVER
+      // be rendered directly — they may only feed the backend-translated
+      // `display_strength` / `display_summary`.
+      display_strength?:
+        | "near_even"
+        | "lean"
+        | "edge"
+        | "strong_edge"
+        | string
+        | null;
+      display_summary?: string | null;
+      leader_source?: string | null;
+      driver_alignment?: string | null;
+      broad_score_gap?: number | null;
+      headline_driver_leader?: string | null;
       drivers?: Array<
         | string
         | {
@@ -347,6 +365,7 @@ export interface GameDetails {
           }
       > | null;
     }> | null;
+
   } | null;
 }
 
