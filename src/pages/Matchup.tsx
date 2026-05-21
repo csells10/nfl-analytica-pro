@@ -672,7 +672,12 @@ function ModelTrustCard({
         {/* 4. Matchup Advantage */}
         {showAdvantage && (
           <div className="mt-4">
-            <InfoTip label="Shows how many matchup factors favored each team across stats and key signals.">
+            <InfoTip
+              label={
+                modelTrust?.matchup_advantage?.tooltip?.trim() ||
+                "Shows how many matchup factors favored each team across stats and key signals."
+              }
+            >
               <p className="mb-2 inline-block cursor-help text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60 underline decoration-dotted decoration-muted-foreground/25 underline-offset-4">
                 Matchup Advantage
               </p>
