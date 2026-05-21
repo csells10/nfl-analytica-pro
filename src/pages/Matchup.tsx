@@ -711,7 +711,12 @@ function ModelTrustCard({
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 space-y-2.5 text-[12px] text-muted-foreground/80">
               <div className="flex items-center justify-between">
-                <InfoTip label="How lopsided the visible Team Comparison stats are. Edge strength only — not overall confidence.">
+                <InfoTip
+                  label={
+                    modelTrust?.edge?.tooltip?.trim() ||
+                    "How lopsided the visible Team Comparison stats are. Edge strength only — not overall confidence."
+                  }
+                >
                   <span className="cursor-help underline decoration-dotted decoration-muted-foreground/30 underline-offset-4">
                     Team Comparison Support
                   </span>
