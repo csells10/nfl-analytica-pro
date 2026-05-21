@@ -644,7 +644,7 @@ function ModelTrustCard({
                   const tip = formatStatGap(r.away, r.home);
                   const row = (
                     <span className={tip ? "cursor-help" : undefined}>
-                      <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
+                      <span className="font-semibold text-foreground">{teamName}</span> leaned in{" "}
                       <span className="text-foreground">{r.label.toLowerCase()}</span>
                     </span>
                   );
