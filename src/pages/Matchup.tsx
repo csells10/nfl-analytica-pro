@@ -897,15 +897,17 @@ function MatchupReadBlock({ lean }: { lean: NonNullable<GameDetails["matchup_lea
 
   // Legacy fallback: render the original Confidence pill exactly as before.
   if (!hasNewRead) {
-    if (!lean.confidence) return null;
+    // Prefer backend's product-safe label; fall back to legacy raw confidence.
+    const confidenceLabel = lean.user_facing_confidence?.label?.trim() || lean.confidence || null;
+    if (!confidenceLabel) return null;
     return (
       <div className="flex items-center gap-2 pt-1">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
           Confidence
         </span>
-        <InfoTip label={confidenceTooltip(lean.confidence)}>
+        <InfoTip label={confidenceTooltip(confidenceLabel)}>
           <span className="rounded-full border border-accent-cool/40 bg-accent-cool/10 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
-            {lean.confidence}
+            {confidenceLabel}
           </span>
         </InfoTip>
       </div>

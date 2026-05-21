@@ -226,6 +226,11 @@ export interface GameDetails {
       label?: string | null;
       summary?: string | null;
     } | null;
+    // ── Backend v1.7.13 (additive, optional): product-safe unified confidence ──
+    user_facing_confidence?: {
+      label?: string | null;
+      summary?: string | null;
+    } | null;
     matchup_label?: string | null;
     matchup_cautions?: Array<
       | string
