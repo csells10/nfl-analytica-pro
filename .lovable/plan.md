@@ -1,44 +1,35 @@
-## v1.8.0 — Spotlight Tour as the only onboarding
+## v1.7.13 — Matchup Lean user-facing confidence wiring
 
-Goal: First-time visitors automatically get the Section Spotlight Tour. Returning users can re-open it any time from the header `?` button. Remove the QA variant switcher and all other intro variants from the rendered UI (keeping only the spotlight code path).
+### Goal
+Update the Matchup page so the visible confidence text in the Matchup Lean card prefers the newer backend field `matchup_lean.user_facing_confidence.label`, falling back to legacy `matchup_lean.confidence` only when absent.
 
-### Behavior
+### Why
+The backend now exposes `user_facing_confidence` as its product-safe confidence mouthpiece. The frontend currently renders `lean.confidence` directly in the legacy fallback path, which can overstate confidence.
 
-- First time on a Matchup page → Spotlight Tour opens automatically (gated by `localStorage["hasSeenMatchupSectionSpotlightTour"]`).
-- After completing or closing the tour → never auto-opens again.
-- Header `?` button (already present in `AppShell`, dispatches `gamelens:open-guide`) → always force-opens the tour, regardless of the "seen" flag.
-- The "Intro QA" toolbar above the back button is removed.
+### Changes
 
-### Files changed
+**`src/lib/nfl-api.ts`** (additive type only)
+- Add `user_facing_confidence?: { label?: string | null; summary?: string | null } | null` inside `matchup_lean`.
 
-1. **`src/pages/Matchup.tsx`**
-   - Remove imports: `MatchupIntroDialog`, `isSectionGuidedVariant`, `isSectionSpotlightVariant`, `MatchupIntroQASelector`.
-   - Keep: `SECTION_SPOTLIGHT_TOUR_SEEN_KEY`, `SectionSpotlightTour`, `SpotlightTourStep`.
-   - Remove `<MatchupIntroDialog />` and `<MatchupIntroQASelector />` from the render tree.
-   - Replace the variant-gated tour effect with:
-     - On mount: if `localStorage[SECTION_SPOTLIGHT_TOUR_SEEN_KEY] !== "true"` → `setTourOpen(true)`.
-     - Listen for `gamelens:open-guide` window event → always `setTourOpen(true)` (does not check or clear the seen flag — re-opening from `?` is a manual replay).
-     - Drop the `gamelens:matchup-intro-reopen` listener.
-   - `markTourSeenAndClose` unchanged.
+**`src/pages/Matchup.tsx`** (two targeted edits)
+1. In `MatchupReadBlock`, update the legacy-fallback confidence pill:
+   - Resolve label as `lean.user_facing_confidence?.label?.trim() || lean.confidence || null`
+   - Pass the resolved label into both the pill text and `confidenceTooltip()`
+   - Keep the exact same layout, classes, and InfoTip wrapper
+2. Keep `classifyConfidence()` and `CONFIDENCE_STYLE` as-is (already a pure string classifier; no active dot UI to wire today).
 
-2. **`src/components/AppShell.tsx`**
-   - No code change required. `openGuideTutorial()` already dispatches `gamelens:open-guide`; Matchup will now listen.
-   - The `?` button stays visible on every route; on non-Matchup routes the event has no listener and is a no-op (acceptable — the tour only makes sense on a matchup page).
+### What stays unchanged
+- New-read path (`profile_strength` / `outcome_confidence` / `matchup_label` chips)
+- `classifyConfidence` and `CONFIDENCE_STYLE` definitions (dead code, no layout impact)
+- Matchup Lean logic, Model Trust, Team Comparison, Core Area, Game Profile, routing, fetching
+- Confidence wording, outcome wording, onboarding/tour
+- `claim_language_context`, `ranking_context`, `lens_tags`, team colors, green/red colors
 
-3. **Deletions**
-   - Delete `src/components/MatchupIntroQASelector.tsx`.
-   - Delete `src/components/MatchupIntroDialog.tsx` (no longer imported anywhere after step 1).
-   - Note: `MatchupIntroDialog.tsx` also calls `clearAllSectionGuideDismissals` from `SectionGuide`. `SectionGuide` itself stays (still imported by `Matchup.tsx`); only the dialog file is removed.
+### QA target
+`/matchup/20251013_BUF@ATL` — verify that if `user_facing_confidence.label` is present, the legacy confidence pill renders that label; otherwise it falls back to `lean.confidence` exactly as before.
 
-### Out of scope (unchanged)
-
-Backend logic, data fetching, Matchup Lean, Model Trust, Game Profile, Core Area Advantage, Final Score, Team Comparison badge/accent, routing, `nfl-api.ts`, `SectionSpotlightTour.tsx` itself, the `?` button styling/pulse logic in `AppShell`.
-
-### QA
-
-- Fresh browser (clear `localStorage`) → load `/matchup/20260111_LAC@NE` → tour auto-opens at Game Profile.
-- Finish or X the tour → reload → no auto-open.
-- Click header `?` → tour re-opens from step 1.
-- Verify Intro QA toolbar is gone above the "Back to games" button.
-- Mobile viewport ≤414px and dark theme: spotlight ring + card placement still correct (no changes to tour component).
-- Click `?` on `/` (Slate) or `/settings` → no error in console (event has no listener).
+### Summary after build
+- files changed
+- exact field precedence used
+- legacy fallback confirmation
+- QA notes for `20251013_BUF@ATL`
