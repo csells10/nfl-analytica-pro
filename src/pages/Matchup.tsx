@@ -544,8 +544,14 @@ function ModelTrustCard({
   const hasBackendReasoning = !!(reasoningHeadline || reasoningSummary || (reasoningDrivers && reasoningDrivers.length > 0));
 
   // Fallback reasoning rows (only used if backend reasoning is absent)
+  // v1.7.17: exclude near-even rows from fallback reasoning bullets so the
+  // frontend doesn't claim an edge that v1.7.15 already neutralised visually.
   const fallbackTopComparisons = (teamComparison ?? [])
     .filter((r) => r.better === "away" || r.better === "home")
+    .filter(
+      (r) =>
+        (r.comparison_strength ?? "").toString().trim().toLowerCase() !== "near_even",
+    )
     .slice(0, 2);
   const fallbackTopProfile = (gameProfile ?? [])
     .slice()
@@ -638,7 +644,7 @@ function ModelTrustCard({
                   const tip = formatStatGap(r.away, r.home);
                   const row = (
                     <span className={tip ? "cursor-help" : undefined}>
-                      <span className="font-semibold text-foreground">{teamName}</span> held the edge in{" "}
+                      <span className="font-semibold text-foreground">{teamName}</span> leaned in{" "}
                       <span className="text-foreground">{r.label.toLowerCase()}</span>
                     </span>
                   );
@@ -854,9 +860,9 @@ const InfoTip = forwardRef<
 
 function confidenceTooltip(level: string): string {
   const v = level.toLowerCase();
-  if (v.includes("high")) return "Clear advantage across multiple factors.";
-  if (v.includes("med")) return "Some edge, but not fully consistent.";
-  if (v.includes("low")) return "Very small edge or uncertain matchup.";
+  if (v.includes("high")) return "Multiple factors point the same way.";
+  if (v.includes("med")) return "Some edge, with support still measured.";
+  if (v.includes("low")) return "Small edge, mixed read, or uncertain matchup.";
   return "Model confidence in this matchup.";
 }
 
