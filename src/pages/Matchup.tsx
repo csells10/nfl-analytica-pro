@@ -1772,12 +1772,13 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                     : adv === "even"
                     ? "text-foreground/75"
                     : "text-foreground/45";
-                // v1.7.15: gate "Fits matchup" badge/tint on cautious signal too
+                // v1.7.18: allow `measured` to render the badge; keep suppressing
+                // caution_only/soften/no_boost. Backend `language_boost_allowed`
+                // remains the primary gate.
                 const CAUTIOUS_SIGNALS = new Set([
                   "caution_only",
                   "soften",
                   "no_boost",
-                  "measured",
                 ]);
                 const signal = (r.language_support?.claim_strength_language_signal ?? "")
                   .toString()
