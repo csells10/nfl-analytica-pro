@@ -208,21 +208,22 @@ export function CoreAreaAdvantage({ rows, awayAbbr, homeAbbr, summaries }: Props
                     )}
                     <span
                       className={`text-[10px] uppercase tracking-[0.1em] ${
-                        isNeutral
+                        isDisplayNeutral
                           ? "text-muted-foreground"
                           : "font-semibold text-foreground"
                       }`}
                     >
-                      {edgeLabel}
+                      {displayEdgeLabel}
                     </span>
                   </div>
                 </div>
 
-                {relationship && (
+                {captionText && (
                   <p className="mb-2 text-[10px] text-muted-foreground/70">
-                    {relationship}
+                    {captionText}
                   </p>
                 )}
+
 
                 <div className="mb-1.5 flex items-baseline justify-between text-[11px] tabular-nums text-muted-foreground">
                   <span
