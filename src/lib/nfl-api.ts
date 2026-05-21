@@ -242,11 +242,20 @@ export interface GameDetails {
     away: number;
     home: number;
     better: "away" | "home" | "even" | string;
-    // Backend v1.7 (additive, optional). Only `language_boost_allowed` is read
-    // by the UI to gate a small "Backed by the matchup" badge. The other
-    // fields are typed for completeness and must NEVER be rendered to users.
+    // Backend v1.7 (additive, optional). The UI reads `language_boost_allowed`
+    // (badge/tint gate), `claim_strength_language_signal` (cautious-signal
+    // suppression), and `comparison_strength` (near-even visual neutrality).
+    // All other fields are typed for completeness and must NEVER be rendered.
+    comparison_strength?: string | null;
+    technical_better?: string | null;
+    near_even_reason?: string | null;
+    raw_gap?: number | null;
+    percentile_gap?: number | null;
+    rank_gap?: number | null;
     language_support?: {
       language_boost_allowed?: boolean | null;
+      claim_strength_language_signal?: string | null;
+      claim_strength_context?: string | null;
       reason?: string | null;
       scope?: string | null;
       two_way_context?: unknown;

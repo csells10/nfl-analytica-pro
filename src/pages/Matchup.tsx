@@ -1726,14 +1726,35 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
 
             <div className="space-y-1">
               {team_comparison.map((r) => {
-                const adv = r.better as "away" | "home" | "even";
+                // v1.7.15: treat backend-marked near-even rows as visually neutral
+                const isNearEven =
+                  (r.comparison_strength ?? "").toString().trim().toLowerCase() === "near_even";
+                const adv = (isNearEven ? "even" : (r.better as "away" | "home" | "even")) as
+                  | "away"
+                  | "home"
+                  | "even";
                 const valueCls = (side: "away" | "home") =>
                   adv === side
                     ? "text-foreground font-semibold"
                     : adv === "even"
                     ? "text-foreground/75"
                     : "text-foreground/45";
-                const supportAllowed = r.language_support?.language_boost_allowed === true;
+                // v1.7.15: gate "Fits matchup" badge/tint on cautious signal too
+                const CAUTIOUS_SIGNALS = new Set([
+                  "caution_only",
+                  "soften",
+                  "no_boost",
+                  "measured",
+                ]);
+                const signal = (r.language_support?.claim_strength_language_signal ?? "")
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+                const signalSuppresses = signal.length > 0 && CAUTIOUS_SIGNALS.has(signal);
+                const supportAllowed =
+                  r.language_support?.language_boost_allowed === true &&
+                  !isNearEven &&
+                  !signalSuppresses;
                 const showAwayBadge = supportAllowed && adv === "away";
                 const showHomeBadge = supportAllowed && adv === "home";
                 const winnerAbbr =
