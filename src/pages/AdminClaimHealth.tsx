@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Component, useMemo, type ErrorInfo, type ReactNode } from "react";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
   Bar,
@@ -26,7 +23,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useClaimHealth, type MatrixRow, type ConfidenceMatrixRow } from "@/lib/admin-api";
+import { useClaimHealth, type ClaimHealthResponse, type MatrixRow, type ConfidenceMatrixRow } from "@/lib/admin-api";
 import { ApiError } from "@/lib/nfl-api";
 
 const RUN_ID = "full_2025_reg_post_claim_matrix_pilot";
