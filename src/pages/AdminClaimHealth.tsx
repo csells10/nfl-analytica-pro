@@ -231,7 +231,7 @@ function StatCard({ label, value, note }: { label: string; value: React.ReactNod
   );
 }
 
-function SummaryCards({ data }: { data: NonNullable<ReturnType<typeof useClaimHealth>["data"]> }) {
+function SummaryCards({ data }: { data: ClaimHealthResponse }) {
   const cov = data.coverage ?? {};
   const base = data.baseline ?? {};
   const games = cov.games_with_claims;
