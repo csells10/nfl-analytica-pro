@@ -26,6 +26,8 @@ export interface MatrixRow {
   category?: string;
   feature?: string;
   label?: string;
+  bucket?: string;
+  strength?: string;
   claim_type?: string;
   claim_layer?: string;
   validation_rate?: number | null;
