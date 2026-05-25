@@ -81,12 +81,49 @@ function rateToPct(v: unknown): number | null {
 
 // ---------- Page ----------
 
+class AdminErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[admin] render error:", error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-base font-medium text-foreground">Something went wrong rendering the dashboard.</div>
+            <div className="mt-1 text-sm text-muted-foreground">{this.state.error.message}</div>
+          </CardContent>
+        </Card>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/**
+ * Read a section by name, tolerating either a nested `sections` envelope or
+ * a flat top-level shape. Never throws; always returns an array.
+ */
+function readSection<T = MatrixRow | ConfidenceMatrixRow>(
+  data: ClaimHealthResponse | undefined,
+  key: "core_area_matrix" | "category_matrix" | "confidence_core_area_matrix" | "feature_scorecard" | "surface_matrix",
+): T[] {
+  if (!data) return [];
+  const nested = (data.sections as Record<string, unknown> | undefined)?.[key];
+  if (Array.isArray(nested)) return nested as T[];
+  const flat = (data as unknown as Record<string, unknown>)[key];
+  if (Array.isArray(flat)) return flat as T[];
+  return [];
+}
+
 export default function AdminClaimHealth() {
-  const { data, isLoading, error } = useClaimHealth(RUN_ID, SEASON);
+  const { data, isLoading, isFetching, error } = useClaimHealth(RUN_ID, SEASON);
 
   return (
     <AppShell showGuide={false}>
-      <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
+      <div className="mx-auto max-w-7xl space-y-8">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin Claim Health</h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
@@ -104,14 +141,32 @@ export default function AdminClaimHealth() {
           )}
         </header>
 
-        {isLoading && (
-          <Card><CardContent className="p-8 text-sm text-muted-foreground">Loading claim health…</CardContent></Card>
-        )}
+        <AdminErrorBoundary>
+          {isLoading && !data && (
+            <Card>
+              <CardContent className="p-8 text-sm text-muted-foreground">
+                Loading claim health…
+              </CardContent>
+            </Card>
+          )}
 
-        {error && <ErrorState error={error} />}
+          {error && !data && <ErrorState error={error} />}
 
-        {data && <Sections data={data} />}
-      </main>
+          {data && <Sections data={data} />}
+
+          {!isLoading && !data && !error && (
+            <Card>
+              <CardContent className="p-8 text-sm text-muted-foreground">
+                No claim health data available.
+              </CardContent>
+            </Card>
+          )}
+
+          {isFetching && data && (
+            <div className="text-xs text-muted-foreground">Refreshing…</div>
+          )}
+        </AdminErrorBoundary>
+      </div>
     </AppShell>
   );
 }
@@ -124,12 +179,14 @@ function ErrorState({ error }: { error: unknown }) {
       title = "Admin access required.";
       detail = "Your account does not have admin privileges for this dashboard.";
     } else if (error.kind === "unauthenticated") {
-      title = "Session expired.";
-      detail = "Please sign in again.";
+      title = "Not signed in.";
+      detail = "Your session has expired. Please sign in again to view this page.";
     } else if (error.kind === "network") {
       title = "Network error.";
       detail = "Check your connection and retry.";
     }
+  } else if (error instanceof Error && error.message) {
+    detail = error.message;
   }
   return (
     <Card>
@@ -141,21 +198,22 @@ function ErrorState({ error }: { error: unknown }) {
   );
 }
 
-function Sections({ data }: { data: NonNullable<ReturnType<typeof useClaimHealth>["data"]> }) {
+function Sections({ data }: { data: ClaimHealthResponse }) {
   const baselineRate = data.baseline?.validation_rate;
   const baselinePct = rateToPct(baselineRate);
 
   return (
     <TooltipProvider delayDuration={150}>
       <SummaryCards data={data} />
-      <CoreAreaHealth rows={data.sections?.core_area_matrix ?? []} baselineRate={baselineRate} />
-      <FeatureScorecard rows={data.sections?.feature_scorecard ?? []} baselineRate={baselineRate} />
-      <CategoryHealth rows={data.sections?.category_matrix ?? []} baselineRate={baselineRate} baselinePct={baselinePct} />
-      <ConfidenceMatrix rows={data.sections?.confidence_core_area_matrix ?? []} />
-      <SurfaceHealth rows={data.sections?.surface_matrix ?? []} baselineRate={baselineRate} baselinePct={baselinePct} />
+      <CoreAreaHealth rows={readSection<MatrixRow>(data, "core_area_matrix")} baselineRate={baselineRate} />
+      <FeatureScorecard rows={readSection<MatrixRow>(data, "feature_scorecard")} baselineRate={baselineRate} />
+      <CategoryHealth rows={readSection<MatrixRow>(data, "category_matrix")} baselineRate={baselineRate} baselinePct={baselinePct} />
+      <ConfidenceMatrix rows={readSection<ConfidenceMatrixRow>(data, "confidence_core_area_matrix")} />
+      <SurfaceHealth rows={readSection<MatrixRow>(data, "surface_matrix")} baselineRate={baselineRate} baselinePct={baselinePct} />
     </TooltipProvider>
   );
 }
+
 
 // ---------- Summary cards ----------
 
