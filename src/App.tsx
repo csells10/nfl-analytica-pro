@@ -78,6 +78,7 @@ const App = () => (
               <Route path="/matchup/:id" element={<ProtectedRoute><Matchup /></ProtectedRoute>} />
               <Route path="/matchup-lens" element={<ProtectedRoute><Placeholder title="Matchup Lens" /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/admin/claim-health" element={<ProtectedRoute><AdminClaimHealth /></ProtectedRoute>} />
             </Routes>
           </Suspense>
         </BrowserRouter>
