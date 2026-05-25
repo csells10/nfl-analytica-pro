@@ -58,7 +58,7 @@ const App = () => (
       persister,
       maxAge: 24 * 60 * 60 * 1000,
       // Bump if the response shape changes so old cache is discarded.
-      buster: "v1",
+      buster: "v2-calibration",
       dehydrateOptions: {
         // Only persist successful queries — never store error states.
         shouldDehydrateQuery: (query) => query.state.status === "success",
