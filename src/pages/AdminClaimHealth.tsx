@@ -473,11 +473,12 @@ function pivotConfidenceRows(rows: ConfidenceMatrixRow[]): ConfidenceMatrixRow[]
     if (typeof conf === "string") {
       const key = conf.trim().toLowerCase();
       if (key === "high" || key === "medium" || key === "low") {
-        existing[key] = {
+        (existing as Record<string, unknown>)[key] = {
           validation_rate: (row.validation_rate ?? null) as number | null,
           claim_row_count: row.claim_row_count,
         };
       }
+
     }
 
     byArea.set(area, existing);
