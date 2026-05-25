@@ -17,7 +17,12 @@ export interface ClaimHealthCoverage {
 export interface ClaimHealthBaseline {
   validation_rate?: number;
   claim_row_count?: number;
+  eligible_claim_row_count?: number;
   game_count?: number;
+  validated_count?: number;
+  not_validated_count?: number;
+  neutral_or_mixed_count?: number;
+  unavailable_count?: number;
   neutral_or_mixed_rate?: number;
 }
 
@@ -45,16 +50,153 @@ export interface ConfidenceMatrixRow {
   [k: string]: unknown;
 }
 
+// ---- New section row types (all optional; defensive rendering) ----
+
+export interface CalibrationOverTimeRow {
+  period_label?: string;
+  period_start?: string;
+  period_end?: string;
+  grain?: string;
+  season_phase?: string;
+  claim_rows?: number;
+  eligible_claim_rows?: number;
+  validated_claims?: number;
+  not_validated_claims?: number;
+  neutral_mixed_claims?: number;
+  unavailable_claims?: number;
+  claim_validation_rate?: number | null;
+  games_total?: number;
+  games_with_claims?: number;
+  games_with_pick?: number;
+  correct_picks?: number;
+  incorrect_picks?: number;
+  no_pick_games?: number;
+  game_pick_correct_rate?: number | null;
+  selected_segment_label?: string;
+  selected_segment_claim_rows?: number;
+  selected_segment_validation_rate?: number | null;
+  selected_segment_lift_vs_claim_baseline?: number | null;
+}
+
+export interface GameLevelCalibrationRow {
+  profile_strength_label?: string;
+  outcome_confidence_label?: string;
+  game_count?: number;
+  correct_count?: number;
+  incorrect_count?: number;
+  no_pick_count?: number;
+  correct_rate?: number | null;
+  incorrect_rate?: number | null;
+  no_pick_rate?: number | null;
+  avg_final_margin_abs?: number | null;
+  close_miss_count?: number;
+  severe_miss_count?: number;
+}
+
+export interface CoreAreaAlignmentRow {
+  profile_type?: string;
+  outcome_confidence_label?: string;
+  game_count?: number;
+  correct_rate?: number | null;
+  avg_core_gap?: number | null;
+  avg_signal_gap?: number | null;
+  avg_final_margin_abs?: number | null;
+}
+
+export interface PillarHealthRow {
+  core_area?: string;
+  category?: string;
+  claim_rows?: number;
+  eligible_claim_rows?: number;
+  validated_claims?: number;
+  validation_rate?: number | null;
+  neutral_mixed_rate?: number | null;
+  not_validated_rate?: number | null;
+  lift_vs_claim_baseline?: number | null;
+  games_represented?: number;
+}
+
+export interface PillarWeeklyHealthRow {
+  game_week?: string | number;
+  games_total?: number;
+  games_with_claims?: number;
+  claim_rows?: number;
+  claim_validation_rate?: number | null;
+  game_pick_correct_rate?: number | null;
+  no_pick_rate?: number | null;
+  avg_confidence?: number | null;
+  top_core_area?: string;
+  weakest_core_area?: string;
+}
+
+export interface FeatureHealthRow {
+  feature_group?: string;
+  feature_family?: string;
+  bucket_or_group?: string;
+  claim_rows?: number;
+  eligible_claim_rows?: number;
+  games_represented?: number;
+  validation_rate?: number | null;
+  lift_vs_claim_baseline?: number | null;
+  neutral_mixed_rate?: number | null;
+  not_validated_rate?: number | null;
+  sample_warning?: string;
+}
+
+export interface TabSpec {
+  id: string;
+  label?: string;
+  description?: string;
+  sections?: string[];
+}
+
+export interface SectionMeta {
+  title?: string;
+  description?: string;
+  chart_type?: string;
+  primary_metric?: string;
+  tab_id?: string;
+  supported_grains?: string[];
+  grain_default?: string;
+  compatibility?: string;
+  section_role?: string;
+}
+
+export interface FormulaNote {
+  meaning?: string;
+  formula?: string;
+  note?: string;
+}
+
+export interface SeasonPhaseGroup {
+  label?: string;
+  weeks?: Array<string | number>;
+  description?: string;
+}
+
 export interface ClaimHealthResponse {
   run_id?: string;
   season?: number | string;
   generated_at?: string;
   available?: boolean;
   status?: string;
+  scope?: string;
+  default_tab?: string;
+  tabs?: TabSpec[];
+  formula_notes?: Record<string, FormulaNote>;
+  season_phase_groups?: Record<string, SeasonPhaseGroup>;
   coverage?: ClaimHealthCoverage;
   baseline?: ClaimHealthBaseline;
-  section_metadata?: Record<string, unknown>;
+  section_metadata?: Record<string, SectionMeta>;
   sections?: {
+    // New
+    calibration_over_time?: CalibrationOverTimeRow[];
+    game_level_calibration?: GameLevelCalibrationRow[];
+    core_area_alignment_matrix?: CoreAreaAlignmentRow[];
+    pillar_health_matrix?: PillarHealthRow[];
+    pillar_weekly_health?: PillarWeeklyHealthRow[];
+    feature_health_matrix?: FeatureHealthRow[];
+    // Legacy (preserved)
     core_area_matrix?: MatrixRow[];
     category_matrix?: MatrixRow[];
     confidence_core_area_matrix?: ConfidenceMatrixRow[];
