@@ -17,6 +17,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  LabelList,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip as RTooltip,
