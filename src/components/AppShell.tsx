@@ -24,6 +24,12 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
+  // Frontend-only UX gate. Backend remains source of truth for admin auth.
+  const { data: me } = useMe(Boolean(user));
+  const navItems = me?.is_admin
+    ? [...baseNavItems, { label: "Admin", path: "/admin/claim-health", icon: ShieldCheck }]
+    : baseNavItems;
+
 
   // Show a subtle pulse on the Guide button for the first few visits so users discover it.
   const [pulseGuide, setPulseGuide] = useState(false);
