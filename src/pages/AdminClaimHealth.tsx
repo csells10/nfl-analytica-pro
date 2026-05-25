@@ -486,13 +486,25 @@ function CalibrationOverTimeChart({
     }));
   }, [rows, grain]);
 
+  const segmentMatchesOverall = useMemo(() => {
+    const source = rows.filter((r) => (r.grain ?? "week") === grain);
+    const target = source.length > 0 ? source : rows;
+    if (target.length === 0) return false;
+    return target.every((r) => r.selected_segment_label === "all_claims_in_period");
+  }, [rows, grain]);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{meta.title ?? "Calibration Over Time"}</CardTitle>
+        <CardTitle className="text-lg">Calibration Over Time</CardTitle>
         <CardDescription>
           {meta.description ?? "Claim validation, game pick accuracy, and selected segment validation across the season."}
         </CardDescription>
+        {segmentMatchesOverall && (
+          <div className="mt-2 text-xs text-muted-foreground">
+            Selected segment currently matches overall claims.
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {filtered.length === 0 ? (
@@ -508,7 +520,9 @@ function CalibrationOverTimeChart({
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="_claim" name="Overall Claim Validation" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
                 <Line type="monotone" dataKey="_pick" name="Game Pick Accuracy" stroke="hsl(var(--accent-warm))" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-                <Line type="monotone" dataKey="_segment" name="Selected Segment Validation" stroke="hsl(var(--accent-cool))" strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3 }} connectNulls={false} />
+                {!segmentMatchesOverall && (
+                  <Line type="monotone" dataKey="_segment" name="Selected Segment Validation" stroke="hsl(var(--accent-cool))" strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3 }} connectNulls={false} />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
