@@ -1021,48 +1021,8 @@ function TechnicalDebugTab({ data }: { data: ClaimHealthResponse }) {
 
 
 
-// ---------- Summary cards ----------
+// (Legacy StatCard / SummaryCards removed — replaced by Overview tab cards.)
 
-function StatCard({ label, value, note }: { label: string; value: React.ReactNode; note?: string }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardDescription className="text-xs uppercase tracking-wide">{label}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold text-foreground">{value}</div>
-        {note && <div className="mt-2 text-xs text-muted-foreground">{note}</div>}
-      </CardContent>
-    </Card>
-  );
-}
-
-function SummaryCards({ data }: { data: ClaimHealthResponse }) {
-  const cov = data.coverage ?? {};
-  const base = data.baseline ?? {};
-  const games = cov.games_with_claims;
-  const expected = cov.expected_games;
-  const coverageStr = isNum(games) && isNum(expected) && expected > 0
-    ? `${games} / ${expected}`
-    : "—";
-  const coveragePct = isNum(games) && isNum(expected) && expected > 0
-    ? ` (${((games / expected) * 100).toFixed(1)}%)`
-    : "";
-
-  return (
-    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      <StatCard
-        label="Coverage"
-        value={<span>{coverageStr}<span className="ml-1 text-sm font-normal text-muted-foreground">{coveragePct}</span></span>}
-        note={cov.context_note}
-      />
-      <StatCard label="No-claim games" value={isNum(cov.games_without_claims) ? cov.games_without_claims : "—"} />
-      <StatCard label="Baseline validation rate" value={formatPercent(base.validation_rate)} />
-      <StatCard label="Claim rows" value={isNum(cov.claim_row_count ?? base.claim_row_count) ? (cov.claim_row_count ?? base.claim_row_count) : "—"} />
-      <StatCard label="Neutral / mixed rate" value={formatPercent(cov.neutral_or_mixed_rate ?? base.neutral_or_mixed_rate)} />
-    </section>
-  );
-}
 
 // ---------- Bar chart helper ----------
 
