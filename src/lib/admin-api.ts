@@ -106,3 +106,53 @@ export function useClaimHealth(runId: string, season: string) {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// ---------- /me (authenticated user context) ----------
+
+export interface MeResponse {
+  email?: string;
+  role?: string;
+  active?: boolean;
+  is_admin?: boolean;
+}
+
+async function fetchMe(): Promise<MeResponse> {
+  const token = await getAuthToken();
+  if (!token) throw new ApiError("unauthenticated", "Not signed in", 401);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/me`, { headers: { Authorization: `Bearer ${token}` } });
+  } catch {
+    throw new ApiError("network", "Network error");
+  }
+
+  if (res.status === 401) throw new ApiError("unauthenticated", "Not signed in", 401);
+  if (res.status === 403) throw new ApiError("forbidden", "Forbidden", 403);
+  if (!res.ok) throw new ApiError(res.status >= 500 ? "server" : "unknown", `Request failed (${res.status})`, res.status);
+
+  try {
+    return (await res.json()) as MeResponse;
+  } catch {
+    throw new ApiError("server", "Invalid response", res.status);
+  }
+}
+
+/**
+ * Authenticated user context (email/role/isAdmin). Used only for UX
+ * affordances like the Admin nav tab. The backend remains the source of
+ * truth for actual admin-route authorization via require_admin_auth.
+ */
+export function useMe(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["me"],
+    queryFn: fetchMe,
+    enabled,
+    retry: (count, err) => {
+      if (err instanceof ApiError && (err.kind === "forbidden" || err.kind === "unauthenticated")) return false;
+      return count < 1;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
