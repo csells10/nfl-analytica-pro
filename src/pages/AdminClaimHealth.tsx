@@ -284,6 +284,7 @@ function SummaryCards({ data }: { data: ClaimHealthResponse }) {
 
 interface BarRow {
   name: string;
+  rawName?: string;
   value: number;
   delta: number | null;
   claim_row_count?: number;
@@ -292,12 +293,18 @@ interface BarRow {
   small: boolean;
 }
 
-function buildBarRows(rows: MatrixRow[], baselineRate: unknown, nameKey: (r: MatrixRow) => string): BarRow[] {
+function buildBarRows(
+  rows: MatrixRow[],
+  baselineRate: unknown,
+  nameKey: (r: MatrixRow) => string,
+  rawNameKey?: (r: MatrixRow) => string,
+): (BarRow & { rawValue: number | null })[] {
   return rows
     .map((r) => {
       const pct = rateToPct(r.validation_rate);
       return {
         name: nameKey(r) || "—",
+        rawName: rawNameKey ? rawNameKey(r) : nameKey(r),
         value: pct ?? 0,
         rawValue: pct,
         delta: deltaVsBaseline(r.validation_rate, baselineRate),
@@ -305,7 +312,7 @@ function buildBarRows(rows: MatrixRow[], baselineRate: unknown, nameKey: (r: Mat
         game_count: r.game_count,
         neutral: rateToPct(r.neutral_or_mixed_rate),
         small: isSmallSample(r),
-      } as BarRow & { rawValue: number | null };
+      };
     })
     .filter((r) => r.rawValue !== null)
     .sort((a, b) => b.value - a.value);
@@ -317,6 +324,9 @@ function BarTooltip({ active, payload, baselinePct }: { active?: boolean; payloa
   return (
     <div className="rounded-md border border-border bg-background p-2 text-xs shadow-md">
       <div className="font-medium text-foreground">{r.name}</div>
+      {r.rawName && r.rawName !== r.name && (
+        <div className="text-[10px] text-muted-foreground">bucket: {r.rawName}</div>
+      )}
       <div className="mt-1 space-y-0.5 text-muted-foreground">
         <div>Validation: <span className="text-foreground">{r.value.toFixed(1)}%</span></div>
         <div>Delta vs baseline: <span className={deltaClass(r.delta)}>{formatDelta(r.delta)}</span></div>
@@ -329,7 +339,7 @@ function BarTooltip({ active, payload, baselinePct }: { active?: boolean; payloa
   );
 }
 
-function HBarChart({ rows, baselineRate }: { rows: BarRow[]; baselineRate: unknown }) {
+function HBarChart({ rows, baselineRate, yAxisWidth = 180 }: { rows: BarRow[]; baselineRate: unknown; yAxisWidth?: number }) {
   const baselinePct = rateToPct(baselineRate);
   const height = Math.max(160, rows.length * 32 + 40);
   if (!rows.length) {
@@ -338,15 +348,24 @@ function HBarChart({ rows, baselineRate }: { rows: BarRow[]; baselineRate: unkno
   return (
     <div style={{ width: "100%", height }}>
       <ResponsiveContainer>
-        <BarChart data={rows} layout="vertical" margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
+        <BarChart data={rows} layout="vertical" margin={{ top: 8, right: 56, left: 8, bottom: 8 }}>
           <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.4} />
           <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-          <YAxis type="category" dataKey="name" width={180} stroke="hsl(var(--muted-foreground))" fontSize={11} interval={0} />
+          <YAxis type="category" dataKey="name" width={yAxisWidth} stroke="hsl(var(--muted-foreground))" fontSize={11} interval={0} tickFormatter={(v: string) => truncateLabel(v, yAxisWidth > 200 ? 36 : 28)} />
           <RTooltip content={<BarTooltip baselinePct={baselinePct} />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
           {baselinePct !== null && (
             <ReferenceLine x={baselinePct} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" label={{ value: `baseline ${baselinePct.toFixed(1)}%`, position: "top", fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
           )}
-          <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}>
+            <LabelList
+              dataKey="value"
+              position="right"
+              formatter={(v: number) => `${v.toFixed(1)}%`}
+              fill="hsl(var(--foreground))"
+              fontSize={11}
+              offset={8}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -374,7 +393,10 @@ function CoreAreaHealth({ rows, baselineRate }: { rows: MatrixRow[]; baselineRat
 
 function FeatureScorecard({ rows, baselineRate }: { rows: MatrixRow[]; baselineRate: unknown }) {
   const bars = useMemo(
-    () => buildBarRows(rows, baselineRate, (r) => r.label ?? r.feature ?? r.category ?? ""),
+    () => buildBarRows(rows, baselineRate, (r) => {
+      const raw = String(r.bucket ?? r.strength ?? "");
+      return raw ? bucketToLabel(raw) : "Unknown bucket";
+    }, (r) => String(r.bucket ?? r.strength ?? "")),
     [rows, baselineRate],
   );
   return (
@@ -387,7 +409,7 @@ function FeatureScorecard({ rows, baselineRate }: { rows: MatrixRow[]; baselineR
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <HBarChart rows={bars} baselineRate={baselineRate} />
+        <HBarChart rows={bars} baselineRate={baselineRate} yAxisWidth={240} />
       </CardContent>
     </Card>
   );
