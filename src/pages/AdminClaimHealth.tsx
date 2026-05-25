@@ -436,10 +436,11 @@ function CategoryHealth({ rows, baselineRate, baselinePct }: { rows: MatrixRow[]
 
 // ---------- Confidence Matrix ----------
 
-function getConfBucket(row: ConfidenceMatrixRow, level: "high" | "medium" | "low") {
-  const direct = row[level] as { validation_rate?: number | null; claim_row_count?: number } | undefined;
+type ConfBucket = { validation_rate?: number | null; claim_row_count?: number } | undefined;
+
+function getConfBucket(row: ConfidenceMatrixRow, level: "high" | "medium" | "low"): ConfBucket {
+  const direct = row[level] as ConfBucket;
   if (direct && typeof direct === "object") return direct;
-  // Tolerate flat shape: { high_validation_rate, high_claim_row_count }
   const vr = row[`${level}_validation_rate`];
   const cr = row[`${level}_claim_row_count`];
   if (vr !== undefined || cr !== undefined) {
@@ -448,8 +449,49 @@ function getConfBucket(row: ConfidenceMatrixRow, level: "high" | "medium" | "low
   return undefined;
 }
 
+/**
+ * Backend may return one of two shapes:
+ *  - Pre-pivoted: one row per core_area with high/medium/low buckets
+ *  - Flat: one row per (core_area, confidence) pair
+ * Normalize to pre-pivoted rows keyed by core_area.
+ */
+function pivotConfidenceRows(rows: ConfidenceMatrixRow[]): ConfidenceMatrixRow[] {
+  const byArea = new Map<string, ConfidenceMatrixRow>();
+
+  for (const row of rows) {
+    const area = (row.core_area as string | undefined)?.trim() || "—";
+    const existing: ConfidenceMatrixRow = byArea.get(area) ?? { core_area: area };
+
+    // Merge any already-pivoted buckets first.
+    for (const level of ["high", "medium", "low"] as const) {
+      const b = getConfBucket(row, level);
+      if (b && existing[level] === undefined) existing[level] = b;
+    }
+
+    // Handle flat shape: { confidence: "High", validation_rate, claim_row_count }
+    const conf = (row as { confidence?: unknown }).confidence;
+    if (typeof conf === "string") {
+      const key = conf.trim().toLowerCase();
+      if (key === "high" || key === "medium" || key === "low") {
+        existing[key] = {
+          validation_rate: (row.validation_rate ?? null) as number | null,
+          claim_row_count: row.claim_row_count,
+        };
+      }
+    }
+
+    byArea.set(area, existing);
+  }
+
+  return Array.from(byArea.values()).sort((a, b) =>
+    String(a.core_area ?? "").localeCompare(String(b.core_area ?? "")),
+  );
+}
+
 function ConfCell({ bucket }: { bucket?: { validation_rate?: number | null; claim_row_count?: number } }) {
-  if (!bucket) return <span className="text-muted-foreground">—</span>;
+  if (!bucket || (bucket.validation_rate == null && bucket.claim_row_count == null)) {
+    return <span className="text-muted-foreground">—</span>;
+  }
   const small = (bucket.claim_row_count ?? 0) < 30;
   return (
     <div className="flex items-baseline justify-end gap-2">
@@ -463,6 +505,7 @@ function ConfCell({ bucket }: { bucket?: { validation_rate?: number | null; clai
 }
 
 function ConfidenceMatrix({ rows }: { rows: ConfidenceMatrixRow[] }) {
+  const pivoted = useMemo(() => pivotConfidenceRows(rows), [rows]);
   return (
     <Card>
       <CardHeader>
@@ -480,10 +523,10 @@ function ConfidenceMatrix({ rows }: { rows: ConfidenceMatrixRow[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 && (
+            {pivoted.length === 0 && (
               <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">No data.</TableCell></TableRow>
             )}
-            {rows.map((r, i) => (
+            {pivoted.map((r, i) => (
               <TableRow key={`${r.core_area}-${i}`}>
                 <TableCell className="font-medium">{(r.core_area as string) ?? "—"}</TableCell>
                 <TableCell className="text-right"><ConfCell bucket={getConfBucket(r, "high")} /></TableCell>
@@ -497,6 +540,7 @@ function ConfidenceMatrix({ rows }: { rows: ConfidenceMatrixRow[] }) {
     </Card>
   );
 }
+
 
 // ---------- Surface Health ----------
 
