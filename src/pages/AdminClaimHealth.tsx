@@ -36,7 +36,6 @@ const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFin
 
 function formatPercent(value: unknown): string {
   if (!isNum(value)) return "—";
-  // Backend rates appear to be 0..1 typically; fall back if already in pts.
   const pct = Math.abs(value) <= 1.5 ? value * 100 : value;
   return `${pct.toFixed(1)}%`;
 }
@@ -78,6 +77,28 @@ function SmallSampleBadge() {
 function rateToPct(v: unknown): number | null {
   if (!isNum(v)) return null;
   return Math.abs(v) <= 1.5 ? v * 100 : v;
+}
+
+function bucketToLabel(bucket: string): string {
+  const map: Record<string, string> = {
+    repeat_positive_strong: "Repeat Positive Strong",
+    repeat_positive_supportive: "Repeat Positive Supportive",
+    not_relevant: "Not Relevant",
+    context_only: "Context Only",
+    negative_caution: "Negative Caution",
+    mixed_near_even: "Mixed / Near Even",
+    anchor_unavailable: "Anchor Unavailable",
+    caution_only: "Caution Only",
+    opposing_efficiency_signal: "Opposing Efficiency Signal",
+  };
+  return map[bucket] ?? bucket
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function truncateLabel(label: string, max = 28): string {
+  if (label.length <= max) return label;
+  return label.slice(0, max) + "…";
 }
 
 // ---------- Page ----------
