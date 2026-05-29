@@ -639,6 +639,36 @@ function GameLevelCalibrationCompact({ rows }: { rows: GameLevelCalibrationRow[]
 function GameCalibrationTab({ data }: { data: ClaimHealthResponse }) {
   const rows = readSection<GameLevelCalibrationRow>(data, "game_level_calibration");
   const meta = sectionMeta(data, "game_level_calibration");
+  const calibratedRows = readSection<GameLevelCalibrationRow>(data, "calibrated_game_level_calibration");
+  const calibratedMeta = sectionMeta(data, "calibrated_game_level_calibration");
+
+  return (
+    <div className="space-y-6">
+      <GameLevelCalibrationCard
+        rows={rows}
+        title={meta.title ?? "Game-Level Calibration"}
+        description={meta.description ?? "Correct rate is based only on games with a directional pick/lean. No-pick games are shown separately."}
+      />
+      {calibratedRows.length > 0 && (
+        <GameLevelCalibrationCard
+          rows={calibratedRows}
+          title={calibratedMeta.title ?? "Calibrated Game-Level Calibration"}
+          description={calibratedMeta.description}
+        />
+      )}
+    </div>
+  );
+}
+
+function GameLevelCalibrationCard({
+  rows,
+  title,
+  description,
+}: {
+  rows: GameLevelCalibrationRow[];
+  title: string;
+  description?: string;
+}) {
   const matrix = useMemo(() => indexBy(rows,
     (r) => r.profile_strength_label ?? "",
     (r) => r.outcome_confidence_label ?? "",
@@ -651,10 +681,8 @@ function GameCalibrationTab({ data }: { data: ClaimHealthResponse }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{meta.title ?? "Game-Level Calibration"}</CardTitle>
-        <CardDescription>
-          {meta.description ?? "Correct rate is based only on games with a directional pick/lean. No-pick games are shown separately."}
-        </CardDescription>
+        <CardTitle className="text-lg">{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent className="p-0">
         {rows.length === 0 ? (
