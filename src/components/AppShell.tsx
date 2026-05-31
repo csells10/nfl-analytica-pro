@@ -2,7 +2,8 @@ import { forwardRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
-import { BarChart3, CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck } from "lucide-react";
+import { CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck } from "lucide-react";
+import gamelensHorizontal from "@/assets/gamelens-horizontal.png";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/lib/admin-api";
 
@@ -56,8 +57,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-foreground">GameLens</span>
+              <img src={gamelensHorizontal} alt="GameLens" className="h-7 w-auto" />
             </Link>
             <nav className="hidden items-center gap-1 md:flex">
               {navItems.map((item) => {

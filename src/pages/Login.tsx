@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { BarChart3 } from "lucide-react";
+import gamelensIconSquare from "@/assets/gamelens-icon-square.png";
 
 export default function Login() {
   const { signInWithGoogle, isLoading, user, isReady, authError } = useAuth();
@@ -31,9 +31,7 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm border-border bg-card">
         <CardHeader className="items-center space-y-3 pb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-            <BarChart3 className="h-6 w-6 text-primary" />
-          </div>
+          <img src={gamelensIconSquare} alt="GameLens" className="h-14 w-14 rounded-lg" />
           <div className="text-center">
             <h1 className="text-xl font-semibold text-foreground">GameLens</h1>
             <p className="text-xs tracking-wide text-muted-foreground">Matchup Intelligence</p>

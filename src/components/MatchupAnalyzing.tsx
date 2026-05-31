@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useState } from "react";
 import { Activity, Gauge, Flame, Zap } from "lucide-react";
+import gamelensIconSquare from "@/assets/gamelens-icon-square.png";
 
 /**
  * MatchupAnalyzing
@@ -30,6 +31,9 @@ export const MatchupAnalyzing = forwardRef<HTMLDivElement>(function MatchupAnaly
 
   return (
     <div ref={ref} className="space-y-5">
+      <div className="flex justify-center">
+        <img src={gamelensIconSquare} alt="GameLens" className="h-10 w-10 rounded-md" />
+      </div>
       {/* Stage banner */}
       <div className="flex items-center gap-2 text-xs">
         <Activity className="h-3.5 w-3.5 text-primary" />
