@@ -251,10 +251,11 @@ async function fetchClaimHealth(
   }
 }
 
-export function useClaimHealth(runId: string, season: string) {
+export function useClaimHealth(runId: string, season: string, grain?: ClaimHealthGrain) {
   return useQuery({
-    queryKey: ["admin-claim-health", runId, season],
-    queryFn: () => fetchClaimHealth(runId, season),
+    queryKey: ["admin-claim-health", runId, season, grain ?? "default"],
+    queryFn: () => fetchClaimHealth(runId, season, grain),
+    placeholderData: keepPreviousData,
     retry: (count, err) => {
       if (err instanceof ApiError && (err.kind === "forbidden" || err.kind === "unauthenticated")) return false;
       return count < 1;
