@@ -256,7 +256,7 @@ export default function AdminClaimHealth() {
           {data && (
             <TooltipProvider delayDuration={150}>
               <HowToRead data={data} />
-              <DashboardTabs data={data} />
+              <DashboardTabs data={data} grain={grain} onGrainChange={handleGrainChange} isFetching={isFetching} />
             </TooltipProvider>
           )}
 
