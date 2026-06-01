@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import gamelensIconSquare from "@/assets/gamelens-icon-square.png";
+import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
+import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 
 export default function Login() {
   const { signInWithGoogle, isLoading, user, isReady, authError } = useAuth();
@@ -31,9 +32,10 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm border-border bg-card">
         <CardHeader className="items-center space-y-3 pb-2">
-          <img src={gamelensIconSquare} alt="" aria-hidden="true" className="mx-auto h-20 w-20 rounded-xl" />
+          <h1 className="sr-only">GameLens</h1>
+          <img src={gamelensHorizontalLight} alt="" aria-hidden="true" className="mx-auto h-16 w-auto dark:hidden" />
+          <img src={gamelensHorizontalDark} alt="" aria-hidden="true" className="mx-auto hidden h-16 w-auto dark:block" />
           <div className="text-center">
-            <h1 className="text-2xl font-semibold text-foreground">GameLens</h1>
             <p className="text-xs uppercase tracking-wider text-muted-foreground">NFL Matchup Intelligence</p>
             <p className="mt-2 text-sm text-muted-foreground">Sign in to continue</p>
           </div>
