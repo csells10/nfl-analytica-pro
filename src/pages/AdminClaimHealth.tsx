@@ -1,4 +1,5 @@
-import { Component, useMemo, type ErrorInfo, type ReactNode } from "react";
+import { Component, useCallback, useMemo, type ErrorInfo, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
