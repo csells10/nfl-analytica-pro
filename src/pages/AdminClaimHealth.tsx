@@ -1273,7 +1273,7 @@ function HBarChart({ rows, baselineRate, yAxisWidth = 180 }: { rows: BarRow[]; b
           <YAxis type="category" dataKey="name" width={yAxisWidth} stroke="hsl(var(--muted-foreground))" fontSize={11} interval={0} tickFormatter={(v: string) => truncateLabel(v, yAxisWidth > 200 ? 36 : 28)} />
           <RTooltip content={<BarTooltip baselinePct={baselinePct} />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
           {baselinePct !== null && (
-            <ReferenceLine x={baselinePct} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" label={{ value: `baseline ${baselinePct.toFixed(1)}%`, position: "top", fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+            <ReferenceLine x={baselinePct} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
           )}
           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}>
             <LabelList
