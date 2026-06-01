@@ -56,8 +56,8 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
-              <img src={gamelensHorizontalLight} alt="GameLens" className="h-7 w-auto dark:hidden" />
-              <img src={gamelensHorizontalDark} alt="GameLens" className="hidden h-7 w-auto dark:block" />
+              <img src={gamelensHorizontalLight} alt="GameLens" className="h-9 w-auto dark:hidden" />
+              <img src={gamelensHorizontalDark} alt="GameLens" className="hidden h-9 w-auto dark:block" />
             </Link>
             <nav className="hidden items-center gap-1 md:flex">
               {navItems.map((item) => {
