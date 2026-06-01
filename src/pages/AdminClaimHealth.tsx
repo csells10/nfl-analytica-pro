@@ -372,7 +372,18 @@ const FALLBACK_TABS: TabSpec[] = [
   { id: "technical_debug", label: "Technical Debug", description: "Claim surface QA and regression checks." },
 ];
 
-function DashboardTabs({ data }: { data: ClaimHealthResponse }) {
+interface TabContext {
+  grain: ClaimHealthGrain;
+  onGrainChange: (g: ClaimHealthGrain) => void;
+  isFetching: boolean;
+}
+
+function DashboardTabs({
+  data,
+  grain,
+  onGrainChange,
+  isFetching,
+}: { data: ClaimHealthResponse } & TabContext) {
   const tabs = data.tabs && data.tabs.length > 0 ? data.tabs : FALLBACK_TABS;
   const defaultTab = data.default_tab && tabs.some((t) => t.id === data.default_tab)
     ? data.default_tab
@@ -392,17 +403,23 @@ function DashboardTabs({ data }: { data: ClaimHealthResponse }) {
           {t.description && (
             <p className="text-sm text-muted-foreground">{t.description}</p>
           )}
-          <TabBody tabId={t.id} data={data} />
+          <TabBody tabId={t.id} data={data} grain={grain} onGrainChange={onGrainChange} isFetching={isFetching} />
         </TabsContent>
       ))}
     </Tabs>
   );
 }
 
-function TabBody({ tabId, data }: { tabId: string; data: ClaimHealthResponse }) {
+function TabBody({
+  tabId,
+  data,
+  grain,
+  onGrainChange,
+  isFetching,
+}: { tabId: string; data: ClaimHealthResponse } & TabContext) {
   switch (tabId) {
     case "overview":
-      return <OverviewTab data={data} />;
+      return <OverviewTab data={data} grain={grain} onGrainChange={onGrainChange} isFetching={isFetching} />;
     case "game_calibration":
       return <GameCalibrationTab data={data} />;
     case "core_area_alignment":
@@ -426,18 +443,29 @@ function TabBody({ tabId, data }: { tabId: string; data: ClaimHealthResponse }) 
 
 // ---------- Overview tab ----------
 
-function OverviewTab({ data }: { data: ClaimHealthResponse }) {
+function OverviewTab({
+  data,
+  grain,
+  onGrainChange,
+  isFetching,
+}: { data: ClaimHealthResponse } & TabContext) {
   const calibRows = readSection<CalibrationOverTimeRow>(data, "calibration_over_time");
   const gameRows = readSection<GameLevelCalibrationRow>(data, "game_level_calibration");
   const meta = sectionMeta(data, "calibration_over_time");
-  const grainDefault = meta.grain_default ?? "week";
   return (
     <div className="space-y-6">
       <CoverageBaselineCards data={data} />
-      <CalibrationOverTimeChart rows={calibRows} grain={grainDefault} meta={meta} />
+      <CalibrationOverTimeChart
+        rows={calibRows}
+        grain={grain}
+        onGrainChange={onGrainChange}
+        isFetching={isFetching}
+        meta={meta}
+      />
       <GameLevelCalibrationCompact rows={gameRows} />
     </div>
   );
+
 }
 
 function CoverageBaselineCards({ data }: { data: ClaimHealthResponse }) {
