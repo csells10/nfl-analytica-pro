@@ -31,10 +31,10 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm border-border bg-card">
         <CardHeader className="items-center space-y-3 pb-2">
-          <img src={gamelensIconSquare} alt="GameLens" className="h-14 w-14 rounded-lg" />
+          <img src={gamelensIconSquare} alt="" aria-hidden="true" className="mx-auto h-20 w-20 rounded-xl" />
           <div className="text-center">
-            <h1 className="text-xl font-semibold text-foreground">GameLens</h1>
-            <p className="text-xs tracking-wide text-muted-foreground">Matchup Intelligence</p>
+            <h1 className="text-2xl font-semibold text-foreground">GameLens</h1>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">NFL Matchup Intelligence</p>
             <p className="mt-2 text-sm text-muted-foreground">Sign in to continue</p>
           </div>
         </CardHeader>

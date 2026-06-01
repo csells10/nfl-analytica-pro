@@ -54,7 +54,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
     <div ref={ref} className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 lg:gap-6">
             <Link to="/" className="flex items-center gap-2">
               <img src={gamelensHorizontalLight} alt="GameLens" className="h-9 w-auto dark:hidden" />
               <img src={gamelensHorizontalDark} alt="GameLens" className="hidden h-9 w-auto dark:block" />
@@ -66,7 +66,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-secondary text-foreground"
                         : "text-muted-foreground hover:text-foreground"
@@ -80,7 +80,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden text-sm text-muted-foreground sm:block">{user?.email}</span>
+            <span className="hidden text-sm text-muted-foreground lg:block">{user?.email}</span>
             {showGuide && (
               <Button
                 variant="ghost"
