@@ -205,7 +205,20 @@ function sectionMeta(data: ClaimHealthResponse | undefined, id: string): Section
 }
 
 export default function AdminClaimHealth() {
-  const { data, isLoading, isFetching, error } = useClaimHealth(RUN_ID, SEASON);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawGrain = searchParams.get("grain");
+  const grain: ClaimHealthGrain = isClaimHealthGrain(rawGrain) ? rawGrain : "week";
+
+  const handleGrainChange = useCallback(
+    (next: ClaimHealthGrain) => {
+      const params = new URLSearchParams(searchParams);
+      params.set("grain", next);
+      setSearchParams(params, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const { data, isLoading, isFetching, error } = useClaimHealth(RUN_ID, SEASON, grain);
 
   return (
     <AppShell showGuide={false}>
