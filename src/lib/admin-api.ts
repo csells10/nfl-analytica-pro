@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-export type ClaimHealthGrain = "week" | "day" | "season_phase";
-export const CLAIM_HEALTH_GRAINS: ClaimHealthGrain[] = ["week", "day", "season_phase"];
+export type ClaimHealthGrain = "week" | "season_phase";
+export const CLAIM_HEALTH_GRAINS: ClaimHealthGrain[] = ["week", "season_phase"];
 export function isClaimHealthGrain(v: unknown): v is ClaimHealthGrain {
   return typeof v === "string" && (CLAIM_HEALTH_GRAINS as string[]).includes(v);
 }

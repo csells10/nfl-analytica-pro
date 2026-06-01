@@ -514,13 +514,11 @@ function StatCard({ label, value, note }: { label: string; value: React.ReactNod
 
 const GRAIN_OPTIONS: Array<{ value: ClaimHealthGrain; label: string }> = [
   { value: "week", label: "Week" },
-  { value: "day", label: "Day" },
   { value: "season_phase", label: "Season Phase" },
 ];
 
 const GRAIN_HELPER: Record<ClaimHealthGrain, string> = {
   week: "Weekly aggregate view of claim validation and game-pick calibration.",
-  day: "Daily view of claim validation and game-pick calibration. Useful for spotting noisy spikes.",
   season_phase: "Season-phase view of claim validation and game-pick calibration.",
 };
 
