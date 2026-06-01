@@ -3,7 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
 import { CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck } from "lucide-react";
-import gamelensHorizontal from "@/assets/gamelens-horizontal.png";
+import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
+import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/lib/admin-api";
 
@@ -12,7 +13,6 @@ const baseNavItems = [
   { label: "Matchup Lens", path: "/matchup-lens", icon: Target },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
-
 
 const GUIDE_EVENT = "gamelens:open-guide";
 const GUIDE_HINT_KEY = "gamelens_guide_hint_views";
@@ -30,7 +30,6 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   const navItems = me?.is_admin
     ? [...baseNavItems, { label: "Admin", path: "/admin/claim-health", icon: ShieldCheck }]
     : baseNavItems;
-
 
   // Show a subtle pulse on the Guide button for the first few visits so users discover it.
   const [pulseGuide, setPulseGuide] = useState(false);
@@ -57,7 +56,8 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
-              <img src={gamelensHorizontal} alt="GameLens" className="h-7 w-auto" />
+              <img src={gamelensHorizontalLight} alt="GameLens" className="h-7 w-auto dark:hidden" />
+              <img src={gamelensHorizontalDark} alt="GameLens" className="hidden h-7 w-auto dark:block" />
             </Link>
             <nav className="hidden items-center gap-1 md:flex">
               {navItems.map((item) => {
