@@ -39,6 +39,8 @@ import {
 } from "recharts";
 import {
   useClaimHealth,
+  isClaimHealthGrain,
+  type ClaimHealthGrain,
   type ClaimHealthResponse,
   type MatrixRow,
   type ConfidenceMatrixRow,
@@ -53,6 +55,7 @@ import {
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/nfl-api";
 import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const RUN_ID = "full_2025_reg_post_claim_matrix_pilot";
 const SEASON = "2025";
