@@ -512,13 +512,70 @@ function StatCard({ label, value, note }: { label: string; value: React.ReactNod
 
 // ---------- Calibration Over Time ----------
 
+const GRAIN_OPTIONS: Array<{ value: ClaimHealthGrain; label: string }> = [
+  { value: "week", label: "Week" },
+  { value: "day", label: "Day" },
+  { value: "season_phase", label: "Season Phase" },
+];
+
+const GRAIN_HELPER: Record<ClaimHealthGrain, string> = {
+  week: "Weekly aggregate view of claim validation and game-pick calibration.",
+  day: "Daily view of claim validation and game-pick calibration. Useful for spotting noisy spikes.",
+  season_phase: "Season-phase view of claim validation and game-pick calibration.",
+};
+
+function GrainPillSelector({
+  value,
+  onChange,
+}: {
+  value: ClaimHealthGrain;
+  onChange: (v: ClaimHealthGrain) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs uppercase tracking-wide text-muted-foreground">View by</span>
+      <div
+        role="group"
+        aria-label="Calibration grain"
+        className="inline-flex rounded-full border border-border bg-muted/40 p-0.5"
+      >
+        {GRAIN_OPTIONS.map((opt) => {
+          const active = opt.value === value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                if (!active) onChange(opt.value);
+              }}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs transition-colors",
+                active
+                  ? "border border-border/80 bg-background text-foreground font-medium shadow-sm"
+                  : "border border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function CalibrationOverTimeChart({
   rows,
   grain,
+  onGrainChange,
+  isFetching,
   meta,
 }: {
   rows: CalibrationOverTimeRow[];
-  grain: string;
+  grain: ClaimHealthGrain;
+  onGrainChange: (g: ClaimHealthGrain) => void;
+  isFetching: boolean;
   meta: SectionMeta;
 }) {
   const filtered = useMemo(() => {
@@ -541,10 +598,13 @@ function CalibrationOverTimeChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Calibration Over Time</CardTitle>
-        <CardDescription>
-          {meta.description ?? "Claim validation, game pick accuracy, and selected segment validation across the season."}
-        </CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <CardTitle className="text-lg">Calibration Over Time</CardTitle>
+            <CardDescription>{GRAIN_HELPER[grain] ?? meta.description}</CardDescription>
+          </div>
+          <GrainPillSelector value={grain} onChange={onGrainChange} />
+        </div>
         {segmentMatchesOverall && (
           <div className="mt-2 text-xs text-muted-foreground">
             Selected segment currently matches overall claims.
@@ -555,7 +615,10 @@ function CalibrationOverTimeChart({
         {filtered.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted-foreground">No data.</div>
         ) : (
-          <div style={{ width: "100%", height: 320 }}>
+          <div
+            className="transition-opacity duration-200"
+            style={{ width: "100%", height: 320, opacity: isFetching ? 0.6 : 1 }}
+          >
             <ResponsiveContainer>
               <LineChart data={filtered} margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeOpacity={0.4} vertical={false} />
@@ -576,6 +639,7 @@ function CalibrationOverTimeChart({
     </Card>
   );
 }
+
 
 function CalibrationTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: CalibrationOverTimeRow }> }) {
   if (!active || !payload?.length) return null;
