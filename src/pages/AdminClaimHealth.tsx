@@ -1273,16 +1273,44 @@ function HBarChart({ rows, baselineRate, yAxisWidth = 180 }: { rows: BarRow[]; b
           <YAxis type="category" dataKey="name" width={yAxisWidth} stroke="hsl(var(--muted-foreground))" fontSize={11} interval={0} tickFormatter={(v: string) => truncateLabel(v, yAxisWidth > 200 ? 36 : 28)} />
           <RTooltip content={<BarTooltip baselinePct={baselinePct} />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
           {baselinePct !== null && (
-            <ReferenceLine x={baselinePct} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+            <ReferenceLine
+              x={baselinePct}
+              stroke="hsl(var(--foreground))"
+              strokeOpacity={0.45}
+              strokeWidth={1.25}
+              strokeDasharray="5 4"
+              ifOverflow="extendDomain"
+            />
           )}
           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}>
             <LabelList
               dataKey="value"
-              position="right"
-              formatter={(v: number) => `${v.toFixed(1)}%`}
-              fill="hsl(var(--foreground))"
-              fontSize={11}
-              offset={8}
+              content={(props: { x?: number; y?: number; width?: number; height?: number; value?: number }) => {
+                const { x = 0, y = 0, width = 0, height = 0, value } = props;
+                if (typeof value !== "number") return null;
+                const baseOffset = 8;
+                const gap = 12;
+                let labelX = x + width + baseOffset;
+                if (baselinePct !== null && value > 0) {
+                  const pxPerPct = width / value;
+                  const baselinePx = x + pxPerPct * baselinePct;
+                  if (Math.abs(labelX - baselinePx) < gap) {
+                    labelX = baselinePx + gap;
+                  }
+                }
+                return (
+                  <text
+                    x={labelX}
+                    y={y + height / 2}
+                    dy={4}
+                    fill="hsl(var(--foreground))"
+                    fontSize={11}
+                    textAnchor="start"
+                  >
+                    {`${value.toFixed(1)}%`}
+                  </text>
+                );
+              }}
             />
           </Bar>
         </BarChart>
