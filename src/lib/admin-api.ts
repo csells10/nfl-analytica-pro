@@ -1,4 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+
+export type ClaimHealthGrain = "week" | "day" | "season_phase";
+export const CLAIM_HEALTH_GRAINS: ClaimHealthGrain[] = ["week", "day", "season_phase"];
+export function isClaimHealthGrain(v: unknown): v is ClaimHealthGrain {
+  return typeof v === "string" && (CLAIM_HEALTH_GRAINS as string[]).includes(v);
+}
 import { getAuthToken, firebaseAuth } from "@/lib/firebase";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { ApiError, API_BASE } from "@/lib/nfl-api";
@@ -207,11 +213,17 @@ export interface ClaimHealthResponse {
 
 // ---------- Fetch ----------
 
-async function fetchClaimHealth(runId: string, season: string): Promise<ClaimHealthResponse> {
+async function fetchClaimHealth(
+  runId: string,
+  season: string,
+  grain?: ClaimHealthGrain,
+): Promise<ClaimHealthResponse> {
   const token = await getAuthToken();
   if (!token) throw new ApiError("unauthenticated", "Not signed in", 401);
 
-  const url = `${API_BASE}/admin/gamelens/claim-health?run_id=${encodeURIComponent(runId)}&season=${encodeURIComponent(season)}`;
+  const params = new URLSearchParams({ run_id: runId, season });
+  if (grain) params.set("grain", grain);
+  const url = `${API_BASE}/admin/gamelens/claim-health?${params.toString()}`;
 
   let res: Response;
   try {
@@ -239,10 +251,11 @@ async function fetchClaimHealth(runId: string, season: string): Promise<ClaimHea
   }
 }
 
-export function useClaimHealth(runId: string, season: string) {
+export function useClaimHealth(runId: string, season: string, grain?: ClaimHealthGrain) {
   return useQuery({
-    queryKey: ["admin-claim-health", runId, season],
-    queryFn: () => fetchClaimHealth(runId, season),
+    queryKey: ["admin-claim-health", runId, season, grain ?? "default"],
+    queryFn: () => fetchClaimHealth(runId, season, grain),
+    placeholderData: keepPreviousData,
     retry: (count, err) => {
       if (err instanceof ApiError && (err.kind === "forbidden" || err.kind === "unauthenticated")) return false;
       return count < 1;

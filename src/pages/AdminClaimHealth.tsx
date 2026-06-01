@@ -1,4 +1,5 @@
-import { Component, useMemo, type ErrorInfo, type ReactNode } from "react";
+import { Component, useCallback, useMemo, type ErrorInfo, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,8 @@ import {
 } from "recharts";
 import {
   useClaimHealth,
+  isClaimHealthGrain,
+  type ClaimHealthGrain,
   type ClaimHealthResponse,
   type MatrixRow,
   type ConfidenceMatrixRow,
@@ -52,6 +55,7 @@ import {
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/nfl-api";
 import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const RUN_ID = "full_2025_reg_post_claim_matrix_pilot";
 const SEASON = "2025";
@@ -201,7 +205,20 @@ function sectionMeta(data: ClaimHealthResponse | undefined, id: string): Section
 }
 
 export default function AdminClaimHealth() {
-  const { data, isLoading, isFetching, error } = useClaimHealth(RUN_ID, SEASON);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawGrain = searchParams.get("grain");
+  const grain: ClaimHealthGrain = isClaimHealthGrain(rawGrain) ? rawGrain : "week";
+
+  const handleGrainChange = useCallback(
+    (next: ClaimHealthGrain) => {
+      const params = new URLSearchParams(searchParams);
+      params.set("grain", next);
+      setSearchParams(params, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const { data, isLoading, isFetching, error } = useClaimHealth(RUN_ID, SEASON, grain);
 
   return (
     <AppShell showGuide={false}>
@@ -239,7 +256,7 @@ export default function AdminClaimHealth() {
           {data && (
             <TooltipProvider delayDuration={150}>
               <HowToRead data={data} />
-              <DashboardTabs data={data} />
+              <DashboardTabs data={data} grain={grain} onGrainChange={handleGrainChange} isFetching={isFetching} />
             </TooltipProvider>
           )}
 
@@ -355,7 +372,18 @@ const FALLBACK_TABS: TabSpec[] = [
   { id: "technical_debug", label: "Technical Debug", description: "Claim surface QA and regression checks." },
 ];
 
-function DashboardTabs({ data }: { data: ClaimHealthResponse }) {
+interface TabContext {
+  grain: ClaimHealthGrain;
+  onGrainChange: (g: ClaimHealthGrain) => void;
+  isFetching: boolean;
+}
+
+function DashboardTabs({
+  data,
+  grain,
+  onGrainChange,
+  isFetching,
+}: { data: ClaimHealthResponse } & TabContext) {
   const tabs = data.tabs && data.tabs.length > 0 ? data.tabs : FALLBACK_TABS;
   const defaultTab = data.default_tab && tabs.some((t) => t.id === data.default_tab)
     ? data.default_tab
@@ -375,17 +403,23 @@ function DashboardTabs({ data }: { data: ClaimHealthResponse }) {
           {t.description && (
             <p className="text-sm text-muted-foreground">{t.description}</p>
           )}
-          <TabBody tabId={t.id} data={data} />
+          <TabBody tabId={t.id} data={data} grain={grain} onGrainChange={onGrainChange} isFetching={isFetching} />
         </TabsContent>
       ))}
     </Tabs>
   );
 }
 
-function TabBody({ tabId, data }: { tabId: string; data: ClaimHealthResponse }) {
+function TabBody({
+  tabId,
+  data,
+  grain,
+  onGrainChange,
+  isFetching,
+}: { tabId: string; data: ClaimHealthResponse } & TabContext) {
   switch (tabId) {
     case "overview":
-      return <OverviewTab data={data} />;
+      return <OverviewTab data={data} grain={grain} onGrainChange={onGrainChange} isFetching={isFetching} />;
     case "game_calibration":
       return <GameCalibrationTab data={data} />;
     case "core_area_alignment":
@@ -409,18 +443,29 @@ function TabBody({ tabId, data }: { tabId: string; data: ClaimHealthResponse }) 
 
 // ---------- Overview tab ----------
 
-function OverviewTab({ data }: { data: ClaimHealthResponse }) {
+function OverviewTab({
+  data,
+  grain,
+  onGrainChange,
+  isFetching,
+}: { data: ClaimHealthResponse } & TabContext) {
   const calibRows = readSection<CalibrationOverTimeRow>(data, "calibration_over_time");
   const gameRows = readSection<GameLevelCalibrationRow>(data, "game_level_calibration");
   const meta = sectionMeta(data, "calibration_over_time");
-  const grainDefault = meta.grain_default ?? "week";
   return (
     <div className="space-y-6">
       <CoverageBaselineCards data={data} />
-      <CalibrationOverTimeChart rows={calibRows} grain={grainDefault} meta={meta} />
+      <CalibrationOverTimeChart
+        rows={calibRows}
+        grain={grain}
+        onGrainChange={onGrainChange}
+        isFetching={isFetching}
+        meta={meta}
+      />
       <GameLevelCalibrationCompact rows={gameRows} />
     </div>
   );
+
 }
 
 function CoverageBaselineCards({ data }: { data: ClaimHealthResponse }) {
@@ -467,13 +512,70 @@ function StatCard({ label, value, note }: { label: string; value: React.ReactNod
 
 // ---------- Calibration Over Time ----------
 
+const GRAIN_OPTIONS: Array<{ value: ClaimHealthGrain; label: string }> = [
+  { value: "week", label: "Week" },
+  { value: "day", label: "Day" },
+  { value: "season_phase", label: "Season Phase" },
+];
+
+const GRAIN_HELPER: Record<ClaimHealthGrain, string> = {
+  week: "Weekly aggregate view of claim validation and game-pick calibration.",
+  day: "Daily view of claim validation and game-pick calibration. Useful for spotting noisy spikes.",
+  season_phase: "Season-phase view of claim validation and game-pick calibration.",
+};
+
+function GrainPillSelector({
+  value,
+  onChange,
+}: {
+  value: ClaimHealthGrain;
+  onChange: (v: ClaimHealthGrain) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs uppercase tracking-wide text-muted-foreground">View by</span>
+      <div
+        role="group"
+        aria-label="Calibration grain"
+        className="inline-flex rounded-full border border-border bg-muted/40 p-0.5"
+      >
+        {GRAIN_OPTIONS.map((opt) => {
+          const active = opt.value === value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                if (!active) onChange(opt.value);
+              }}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs transition-colors",
+                active
+                  ? "border border-border/80 bg-background text-foreground font-medium shadow-sm"
+                  : "border border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function CalibrationOverTimeChart({
   rows,
   grain,
+  onGrainChange,
+  isFetching,
   meta,
 }: {
   rows: CalibrationOverTimeRow[];
-  grain: string;
+  grain: ClaimHealthGrain;
+  onGrainChange: (g: ClaimHealthGrain) => void;
+  isFetching: boolean;
   meta: SectionMeta;
 }) {
   const filtered = useMemo(() => {
@@ -496,10 +598,13 @@ function CalibrationOverTimeChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Calibration Over Time</CardTitle>
-        <CardDescription>
-          {meta.description ?? "Claim validation, game pick accuracy, and selected segment validation across the season."}
-        </CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <CardTitle className="text-lg">Calibration Over Time</CardTitle>
+            <CardDescription>{GRAIN_HELPER[grain] ?? meta.description}</CardDescription>
+          </div>
+          <GrainPillSelector value={grain} onChange={onGrainChange} />
+        </div>
         {segmentMatchesOverall && (
           <div className="mt-2 text-xs text-muted-foreground">
             Selected segment currently matches overall claims.
@@ -510,7 +615,10 @@ function CalibrationOverTimeChart({
         {filtered.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted-foreground">No data.</div>
         ) : (
-          <div style={{ width: "100%", height: 320 }}>
+          <div
+            className="transition-opacity duration-200"
+            style={{ width: "100%", height: 320, opacity: isFetching ? 0.6 : 1 }}
+          >
             <ResponsiveContainer>
               <LineChart data={filtered} margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeOpacity={0.4} vertical={false} />
@@ -531,6 +639,7 @@ function CalibrationOverTimeChart({
     </Card>
   );
 }
+
 
 function CalibrationTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: CalibrationOverTimeRow }> }) {
   if (!active || !payload?.length) return null;
