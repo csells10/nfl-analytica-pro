@@ -1273,7 +1273,7 @@ function HBarChart({ rows, baselineRate, yAxisWidth = 180 }: { rows: BarRow[]; b
           <YAxis type="category" dataKey="name" width={yAxisWidth} stroke="hsl(var(--muted-foreground))" fontSize={11} interval={0} tickFormatter={(v: string) => truncateLabel(v, yAxisWidth > 200 ? 36 : 28)} />
           <RTooltip content={<BarTooltip baselinePct={baselinePct} />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
           {baselinePct !== null && (
-            <ReferenceLine x={baselinePct} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" label={{ value: `baseline ${baselinePct.toFixed(1)}%`, position: "top", fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+            <ReferenceLine x={baselinePct} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
           )}
           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}>
             <LabelList
@@ -1293,13 +1293,26 @@ function HBarChart({ rows, baselineRate, yAxisWidth = 180 }: { rows: BarRow[]; b
 
 // ---------- Core Area ----------
 
+function BaselineBadge({ baselinePct }: { baselinePct: number | null | undefined }) {
+  if (baselinePct == null || !Number.isFinite(baselinePct)) return null;
+  return (
+    <span className="inline-flex items-center rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">
+      Baseline:&nbsp;
+      <span className="font-medium text-foreground">{baselinePct.toFixed(1)}%</span>
+    </span>
+  );
+}
+
 function CoreAreaHealth({ rows, baselineRate }: { rows: MatrixRow[]; baselineRate: unknown }) {
   const bars = useMemo(() => buildBarRows(rows, baselineRate, (r) => r.core_area ?? ""), [rows, baselineRate]);
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Core Area Health</CardTitle>
-        <CardDescription>Validation rate by core area, vs baseline.</CardDescription>
+      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle className="text-lg">Core Area Health</CardTitle>
+          <CardDescription>Validation rate by core area, vs baseline.</CardDescription>
+        </div>
+        <BaselineBadge baselinePct={rateToPct(baselineRate)} />
       </CardHeader>
       <CardContent>
         <HBarChart rows={bars} baselineRate={baselineRate} />
@@ -1320,12 +1333,15 @@ function FeatureScorecard({ rows, baselineRate }: { rows: MatrixRow[]; baselineR
   );
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Offensive Efficiency Feature Scorecard</CardTitle>
-        <CardDescription>
-          This feature is claim-language calibration support only. It does not drive winner prediction,
-          Matchup Lean confidence, or Model Trust overrides.
-        </CardDescription>
+      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle className="text-lg">Offensive Efficiency Feature Scorecard</CardTitle>
+          <CardDescription>
+            This feature is claim-language calibration support only. It does not drive winner prediction,
+            Matchup Lean confidence, or Model Trust overrides.
+          </CardDescription>
+        </div>
+        <BaselineBadge baselinePct={rateToPct(baselineRate)} />
       </CardHeader>
       <CardContent>
         <HBarChart rows={bars} baselineRate={baselineRate} yAxisWidth={240} />
