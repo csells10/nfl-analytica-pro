@@ -213,11 +213,17 @@ export interface ClaimHealthResponse {
 
 // ---------- Fetch ----------
 
-async function fetchClaimHealth(runId: string, season: string): Promise<ClaimHealthResponse> {
+async function fetchClaimHealth(
+  runId: string,
+  season: string,
+  grain?: ClaimHealthGrain,
+): Promise<ClaimHealthResponse> {
   const token = await getAuthToken();
   if (!token) throw new ApiError("unauthenticated", "Not signed in", 401);
 
-  const url = `${API_BASE}/admin/gamelens/claim-health?run_id=${encodeURIComponent(runId)}&season=${encodeURIComponent(season)}`;
+  const params = new URLSearchParams({ run_id: runId, season });
+  if (grain) params.set("grain", grain);
+  const url = `${API_BASE}/admin/gamelens/claim-health?${params.toString()}`;
 
   let res: Response;
   try {
