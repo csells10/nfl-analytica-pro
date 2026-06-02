@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -16,7 +17,7 @@ import {
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from "firebase/auth";
-import { firebaseAuth, googleProvider, isMobileBrowser } from "@/lib/firebase";
+import { firebaseAuth, googleProvider } from "@/lib/firebase";
 import { perfNow, perfTime } from "@/lib/perf";
 
 interface User {
@@ -29,12 +30,13 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  /** True once the initial auth-state check has completed. */
+  /** True once Firebase has finished both redirect-result processing and the first auth-state event. */
   isReady: boolean;
   /** True from the moment the user taps sign-in until it resolves (or the page redirects). */
   isSigningIn: boolean;
-  /** Error from the most recent sign-in attempt (e.g. not allowlisted). */
+  /** Error from the most recent sign-in attempt. */
   authError: string | null;
+  clearAuthError: () => void;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -50,35 +52,53 @@ function toUser(fbUser: FirebaseUser): User {
   };
 }
 
+function safeLog(label: string, err: unknown) {
+  const code = (err as { code?: string }).code;
+  const message = (err as { message?: string }).message;
+  // eslint-disable-next-line no-console
+  console.error("[auth]", label, code, message);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [redirectChecked, setRedirectChecked] = useState(false);
+  const [firstAuthEventReceived, setFirstAuthEventReceived] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const startRef = useRef(perfNow());
+
+  const isReady = redirectChecked && firstAuthEventReceived;
 
   useEffect(() => {
-    const start = perfNow();
     let cancelled = false;
 
-    // Ensure session persists across the redirect round-trip (iOS Chrome
-    // in particular needs explicit local persistence) and complete any
-    // pending redirect sign-in from a previous navigation.
     void (async () => {
+      // 1. Ensure session persists across the redirect round-trip.
       try {
         await setPersistence(firebaseAuth, browserLocalPersistence);
-        await getRedirectResult(firebaseAuth);
       } catch (err) {
-        const code = (err as { code?: string }).code;
-        const message = (err as { message?: string }).message;
-        // eslint-disable-next-line no-console
-        console.error("[auth] redirect result", code, message);
+        safeLog("setPersistence", err);
+      }
+
+      // 2. Drain any pending redirect result from a previous navigation.
+      try {
+        const result = await getRedirectResult(firebaseAuth);
+        if (result?.user && !cancelled) {
+          // eslint-disable-next-line no-console
+          console.log("[auth] redirect result restored user");
+        }
+      } catch (err) {
+        safeLog("getRedirectResult", err);
         if (!cancelled) {
           setAuthError("Google sign-in could not finish. Please try again.");
         }
+      } finally {
+        if (!cancelled) setRedirectChecked(true);
       }
     })();
 
+    // 3. Subscribe to auth-state changes.
     const unsub = onAuthStateChanged(firebaseAuth, (fbUser) => {
       if (fbUser) {
         setUser(toUser(fbUser));
@@ -86,13 +106,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null);
       }
-      if (!isReady) {
-        setIsReady(true);
-        perfTime("auth restore", start);
+      if (!firstAuthEventReceived) {
+        setFirstAuthEventReceived(true);
+        perfTime("auth restore", startRef.current);
       }
-      // Resolve any in-flight sign-in flag once auth state lands.
       setIsSigningIn(false);
     });
+
     return () => {
       cancelled = true;
       unsub();
@@ -100,36 +120,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const clearAuthError = useCallback(() => setAuthError(null), []);
+
   const signInWithGoogle = useCallback(async () => {
     if (isSigningIn) return;
     setIsSigningIn(true);
     setIsLoading(true);
     setAuthError(null);
 
-    const mobile = isMobileBrowser();
+    let willRedirect = false;
     try {
-      if (mobile) {
-        // Page will navigate away; do NOT clear isSigningIn here.
-        await signInWithRedirect(firebaseAuth, googleProvider);
-        return;
-      }
+      // Popup-first for all browsers — works on modern iOS Safari + iOS Chrome
+      // when triggered directly from a user tap. Fall back to redirect only
+      // when the popup is structurally blocked.
       await signInWithPopup(firebaseAuth, googleProvider);
     } catch (err) {
       const code = (err as { code?: string }).code;
-      const message = (err as { message?: string }).message;
-      // eslint-disable-next-line no-console
-      console.error("[auth]", code, message);
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        setAuthError(null);
+        // User dismissed — silent.
+        setIsSigningIn(false);
+      } else if (
+        code === "auth/popup-blocked" ||
+        code === "auth/operation-not-supported-in-this-environment"
+      ) {
+        // Popup unavailable — fall back to redirect. Page will navigate away;
+        // keep isSigningIn=true so the button stays disabled until unload.
+        willRedirect = true;
+        try {
+          await signInWithRedirect(firebaseAuth, googleProvider);
+        } catch (redirectErr) {
+          safeLog("signInWithRedirect", redirectErr);
+          setAuthError("Sign-in failed. Please try again.");
+          setIsSigningIn(false);
+          willRedirect = false;
+        }
       } else {
+        safeLog("signInWithPopup", err);
         setAuthError("Sign-in failed. Please try again.");
+        setIsSigningIn(false);
       }
-      setIsSigningIn(false);
-      throw err;
     } finally {
       setIsLoading(false);
-      // For the redirect path we already returned above; for popup we reset here.
-      if (!mobile) setIsSigningIn(false);
+      // If we kicked off a redirect, keep isSigningIn=true until navigation.
+      if (!willRedirect) {
+        // signInWithPopup success path: onAuthStateChanged will clear isSigningIn.
+      }
     }
   }, [isSigningIn]);
 
@@ -140,7 +175,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isReady, isSigningIn, authError, signInWithGoogle, signOut }}
+      value={{
+        user,
+        isLoading,
+        isReady,
+        isSigningIn,
+        authError,
+        clearAuthError,
+        signInWithGoogle,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>
