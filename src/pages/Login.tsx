@@ -7,7 +7,7 @@ import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 
 export default function Login() {
-  const { signInWithGoogle, isLoading, isSigningIn, user, isReady, authError } = useAuth();
+  const { signInWithGoogle, isLoading, isSigningIn, user, isReady, authError, clearAuthError } = useAuth();
   const busy = isLoading || isSigningIn;
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,6 +22,7 @@ export default function Login() {
   }, [isReady, user, navigate, redirectTo]);
 
   const handleGoogleSignIn = async () => {
+    clearAuthError();
     try {
       await signInWithGoogle();
     } catch {

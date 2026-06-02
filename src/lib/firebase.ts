@@ -21,8 +21,6 @@ export const googleProvider = new GoogleAuthProvider();
 
 /**
  * True for iPhone/iPad/iPod/Android, including iPadOS (Mac UA + touch).
- * Used to choose `signInWithRedirect` over `signInWithPopup` on mobile
- * browsers where popup-based OAuth (especially iOS Chrome) is unreliable.
  */
 export function isMobileBrowser(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -31,6 +29,18 @@ export function isMobileBrowser(): boolean {
   const isAndroid = /Android/i.test(ua);
   const isIPadOS = /Macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1;
   return isIOS || isAndroid || isIPadOS;
+}
+
+/**
+ * True for Safari and Safari-like WebKit browsers (desktop Safari, iOS Safari).
+ * Excludes Chrome/Firefox/Edge on iOS (which also use WebKit but identify via
+ * CriOS/FxiOS/EdgiOS tokens).
+ */
+export function isSafariLike(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (/CriOS|FxiOS|EdgiOS|Chrome|Chromium|Android/i.test(ua)) return false;
+  return /Safari/i.test(ua) && /AppleWebKit/i.test(ua);
 }
 
 /**
