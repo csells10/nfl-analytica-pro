@@ -45,12 +45,12 @@ export default function Login() {
           <Button
             type="button"
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={busy}
             className="w-full"
             variant="outline"
           >
             <GoogleIcon className="mr-2 h-4 w-4" />
-            {isLoading ? "Signing in…" : "Sign in with Google"}
+            {busy ? "Signing in…" : "Sign in with Google"}
           </Button>
           {authError && (
             <p className="mt-3 text-center text-sm text-destructive">{authError}</p>
