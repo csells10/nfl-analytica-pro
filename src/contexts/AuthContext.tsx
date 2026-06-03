@@ -25,8 +25,10 @@ import {
 import { perfNow, perfTime } from "@/lib/perf";
 import { SDK_VERSION as FIREBASE_SDK_VERSION } from "firebase/app";
 import {
+  collectEnvSnapshot,
   incrementMountCount,
   isAuthDebugEnabled,
+  probeStorage,
   recordAuthDebug,
   safeUrlFields,
 } from "@/lib/auth-debug";
