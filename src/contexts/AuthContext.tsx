@@ -133,6 +133,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firebaseSdkVersion: FIREBASE_SDK_VERSION,
         ...urlFields,
       });
+      recordAuthDebug("env:snapshot", {
+        phase: "mounted",
+        ...collectEnvSnapshot(),
+      });
+      recordAuthDebug("pendingRedirect:onMount", {
+        phase: "mounted",
+        pendingRedirect,
+      });
+      try {
+        const opts = firebaseAuth.app.options as { authDomain?: string; projectId?: string };
+        recordAuthDebug("firebase:instance", {
+          phase: "mounted",
+          firebaseAuthPresent: !!firebaseAuth,
+          authDomain: opts.authDomain ?? null,
+          projectId: opts.projectId ?? null,
+          appLabel: firebaseAuth.app.name,
+          initializeAuthUsed: true,
+          currentUserPresent: !!firebaseAuth.currentUser,
+        });
+      } catch {
+        /* best-effort */
+      }
+      // Non-blocking storage probe — never gates the auth flow.
+      setTimeout(() => {
+        void probeStorage().then((fields) => {
+          recordAuthDebug("storage:probe", { phase: phaseRef.current, ...fields });
+        });
+      }, 0);
     }
 
     if (pendingRedirect) {
@@ -141,6 +169,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let watchdog: ReturnType<typeof setTimeout> | null = null;
     if (pendingRedirect) {
+      recordAuthDebug("watchdog:started", {
+        phase: phaseRef.current,
+        watchdogStarted: true,
+      });
       watchdog = setTimeout(() => {
         if (cancelled) return;
         if (!firebaseAuth.currentUser) {
@@ -153,6 +185,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
           if (typeof sessionStorage !== "undefined") {
             sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+            recordAuthDebug("pendingRedirect:cleared", {
+              phase: phaseRef.current,
+              pendingRedirect: false,
+            });
           }
           setAuthError(
             "Google sign-in didn't complete. Please tap Sign in with Google to try again.",
