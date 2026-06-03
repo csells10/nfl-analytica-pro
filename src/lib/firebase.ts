@@ -7,7 +7,7 @@ import {
 
 const firebaseConfig = {
   apiKey: "AIzaSyDc26C2c5xVySTyD0JyLdhJGwgspNAVDWA",
-  authDomain: "nfl-stream-406420.firebaseapp.com",
+  authDomain: "auth.gamelens.io",
   projectId: "nfl-stream-406420",
   storageBucket: "nfl-stream-406420.firebasestorage.app",
   messagingSenderId: "362530996210",
