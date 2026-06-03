@@ -294,14 +294,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // redirect. Every other browser tries popup first.
     if (prefersRedirectStrategy(bucket)) {
       safeLog("start", bucket, "redirect");
+      recordAuthDebug("signIn:start", { browserBucket: bucket, selectedStrategy: "redirect" });
       try {
         if (typeof sessionStorage !== "undefined") {
           sessionStorage.setItem(PENDING_REDIRECT_KEY, "1");
         }
+        recordAuthDebug("signIn:redirectDispatched", { pendingRedirect: true });
         await signInWithRedirect(firebaseAuth, googleProvider);
         // Page is navigating away — keep isSigningIn=true until unload.
       } catch (err) {
         safeLog("signInWithRedirect error", bucket, "redirect", err);
+        recordAuthDebug("signIn:redirectError", {
+          errorCode: (err as { code?: string }).code ?? null,
+        });
         if (typeof sessionStorage !== "undefined") {
           sessionStorage.removeItem(PENDING_REDIRECT_KEY);
         }
@@ -314,6 +319,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     safeLog("start", bucket, "popup");
+    recordAuthDebug("signIn:start", { browserBucket: bucket, selectedStrategy: "popup" });
+
     let willRedirect = false;
     try {
       await signInWithPopup(firebaseAuth, googleProvider);
