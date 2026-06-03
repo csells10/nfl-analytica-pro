@@ -8,10 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import {
-  browserLocalPersistence,
   getRedirectResult,
   onAuthStateChanged,
-  setPersistence,
   signInWithPopup,
   signInWithRedirect,
   signOut as firebaseSignOut,
