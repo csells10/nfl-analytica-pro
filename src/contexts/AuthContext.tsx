@@ -293,13 +293,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setAuthError(null);
 
-    // Persistence must be set before kicking off any auth flow so the session
-    // survives the redirect round-trip.
-    try {
-      await setPersistence(firebaseAuth, browserLocalPersistence);
-    } catch (err) {
-      safeLog("setPersistence (pre-signin) failed", bucket, "none", err);
-    }
+    // Persistence is configured at init time (initializeAuth in firebase.ts).
+    // No pre-signin setPersistence call for this experiment.
+
+
 
     // iOS Chrome (CriOS): popup is structurally unreliable — go straight to
     // redirect. Every other browser tries popup first.
