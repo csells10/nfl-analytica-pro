@@ -3,7 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMe } from "@/lib/admin-api";
 import { ApiError } from "@/lib/nfl-api";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { recordAuthDebug } from "@/lib/auth-debug";
 
 /**
  * Gates protected routes on:
