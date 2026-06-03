@@ -214,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       recordAuthDebug("getRedirectResult:start", {
         phase: "redirect_result_pending",
         pendingRedirect,
+        currentUserPresent: !!firebaseAuth.currentUser,
       });
 
       try {
@@ -226,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phase: "redirect_result_resolved",
             redirectResultStatus: "success",
             hasUser: true,
+            currentUserPresent: !!firebaseAuth.currentUser,
             elapsedMs: Math.round(perfNow() - grrStart),
           });
         } else if (pendingRedirect) {
@@ -235,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phase: "redirect_result_null",
             redirectResultStatus: "null",
             hasUser: false,
+            currentUserPresent: !!firebaseAuth.currentUser,
             elapsedMs: Math.round(perfNow() - grrStart),
           });
           setAuthError(
@@ -247,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phase: "redirect_result_null",
             redirectResultStatus: "null",
             hasUser: false,
+            currentUserPresent: !!firebaseAuth.currentUser,
             elapsedMs: Math.round(perfNow() - grrStart),
           });
         }
@@ -257,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           phase: "redirect_result_error",
           redirectResultStatus: "error",
           hasUser: false,
+          currentUserPresent: !!firebaseAuth.currentUser,
           elapsedMs: Math.round(perfNow() - grrStart),
           errorCode: (err as { code?: string }).code ?? null,
         });
@@ -272,7 +277,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           currentUserPresent: !!firebaseAuth.currentUser,
         });
         if (typeof sessionStorage !== "undefined") {
+          const wasPending = sessionStorage.getItem(PENDING_REDIRECT_KEY) === "1";
           sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+          if (wasPending) {
+            recordAuthDebug("pendingRedirect:cleared", {
+              phase: phaseRef.current,
+              pendingRedirect: false,
+            });
+          }
         }
         if (!cancelled) {
           phaseRef.current = "auth_state_pending";
@@ -282,7 +294,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
 
     let firstAuthEventLogged = false;
+    let onAuthStateChangedCount = 0;
+    recordAuthDebug("onAuthStateChanged:subscribed", { phase: phaseRef.current });
     const unsub = onAuthStateChanged(firebaseAuth, (fbUser) => {
+      onAuthStateChangedCount += 1;
       if (!firstAuthEventLogged) {
         firstAuthEventLogged = true;
         const nextPhase = fbUser ? "ready" : "auth_state_pending";
@@ -295,6 +310,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (fbUser) {
         phaseRef.current = "ready";
       }
+      recordAuthDebug("onAuthStateChanged:tick", {
+        phase: phaseRef.current,
+        hasUser: !!fbUser,
+        onAuthStateChangedCount,
+      });
       if (fbUser) {
         setUser(toUser(fbUser));
         setAuthError(null);
@@ -302,6 +322,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (watchdog) {
           clearTimeout(watchdog);
           watchdog = null;
+          recordAuthDebug("watchdog:cleared", {
+            phase: phaseRef.current,
+            watchdogCleared: true,
+          });
         }
       } else {
         setUser(null);
