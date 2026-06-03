@@ -163,92 +163,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     void (async () => {
-      // ----- Persistence step -----
-      phaseRef.current = "persistence_pending";
-      const setPersistStart = perfNow();
-      recordAuthDebug("setPersistence:start", { phase: "persistence_pending" });
+      // Persistence is now configured at Firebase Auth init time via
+      // initializeAuth(...) in src/lib/firebase.ts. No post-mount
+      // setPersistence call is needed (or wanted) for this experiment.
+      void debugEnabled;
 
-      const useDebugTimeoutBranch = debugEnabled && pendingRedirect;
 
-      type PersistOutcome =
-        | { status: "success" }
-        | { status: "error"; code: string | null }
-        | { status: "timeout" };
-
-      const persistencePromise: Promise<PersistOutcome> = setPersistence(
-        firebaseAuth,
-        browserLocalPersistence,
-      )
-        .then<PersistOutcome>(() => ({ status: "success" }))
-        .catch<PersistOutcome>((e) => ({
-          status: "error",
-          code: (e as { code?: string })?.code ?? null,
-        }));
-
-      let persistenceResult: PersistOutcome;
-      let didTimeout = false;
-
-      if (useDebugTimeoutBranch) {
-        persistenceResult = await Promise.race<PersistOutcome>([
-          persistencePromise,
-          new Promise<PersistOutcome>((resolve) =>
-            setTimeout(() => resolve({ status: "timeout" }), 2000),
-          ),
-        ]);
-        didTimeout = persistenceResult.status === "timeout";
-      } else {
-        persistenceResult = await persistencePromise;
-      }
-
-      const elapsedPersist = Math.round(perfNow() - setPersistStart);
-
-      if (persistenceResult.status === "success") {
-        phaseRef.current = "persistence_resolved";
-        recordAuthDebug("setPersistence:end", {
-          phase: "persistence_resolved",
-          persistenceStatus: "success",
-          setPersistenceOk: true,
-          elapsedMs: elapsedPersist,
-        });
-      } else if (persistenceResult.status === "error") {
-        phaseRef.current = "persistence_error";
-        safeLog("setPersistence failed", bucket, "none", {
-          code: persistenceResult.code,
-        });
-        recordAuthDebug("setPersistence:error", {
-          phase: "persistence_error",
-          persistenceStatus: "error",
-          setPersistenceOk: false,
-          elapsedMs: elapsedPersist,
-          errorCode: persistenceResult.code,
-        });
-      } else {
-        phaseRef.current = "persistence_timeout";
-        recordAuthDebug("setPersistence:timeout", {
-          phase: "persistence_timeout",
-          persistenceStatus: "timeout",
-          elapsedMs: 2000,
-        });
-      }
-
-      // If we timed out, observe the original promise's eventual outcome.
-      if (didTimeout) {
-        void persistencePromise.then((late) => {
-          if (cancelled) return;
-          if (late.status === "success") {
-            recordAuthDebug("setPersistence:lateSuccess", {
-              persistenceStatus: "late_success",
-              elapsedMs: Math.round(perfNow() - setPersistStart),
-            });
-          } else if (late.status === "error") {
-            recordAuthDebug("setPersistence:lateError", {
-              persistenceStatus: "late_error",
-              elapsedMs: Math.round(perfNow() - setPersistStart),
-              errorCode: late.code,
-            });
-          }
-        });
-      }
 
       // ----- Redirect-result step (always runs) -----
       phaseRef.current = "redirect_result_pending";
