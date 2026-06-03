@@ -3,7 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMe } from "@/lib/admin-api";
 import { ApiError } from "@/lib/nfl-api";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { recordAuthDebug } from "@/lib/auth-debug";
 
 /**
  * Gates protected routes on:
@@ -53,6 +54,28 @@ function AccessGate({
 }) {
   const { data, error, isLoading } = useMe(true);
 
+  // Diagnostic-only: observe the existing /me query — never trigger a new fetch.
+  const meCalledLoggedRef = useRef(false);
+  const meResultLoggedRef = useRef(false);
+  useEffect(() => {
+    if (!meCalledLoggedRef.current) {
+      meCalledLoggedRef.current = true;
+      recordAuthDebug("me:called", { meCalled: true });
+    }
+    if (!meResultLoggedRef.current) {
+      if (data) {
+        meResultLoggedRef.current = true;
+        recordAuthDebug("me:result", { meStatus: "ok" });
+      } else if (error instanceof ApiError) {
+        meResultLoggedRef.current = true;
+        recordAuthDebug("me:result", { meStatus: error.kind });
+      } else if (error) {
+        meResultLoggedRef.current = true;
+        recordAuthDebug("me:result", { meStatus: "network-error" });
+      }
+    }
+  }, [data, error, isLoading]);
+
   // 401 from backend → session is stale; sign out so the guard sends to /login.
   useEffect(() => {
     if (error instanceof ApiError && error.kind === "unauthenticated") {
@@ -61,6 +84,7 @@ function AccessGate({
       void signOut();
     }
   }, [error, signOut]);
+
 
   if (isLoading && !data) {
     return (
