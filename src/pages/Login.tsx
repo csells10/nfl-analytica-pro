@@ -112,14 +112,29 @@ function AuthDebugPanel() {
     "hasState",
     "hasError",
   ]);
-  pickLast("setPersistence:end", ["setPersistenceOk", "elapsedMs", "errorCode"]);
-  pickLast("getRedirectResult:end", ["redirectResultStatus", "hasUser", "elapsedMs", "errorCode"]);
+  pickLast("setPersistence:end", ["phase", "persistenceStatus", "setPersistenceOk", "elapsedMs"]);
+  pickLast("setPersistence:error", ["phase", "persistenceStatus", "errorCode", "elapsedMs"]);
+  pickLast("setPersistence:timeout", ["phase", "persistenceStatus", "elapsedMs"]);
+  pickLast("setPersistence:lateSuccess", ["persistenceStatus", "elapsedMs"]);
+  pickLast("setPersistence:lateError", ["persistenceStatus", "errorCode", "elapsedMs"]);
+  pickLast("getRedirectResult:start", ["phase"]);
+  pickLast("getRedirectResult:end", ["phase", "redirectResultStatus", "hasUser", "elapsedMs", "errorCode"]);
   pickLast("currentUserAfterDrain", ["currentUserPresent"]);
-  pickLast("onAuthStateChanged:first", ["hasUser", "elapsedMs"]);
-  pickLast("watchdog:fired", ["watchdogFired", "elapsedMs"]);
+  pickLast("onAuthStateChanged:first", ["phase", "hasUser", "elapsedMs"]);
+  pickLast("watchdog:fired", ["watchdogFired", "phase", "elapsedMs"]);
   pickLast("signIn:start", ["selectedStrategy"]);
   pickLast("me:called", ["meCalled"]);
   pickLast("me:result", ["meStatus"]);
+
+  // Latest phase across all events for a single top-line summary entry.
+  for (let i = events.length - 1; i >= 0; i--) {
+    const p = events[i].phase;
+    if (typeof p === "string") {
+      summary["latestPhase"] = p;
+      break;
+    }
+  }
+
 
   const handleCopy = async () => {
     const payload = JSON.stringify(

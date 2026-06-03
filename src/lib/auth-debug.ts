@@ -37,6 +37,8 @@ const ALLOWED_FIELDS = new Set<string>([
   "errorCode",
   "authProviderMountCount",
   "firebaseSdkVersion",
+  "phase",
+  "persistenceStatus",
 ]);
 
 const DENY_PATTERN = /token|email|uid|displayname|name|photo|provider|credential|secret|key|url|href$|referrer$/i;
