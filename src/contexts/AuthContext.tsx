@@ -25,8 +25,10 @@ import {
 import { perfNow, perfTime } from "@/lib/perf";
 import { SDK_VERSION as FIREBASE_SDK_VERSION } from "firebase/app";
 import {
+  collectEnvSnapshot,
   incrementMountCount,
   isAuthDebugEnabled,
+  probeStorage,
   recordAuthDebug,
   safeUrlFields,
 } from "@/lib/auth-debug";
@@ -131,6 +133,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firebaseSdkVersion: FIREBASE_SDK_VERSION,
         ...urlFields,
       });
+      recordAuthDebug("env:snapshot", {
+        phase: "mounted",
+        ...collectEnvSnapshot(),
+      });
+      recordAuthDebug("pendingRedirect:onMount", {
+        phase: "mounted",
+        pendingRedirect,
+      });
+      try {
+        const opts = firebaseAuth.app.options as { authDomain?: string; projectId?: string };
+        recordAuthDebug("firebase:instance", {
+          phase: "mounted",
+          firebaseAuthPresent: !!firebaseAuth,
+          authDomain: opts.authDomain ?? null,
+          projectId: opts.projectId ?? null,
+          appLabel: firebaseAuth.app.name,
+          initializeAuthUsed: true,
+          currentUserPresent: !!firebaseAuth.currentUser,
+        });
+      } catch {
+        /* best-effort */
+      }
+      // Non-blocking storage probe — never gates the auth flow.
+      setTimeout(() => {
+        void probeStorage().then((fields) => {
+          recordAuthDebug("storage:probe", { phase: phaseRef.current, ...fields });
+        });
+      }, 0);
     }
 
     if (pendingRedirect) {
@@ -139,6 +169,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let watchdog: ReturnType<typeof setTimeout> | null = null;
     if (pendingRedirect) {
+      recordAuthDebug("watchdog:started", {
+        phase: phaseRef.current,
+        watchdogStarted: true,
+      });
       watchdog = setTimeout(() => {
         if (cancelled) return;
         if (!firebaseAuth.currentUser) {
@@ -151,6 +185,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
           if (typeof sessionStorage !== "undefined") {
             sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+            recordAuthDebug("pendingRedirect:cleared", {
+              phase: phaseRef.current,
+              pendingRedirect: false,
+            });
           }
           setAuthError(
             "Google sign-in didn't complete. Please tap Sign in with Google to try again.",
@@ -176,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       recordAuthDebug("getRedirectResult:start", {
         phase: "redirect_result_pending",
         pendingRedirect,
+        currentUserPresent: !!firebaseAuth.currentUser,
       });
 
       try {
@@ -188,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phase: "redirect_result_resolved",
             redirectResultStatus: "success",
             hasUser: true,
+            currentUserPresent: !!firebaseAuth.currentUser,
             elapsedMs: Math.round(perfNow() - grrStart),
           });
         } else if (pendingRedirect) {
@@ -197,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phase: "redirect_result_null",
             redirectResultStatus: "null",
             hasUser: false,
+            currentUserPresent: !!firebaseAuth.currentUser,
             elapsedMs: Math.round(perfNow() - grrStart),
           });
           setAuthError(
@@ -209,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phase: "redirect_result_null",
             redirectResultStatus: "null",
             hasUser: false,
+            currentUserPresent: !!firebaseAuth.currentUser,
             elapsedMs: Math.round(perfNow() - grrStart),
           });
         }
@@ -219,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           phase: "redirect_result_error",
           redirectResultStatus: "error",
           hasUser: false,
+          currentUserPresent: !!firebaseAuth.currentUser,
           elapsedMs: Math.round(perfNow() - grrStart),
           errorCode: (err as { code?: string }).code ?? null,
         });
@@ -234,7 +277,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           currentUserPresent: !!firebaseAuth.currentUser,
         });
         if (typeof sessionStorage !== "undefined") {
+          const wasPending = sessionStorage.getItem(PENDING_REDIRECT_KEY) === "1";
           sessionStorage.removeItem(PENDING_REDIRECT_KEY);
+          if (wasPending) {
+            recordAuthDebug("pendingRedirect:cleared", {
+              phase: phaseRef.current,
+              pendingRedirect: false,
+            });
+          }
         }
         if (!cancelled) {
           phaseRef.current = "auth_state_pending";
@@ -244,7 +294,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
 
     let firstAuthEventLogged = false;
+    let onAuthStateChangedCount = 0;
+    recordAuthDebug("onAuthStateChanged:subscribed", { phase: phaseRef.current });
     const unsub = onAuthStateChanged(firebaseAuth, (fbUser) => {
+      onAuthStateChangedCount += 1;
       if (!firstAuthEventLogged) {
         firstAuthEventLogged = true;
         const nextPhase = fbUser ? "ready" : "auth_state_pending";
@@ -257,6 +310,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (fbUser) {
         phaseRef.current = "ready";
       }
+      recordAuthDebug("onAuthStateChanged:tick", {
+        phase: phaseRef.current,
+        hasUser: !!fbUser,
+        onAuthStateChangedCount,
+      });
       if (fbUser) {
         setUser(toUser(fbUser));
         setAuthError(null);
@@ -264,6 +322,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (watchdog) {
           clearTimeout(watchdog);
           watchdog = null;
+          recordAuthDebug("watchdog:cleared", {
+            phase: phaseRef.current,
+            watchdogCleared: true,
+          });
         }
       } else {
         setUser(null);

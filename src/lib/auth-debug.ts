@@ -39,9 +39,37 @@ const ALLOWED_FIELDS = new Set<string>([
   "firebaseSdkVersion",
   "phase",
   "persistenceStatus",
+  // --- Expanded auth-path diagnostics (debug=1 only) ---
+  "platform",
+  "cookieEnabled",
+  "onLine",
+  "hasLocalStorage",
+  "hasIndexedDB",
+  "isSecureContext",
+  "protocol",
+  "visibilityState",
+  "tzOffsetMin",
+  "storageSessionProbe",
+  "storageLocalProbe",
+  "storageIndexedDbProbe",
+  "indexedDbOpenProbe",
+  "authDomain",
+  "projectId",
+  "appLabel",
+  "firebaseAuthPresent",
+  "initializeAuthUsed",
+  "fallbackToGetAuth",
+  "onAuthStateChangedCount",
+  "watchdogStarted",
+  "watchdogCleared",
+  "loginMounted",
+  "routePath",
+  "isReady",
+  "isSigningIn",
 ]);
 
-const DENY_PATTERN = /token|email|uid|displayname|name|photo|provider|credential|secret|key|url|href$|referrer$/i;
+// Word-boundaried so safe fields like "appLabel" / "projectId" aren't caught by "name"/"key".
+const DENY_PATTERN = /\b(token|email|uid|displayname|photo|provider|credential|secret|href|referrer)\b/i;
 
 export type DebugFieldValue = string | number | boolean | null;
 export type DebugEvent = { t: number; event: string } & Record<string, DebugFieldValue>;
@@ -187,4 +215,127 @@ export function safeUrlFields(href: string | null | undefined, referrer: string 
     }
   }
   return out;
+}
+
+/**
+ * Safe environment snapshot — booleans, enums, host/path only. No URLs,
+ * no user-agent strings, no email/UID/token data.
+ */
+export function collectEnvSnapshot(): Record<string, DebugFieldValue> {
+  const out: Record<string, DebugFieldValue> = {};
+  try {
+    if (typeof navigator !== "undefined") {
+      out.platform = navigator.platform ?? null;
+      out.cookieEnabled = !!navigator.cookieEnabled;
+      out.onLine = !!navigator.onLine;
+    }
+    if (typeof window !== "undefined") {
+      out.isSecureContext = !!window.isSecureContext;
+      out.hasLocalStorage = typeof window.localStorage !== "undefined";
+      out.hasIndexedDB = typeof window.indexedDB !== "undefined";
+    }
+    if (typeof document !== "undefined") {
+      out.visibilityState = document.visibilityState;
+    }
+    if (typeof location !== "undefined") {
+      out.protocol = location.protocol;
+    }
+    out.tzOffsetMin = new Date().getTimezoneOffset();
+  } catch {
+    /* env snapshot is best-effort */
+  }
+  return out;
+}
+
+const PROBE_KEY = "__gl_probe";
+const PROBE_VALUE = "1";
+
+/**
+ * Non-blocking storage capability probes. Uses constant key/value, removes
+ * immediately in finally, and never throws. IndexedDB open races a 1500ms
+ * timeout so a stalled IDB layer can't delay the caller.
+ */
+export async function probeStorage(): Promise<Record<string, DebugFieldValue>> {
+  const out: Record<string, DebugFieldValue> = {
+    storageSessionProbe: "error",
+    storageLocalProbe: "error",
+    storageIndexedDbProbe: "unavailable",
+    indexedDbOpenProbe: "unavailable",
+  };
+  try {
+    sessionStorage.setItem(PROBE_KEY, PROBE_VALUE);
+    out.storageSessionProbe = sessionStorage.getItem(PROBE_KEY) === PROBE_VALUE ? "ok" : "error";
+  } catch {
+    out.storageSessionProbe = "error";
+  } finally {
+    try { sessionStorage.removeItem(PROBE_KEY); } catch { /* ignore */ }
+  }
+  try {
+    localStorage.setItem(PROBE_KEY, PROBE_VALUE);
+    out.storageLocalProbe = localStorage.getItem(PROBE_KEY) === PROBE_VALUE ? "ok" : "error";
+  } catch {
+    out.storageLocalProbe = "error";
+  } finally {
+    try { localStorage.removeItem(PROBE_KEY); } catch { /* ignore */ }
+  }
+  try {
+    if (typeof indexedDB !== "undefined") {
+      out.storageIndexedDbProbe = "ok";
+      out.indexedDbOpenProbe = await new Promise<DebugFieldValue>((resolve) => {
+        let settled = false;
+        const finish = (v: DebugFieldValue) => {
+          if (settled) return;
+          settled = true;
+          resolve(v);
+        };
+        const timer = setTimeout(() => finish("timeout"), 1500);
+        try {
+          const req = indexedDB.open(PROBE_KEY);
+          req.onsuccess = () => {
+            clearTimeout(timer);
+            try { req.result.close(); } catch { /* ignore */ }
+            try { indexedDB.deleteDatabase(PROBE_KEY); } catch { /* ignore */ }
+            finish("ok");
+          };
+          req.onerror = () => {
+            clearTimeout(timer);
+            finish("error");
+          };
+          req.onblocked = () => {
+            clearTimeout(timer);
+            finish("error");
+          };
+        } catch {
+          clearTimeout(timer);
+          finish("error");
+        }
+      });
+    }
+  } catch {
+    out.storageIndexedDbProbe = "error";
+  }
+  return out;
+}
+
+/**
+ * Lightweight subscription for the debug panel. Polls sessionStorage at
+ * 500ms; callback fires only when the serialized event list changes.
+ */
+export function subscribeAuthDebug(cb: (events: DebugEvent[]) => void): () => void {
+  let lastSerialized = "";
+  const tick = () => {
+    if (!hasSessionStorage()) return;
+    try {
+      const raw = sessionStorage.getItem(EVENTS_KEY) ?? "[]";
+      if (raw !== lastSerialized) {
+        lastSerialized = raw;
+        cb(readEvents());
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+  tick();
+  const id = setInterval(tick, 500);
+  return () => clearInterval(id);
 }
