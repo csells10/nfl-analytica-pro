@@ -25,6 +25,13 @@ import {
   type BrowserBucket,
 } from "@/lib/firebase";
 import { perfNow, perfTime } from "@/lib/perf";
+import { SDK_VERSION as FIREBASE_SDK_VERSION } from "firebase/app";
+import {
+  incrementMountCount,
+  isAuthDebugEnabled,
+  recordAuthDebug,
+  safeUrlFields,
+} from "@/lib/auth-debug";
 
 interface User {
   id: string;
