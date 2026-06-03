@@ -1,10 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
+import {
+  clearAuthDebug,
+  getAuthDebugEvents,
+  isAuthDebugEnabled,
+  type DebugEvent,
+} from "@/lib/auth-debug";
 
 export default function Login() {
   const { signInWithGoogle, isLoading, isSigningIn, user, isReady, authError, clearAuthError } = useAuth();
