@@ -2,8 +2,14 @@ import { initializeApp, type FirebaseApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  browserPopupRedirectResolver,
   type Auth,
 } from "firebase/auth";
+import { recordAuthDebug } from "@/lib/auth-debug";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDc26C2c5xVySTyD0JyLdhJGwgspNAVDWA",
@@ -16,7 +22,45 @@ const firebaseConfig = {
 };
 
 export const firebaseApp: FirebaseApp = initializeApp(firebaseConfig);
-export const firebaseAuth: Auth = getAuth(firebaseApp);
+
+/**
+ * Initialize Auth with explicit persistence chain and popup/redirect resolver
+ * so iOS Chrome (CriOS) has both configured before the redirect round-trip.
+ *
+ * Falls back to getAuth(app) only for the expected "already-initialized" case
+ * (HMR / duplicate import). Any other error is rethrown so we don't silently
+ * mask a real misconfiguration.
+ */
+function createFirebaseAuth(): Auth {
+  try {
+    return initializeAuth(firebaseApp, {
+      persistence: [
+        indexedDBLocalPersistence,
+        browserLocalPersistence,
+        browserSessionPersistence,
+      ],
+      popupRedirectResolver: browserPopupRedirectResolver,
+    });
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? null;
+    // Firebase throws auth/already-initialized when initializeAuth runs twice
+    // on the same app (HMR, double import). That's the only case we tolerate.
+    if (code === "auth/already-initialized") {
+      try {
+        recordAuthDebug("initializeAuth:fallback", {
+          phase: "init_fallback",
+          errorCode: code,
+        });
+      } catch {
+        /* recordAuthDebug is best-effort during init */
+      }
+      return getAuth(firebaseApp);
+    }
+    throw err;
+  }
+}
+
+export const firebaseAuth: Auth = createFirebaseAuth();
 export const googleProvider = new GoogleAuthProvider();
 
 /**
