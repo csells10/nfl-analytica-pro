@@ -95,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
   const startRef = useRef(perfNow());
   const bucketRef = useRef<BrowserBucket>(detectBrowserBucket());
+  const phaseRef = useRef<string>("mounted");
 
   const isReady = redirectChecked && firstAuthEventReceived;
 
@@ -103,8 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const bucket = bucketRef.current;
     const mountTime = perfNow();
 
-    // Detect whether we're returning from a redirect. We persist a flag before
-    // calling signInWithRedirect so we can arm a watchdog on the next page load.
     const pendingRedirect =
       typeof sessionStorage !== "undefined" &&
       sessionStorage.getItem(PENDING_REDIRECT_KEY) === "1";
@@ -116,14 +115,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }`,
     );
 
-    // Diagnostic mount event (read-only, gated by ?debug=1).
-    if (isAuthDebugEnabled()) {
+    phaseRef.current = "mounted";
+    const debugEnabled = isAuthDebugEnabled();
+
+    if (debugEnabled) {
       const mountCount = incrementMountCount();
       const urlFields = safeUrlFields(
         typeof location !== "undefined" ? location.href : null,
         typeof document !== "undefined" ? document.referrer : null,
       );
       recordAuthDebug("mount", {
+        phase: "mounted",
         browserBucket: bucket,
         pendingRedirect,
         hasSessionStorage: typeof sessionStorage !== "undefined",
@@ -137,9 +139,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsSigningIn(true);
     }
 
-    // Watchdog: if a redirect was pending and we still haven't received an
-    // authed user within REDIRECT_WATCHDOG_MS, surface a clear error instead
-    // of spinning forever. No automatic retry.
     let watchdog: ReturnType<typeof setTimeout> | null = null;
     if (pendingRedirect) {
       watchdog = setTimeout(() => {
@@ -148,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           safeLog("redirect watchdog timeout", bucket, "redirect");
           recordAuthDebug("watchdog:fired", {
             watchdogFired: true,
+            phase: phaseRef.current,
             elapsedMs: Math.round(perfNow() - mountTime),
             currentUserPresent: false,
           });
@@ -165,39 +165,118 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     void (async () => {
+      // ----- Persistence step -----
+      phaseRef.current = "persistence_pending";
       const setPersistStart = perfNow();
-      recordAuthDebug("setPersistence:start", {});
-      try {
-        await setPersistence(firebaseAuth, browserLocalPersistence);
+      recordAuthDebug("setPersistence:start", { phase: "persistence_pending" });
+
+      const useDebugTimeoutBranch = debugEnabled && pendingRedirect;
+
+      type PersistOutcome =
+        | { status: "success" }
+        | { status: "error"; code: string | null }
+        | { status: "timeout" };
+
+      const persistencePromise: Promise<PersistOutcome> = setPersistence(
+        firebaseAuth,
+        browserLocalPersistence,
+      )
+        .then<PersistOutcome>(() => ({ status: "success" }))
+        .catch<PersistOutcome>((e) => ({
+          status: "error",
+          code: (e as { code?: string })?.code ?? null,
+        }));
+
+      let persistenceResult: PersistOutcome;
+      let didTimeout = false;
+
+      if (useDebugTimeoutBranch) {
+        persistenceResult = await Promise.race<PersistOutcome>([
+          persistencePromise,
+          new Promise<PersistOutcome>((resolve) =>
+            setTimeout(() => resolve({ status: "timeout" }), 2000),
+          ),
+        ]);
+        didTimeout = persistenceResult.status === "timeout";
+      } else {
+        persistenceResult = await persistencePromise;
+      }
+
+      const elapsedPersist = Math.round(perfNow() - setPersistStart);
+
+      if (persistenceResult.status === "success") {
+        phaseRef.current = "persistence_resolved";
         recordAuthDebug("setPersistence:end", {
+          phase: "persistence_resolved",
+          persistenceStatus: "success",
           setPersistenceOk: true,
-          elapsedMs: Math.round(perfNow() - setPersistStart),
+          elapsedMs: elapsedPersist,
         });
-      } catch (err) {
-        safeLog("setPersistence failed", bucket, "none", err);
-        recordAuthDebug("setPersistence:end", {
+      } else if (persistenceResult.status === "error") {
+        phaseRef.current = "persistence_error";
+        safeLog("setPersistence failed", bucket, "none", {
+          code: persistenceResult.code,
+        });
+        recordAuthDebug("setPersistence:error", {
+          phase: "persistence_error",
+          persistenceStatus: "error",
           setPersistenceOk: false,
-          elapsedMs: Math.round(perfNow() - setPersistStart),
-          errorCode: (err as { code?: string }).code ?? null,
+          elapsedMs: elapsedPersist,
+          errorCode: persistenceResult.code,
+        });
+      } else {
+        phaseRef.current = "persistence_timeout";
+        recordAuthDebug("setPersistence:timeout", {
+          phase: "persistence_timeout",
+          persistenceStatus: "timeout",
+          elapsedMs: 2000,
         });
       }
 
+      // If we timed out, observe the original promise's eventual outcome.
+      if (didTimeout) {
+        void persistencePromise.then((late) => {
+          if (cancelled) return;
+          if (late.status === "success") {
+            recordAuthDebug("setPersistence:lateSuccess", {
+              persistenceStatus: "late_success",
+              elapsedMs: Math.round(perfNow() - setPersistStart),
+            });
+          } else if (late.status === "error") {
+            recordAuthDebug("setPersistence:lateError", {
+              persistenceStatus: "late_error",
+              elapsedMs: Math.round(perfNow() - setPersistStart),
+              errorCode: late.code,
+            });
+          }
+        });
+      }
+
+      // ----- Redirect-result step (always runs) -----
+      phaseRef.current = "redirect_result_pending";
       const grrStart = perfNow();
-      recordAuthDebug("getRedirectResult:start", { pendingRedirect });
+      recordAuthDebug("getRedirectResult:start", {
+        phase: "redirect_result_pending",
+        pendingRedirect,
+      });
+
       try {
         const result = await getRedirectResult(firebaseAuth);
         if (cancelled) return;
         if (result?.user) {
+          phaseRef.current = "redirect_result_resolved";
           safeLog("redirect result restored", bucket, "redirect");
           recordAuthDebug("getRedirectResult:end", {
+            phase: "redirect_result_resolved",
             redirectResultStatus: "success",
             hasUser: true,
             elapsedMs: Math.round(perfNow() - grrStart),
           });
         } else if (pendingRedirect) {
-          // Redirect was expected but result is null — likely storage/ITP issue.
+          phaseRef.current = "redirect_result_null";
           safeLog("redirect result null", bucket, "redirect");
           recordAuthDebug("getRedirectResult:end", {
+            phase: "redirect_result_null",
             redirectResultStatus: "null",
             hasUser: false,
             elapsedMs: Math.round(perfNow() - grrStart),
@@ -207,15 +286,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           );
           setIsSigningIn(false);
         } else {
+          phaseRef.current = "redirect_result_null";
           recordAuthDebug("getRedirectResult:end", {
+            phase: "redirect_result_null",
             redirectResultStatus: "null",
             hasUser: false,
             elapsedMs: Math.round(perfNow() - grrStart),
           });
         }
       } catch (err) {
+        phaseRef.current = "redirect_result_error";
         safeLog("getRedirectResult error", bucket, "redirect", err);
         recordAuthDebug("getRedirectResult:end", {
+          phase: "redirect_result_error",
           redirectResultStatus: "error",
           hasUser: false,
           elapsedMs: Math.round(perfNow() - grrStart),
@@ -229,12 +312,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } finally {
         recordAuthDebug("currentUserAfterDrain", {
+          phase: phaseRef.current,
           currentUserPresent: !!firebaseAuth.currentUser,
         });
         if (typeof sessionStorage !== "undefined") {
           sessionStorage.removeItem(PENDING_REDIRECT_KEY);
         }
-        if (!cancelled) setRedirectChecked(true);
+        if (!cancelled) {
+          phaseRef.current = "auth_state_pending";
+          setRedirectChecked(true);
+        }
       }
     })();
 
@@ -242,10 +329,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(firebaseAuth, (fbUser) => {
       if (!firstAuthEventLogged) {
         firstAuthEventLogged = true;
+        const nextPhase = fbUser ? "ready" : "auth_state_pending";
+        phaseRef.current = nextPhase;
         recordAuthDebug("onAuthStateChanged:first", {
+          phase: nextPhase,
           hasUser: !!fbUser,
           elapsedMs: Math.round(perfNow() - mountTime),
         });
+      } else if (fbUser) {
+        phaseRef.current = "ready";
       }
       if (fbUser) {
         setUser(toUser(fbUser));
@@ -272,6 +364,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const clearAuthError = useCallback(() => setAuthError(null), []);
 
