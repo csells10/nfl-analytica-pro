@@ -67,9 +67,141 @@ export default function Login() {
           </p>
         </CardContent>
       </Card>
+      <AuthDebugPanel />
     </div>
   );
 }
+
+function AuthDebugPanel() {
+  const [enabled] = useState(() => isAuthDebugEnabled());
+  const [events, setEvents] = useState<DebugEvent[]>(() =>
+    isAuthDebugEnabled() ? getAuthDebugEvents() : [],
+  );
+  const [copyStatus, setCopyStatus] = useState<string>("");
+
+  useEffect(() => {
+    if (!enabled) return;
+    const id = setInterval(() => setEvents(getAuthDebugEvents()), 500);
+    return () => clearInterval(id);
+  }, [enabled]);
+
+  if (!enabled) return null;
+
+  // Derive a compact summary from the event list (last-occurrence wins).
+  const summary: Record<string, string> = {};
+  const pickLast = (event: string, fields: string[]) => {
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i].event === event) {
+        for (const f of fields) {
+          const v = events[i][f];
+          if (v !== undefined && v !== null) summary[`${event}.${f}`] = String(v);
+        }
+        return;
+      }
+    }
+  };
+  pickLast("mount", [
+    "browserBucket",
+    "pendingRedirect",
+    "authProviderMountCount",
+    "firebaseSdkVersion",
+    "hrefHost",
+    "hrefPath",
+    "referrerHost",
+    "hasCode",
+    "hasState",
+    "hasError",
+  ]);
+  pickLast("setPersistence:end", ["setPersistenceOk", "elapsedMs", "errorCode"]);
+  pickLast("getRedirectResult:end", ["redirectResultStatus", "hasUser", "elapsedMs", "errorCode"]);
+  pickLast("currentUserAfterDrain", ["currentUserPresent"]);
+  pickLast("onAuthStateChanged:first", ["hasUser", "elapsedMs"]);
+  pickLast("watchdog:fired", ["watchdogFired", "elapsedMs"]);
+  pickLast("signIn:start", ["selectedStrategy"]);
+  pickLast("me:called", ["meCalled"]);
+  pickLast("me:result", ["meStatus"]);
+
+  const handleCopy = async () => {
+    const payload = JSON.stringify(
+      { summary, events, capturedAt: new Date().toISOString() },
+      null,
+      2,
+    );
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload);
+        setCopyStatus("Copied ✓");
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = payload;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        setCopyStatus("Copied ✓");
+      }
+    } catch {
+      setCopyStatus("Copy failed — long-press the box below");
+    }
+    setTimeout(() => setCopyStatus(""), 2500);
+  };
+
+  const handleClear = () => {
+    clearAuthDebug();
+    setEvents([]);
+    setCopyStatus("Cleared");
+    setTimeout(() => setCopyStatus(""), 1500);
+  };
+
+  return (
+    <Card className="mt-4 w-full max-w-sm border-border bg-card">
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Auth diagnostics (debug=1)
+          </p>
+          <span className="text-[10px] text-muted-foreground">{events.length}/100</span>
+        </div>
+
+        <div className="rounded border border-border bg-muted/40 p-2 font-mono text-[11px] leading-snug text-foreground">
+          {Object.keys(summary).length === 0 ? (
+            <p className="text-muted-foreground">No events yet. Tap Sign in with Google.</p>
+          ) : (
+            <ul className="space-y-0.5">
+              {Object.entries(summary).map(([k, v]) => (
+                <li key={k}>
+                  <span className="text-muted-foreground">{k}:</span> {v}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button type="button" size="sm" variant="outline" className="flex-1" onClick={handleCopy}>
+            Copy diagnostics
+          </Button>
+          <Button type="button" size="sm" variant="outline" className="flex-1" onClick={handleClear}>
+            Clear
+          </Button>
+        </div>
+        {copyStatus && (
+          <p className="text-center text-[11px] text-muted-foreground">{copyStatus}</p>
+        )}
+
+        <details className="text-[11px]">
+          <summary className="cursor-pointer text-muted-foreground">Full event log</summary>
+          <pre className="mt-2 max-h-72 overflow-auto rounded border border-border bg-muted/40 p-2 font-mono text-[10px] leading-snug text-foreground">
+{JSON.stringify(events, null, 2)}
+          </pre>
+        </details>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
