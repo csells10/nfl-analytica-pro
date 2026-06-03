@@ -39,9 +39,37 @@ const ALLOWED_FIELDS = new Set<string>([
   "firebaseSdkVersion",
   "phase",
   "persistenceStatus",
+  // --- Expanded auth-path diagnostics (debug=1 only) ---
+  "platform",
+  "cookieEnabled",
+  "onLine",
+  "hasLocalStorage",
+  "hasIndexedDB",
+  "isSecureContext",
+  "protocol",
+  "visibilityState",
+  "tzOffsetMin",
+  "storageSessionProbe",
+  "storageLocalProbe",
+  "storageIndexedDbProbe",
+  "indexedDbOpenProbe",
+  "authDomain",
+  "projectId",
+  "appLabel",
+  "firebaseAuthPresent",
+  "initializeAuthUsed",
+  "fallbackToGetAuth",
+  "onAuthStateChangedCount",
+  "watchdogStarted",
+  "watchdogCleared",
+  "loginMounted",
+  "routePath",
+  "isReady",
+  "isSigningIn",
 ]);
 
-const DENY_PATTERN = /token|email|uid|displayname|name|photo|provider|credential|secret|key|url|href$|referrer$/i;
+// Word-boundaried so safe fields like "appLabel" / "projectId" aren't caught by "name"/"key".
+const DENY_PATTERN = /\b(token|email|uid|displayname|photo|provider|credential|secret|href|referrer)\b/i;
 
 export type DebugFieldValue = string | number | boolean | null;
 export type DebugEvent = { t: number; event: string } & Record<string, DebugFieldValue>;
