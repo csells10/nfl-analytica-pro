@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     const bucket = bucketRef.current;
+    const mountTime = perfNow();
 
     // Detect whether we're returning from a redirect. We persist a flag before
     // calling signInWithRedirect so we can arm a watchdog on the next page load.
@@ -115,6 +116,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }`,
     );
 
+    // Diagnostic mount event (read-only, gated by ?debug=1).
+    if (isAuthDebugEnabled()) {
+      const mountCount = incrementMountCount();
+      const urlFields = safeUrlFields(
+        typeof location !== "undefined" ? location.href : null,
+        typeof document !== "undefined" ? document.referrer : null,
+      );
+      recordAuthDebug("mount", {
+        browserBucket: bucket,
+        pendingRedirect,
+        hasSessionStorage: typeof sessionStorage !== "undefined",
+        authProviderMountCount: mountCount,
+        firebaseSdkVersion: FIREBASE_SDK_VERSION,
+        ...urlFields,
+      });
+    }
+
     if (pendingRedirect) {
       setIsSigningIn(true);
     }
@@ -128,6 +146,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         if (!firebaseAuth.currentUser) {
           safeLog("redirect watchdog timeout", bucket, "redirect");
+          recordAuthDebug("watchdog:fired", {
+            watchdogFired: true,
+            elapsedMs: Math.round(perfNow() - mountTime),
+            currentUserPresent: false,
+          });
           if (typeof sessionStorage !== "undefined") {
             sessionStorage.removeItem(PENDING_REDIRECT_KEY);
           }
@@ -142,27 +165,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     void (async () => {
+      const setPersistStart = perfNow();
+      recordAuthDebug("setPersistence:start", {});
       try {
         await setPersistence(firebaseAuth, browserLocalPersistence);
+        recordAuthDebug("setPersistence:end", {
+          setPersistenceOk: true,
+          elapsedMs: Math.round(perfNow() - setPersistStart),
+        });
       } catch (err) {
         safeLog("setPersistence failed", bucket, "none", err);
+        recordAuthDebug("setPersistence:end", {
+          setPersistenceOk: false,
+          elapsedMs: Math.round(perfNow() - setPersistStart),
+          errorCode: (err as { code?: string }).code ?? null,
+        });
       }
 
+      const grrStart = perfNow();
+      recordAuthDebug("getRedirectResult:start", { pendingRedirect });
       try {
         const result = await getRedirectResult(firebaseAuth);
         if (cancelled) return;
         if (result?.user) {
           safeLog("redirect result restored", bucket, "redirect");
+          recordAuthDebug("getRedirectResult:end", {
+            redirectResultStatus: "success",
+            hasUser: true,
+            elapsedMs: Math.round(perfNow() - grrStart),
+          });
         } else if (pendingRedirect) {
           // Redirect was expected but result is null — likely storage/ITP issue.
           safeLog("redirect result null", bucket, "redirect");
+          recordAuthDebug("getRedirectResult:end", {
+            redirectResultStatus: "null",
+            hasUser: false,
+            elapsedMs: Math.round(perfNow() - grrStart),
+          });
           setAuthError(
             "Google sign-in didn't complete. Please tap Sign in with Google to try again.",
           );
           setIsSigningIn(false);
+        } else {
+          recordAuthDebug("getRedirectResult:end", {
+            redirectResultStatus: "null",
+            hasUser: false,
+            elapsedMs: Math.round(perfNow() - grrStart),
+          });
         }
       } catch (err) {
         safeLog("getRedirectResult error", bucket, "redirect", err);
+        recordAuthDebug("getRedirectResult:end", {
+          redirectResultStatus: "error",
+          hasUser: false,
+          elapsedMs: Math.round(perfNow() - grrStart),
+          errorCode: (err as { code?: string }).code ?? null,
+        });
         if (!cancelled) {
           setAuthError(
             "Google sign-in could not finish. Please tap Sign in with Google to try again.",
@@ -170,6 +228,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsSigningIn(false);
         }
       } finally {
+        recordAuthDebug("currentUserAfterDrain", {
+          currentUserPresent: !!firebaseAuth.currentUser,
+        });
         if (typeof sessionStorage !== "undefined") {
           sessionStorage.removeItem(PENDING_REDIRECT_KEY);
         }
@@ -177,7 +238,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })();
 
+    let firstAuthEventLogged = false;
     const unsub = onAuthStateChanged(firebaseAuth, (fbUser) => {
+      if (!firstAuthEventLogged) {
+        firstAuthEventLogged = true;
+        recordAuthDebug("onAuthStateChanged:first", {
+          hasUser: !!fbUser,
+          elapsedMs: Math.round(perfNow() - mountTime),
+        });
+      }
       if (fbUser) {
         setUser(toUser(fbUser));
         setAuthError(null);
@@ -194,6 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         perfTime("auth restore", startRef.current);
       }
     });
+
 
     return () => {
       cancelled = true;
