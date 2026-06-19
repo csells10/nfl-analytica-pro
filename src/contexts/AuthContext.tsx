@@ -9,7 +9,9 @@ import {
 } from "react";
 import {
   getRedirectResult,
+  GoogleAuthProvider,
   onAuthStateChanged,
+  signInWithCredential,
   signInWithPopup,
   signInWithRedirect,
   signOut as firebaseSignOut,
@@ -53,6 +55,12 @@ interface AuthContextType {
   authError: string | null;
   clearAuthError: () => void;
   signInWithGoogle: () => Promise<void>;
+  /**
+   * iPhone-Chrome-only path: exchange a Google Identity Services ID token
+   * for a Firebase session via signInWithCredential. Avoids the
+   * /__/auth/handler round-trip that breaks on iOS Chrome.
+   */
+  signInWithGoogleCredential: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -430,6 +438,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [isSigningIn]);
 
+  const signInWithGoogleCredential = useCallback(
+    async (idToken: string) => {
+      if (isSigningIn) return;
+      const bucket = bucketRef.current;
+      setIsSigningIn(true);
+      setIsLoading(true);
+      setAuthError(null);
+
+      safeLog("gis credential start", bucket, "popup");
+      recordAuthDebug("signIn:gisCredentialExchange:start", {
+        browserBucket: bucket,
+        selectedStrategy: "popup",
+      });
+
+      const start = perfNow();
+      try {
+        const cred = GoogleAuthProvider.credential(idToken);
+        await signInWithCredential(firebaseAuth, cred);
+        recordAuthDebug("signIn:gisCredentialExchange:end", {
+          redirectResultStatus: "success",
+          elapsedMs: Math.round(perfNow() - start),
+        });
+        // onAuthStateChanged drives setUser / setIsSigningIn(false).
+      } catch (err) {
+        safeLog("gis credential error", bucket, "popup", err);
+        recordAuthDebug("signIn:credentialError", {
+          errorCode: (err as { code?: string }).code ?? null,
+        });
+        recordAuthDebug("signIn:gisCredentialExchange:end", {
+          redirectResultStatus: "error",
+          elapsedMs: Math.round(perfNow() - start),
+          errorCode: (err as { code?: string }).code ?? null,
+        });
+        setAuthError("Sign-in failed. Please try again.");
+        setIsSigningIn(false);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isSigningIn],
+  );
+
   const signOut = useCallback(async () => {
     await firebaseSignOut(firebaseAuth);
     setUser(null);
@@ -445,6 +495,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authError,
         clearAuthError,
         signInWithGoogle,
+        signInWithGoogleCredential,
         signOut,
       }}
     >
