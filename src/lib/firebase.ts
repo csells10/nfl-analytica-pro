@@ -24,6 +24,20 @@ const firebaseConfig = {
 export const firebaseApp: FirebaseApp = initializeApp(firebaseConfig);
 
 /**
+ * OAuth 2.0 Web Client ID for project nfl-stream-406420 — the same Web
+ * client that Firebase Auth uses. Sourced from Google Cloud Console →
+ * APIs & Services → Credentials. Public by design (it's an OAuth client
+ * ID, not a secret).
+ *
+ * Used by Google Identity Services (src/lib/gis.ts) on iPhone Chrome
+ * (CriOS) to obtain an ID token that AuthContext exchanges for a
+ * Firebase session via signInWithCredential — avoiding the
+ * /__/auth/handler round-trip that breaks on iOS Chrome.
+ */
+export const GOOGLE_WEB_CLIENT_ID =
+  "362530996210-ke3ajdjovtr7514m3rdrlum715dt5o38.apps.googleusercontent.com";
+
+/**
  * Initialize Auth with explicit persistence chain and popup/redirect resolver
  * so iOS Chrome (CriOS) has both configured before the redirect round-trip.
  *
