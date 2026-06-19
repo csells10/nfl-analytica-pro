@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
+import { detectBrowserBucket, GOOGLE_WEB_CLIENT_ID } from "@/lib/firebase";
+import {
+  cancelGis,
+  initializeGis,
+  loadGisScript,
+  renderGoogleButton,
+} from "@/lib/gis";
 import {
   clearAuthDebug,
   getAuthDebugEvents,
