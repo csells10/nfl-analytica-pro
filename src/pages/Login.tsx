@@ -149,16 +149,25 @@ export default function Login() {
             </div>
           </CardHeader>
           <CardContent>
-            <Button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={busy}
-              className="w-full"
-              variant="outline"
-            >
-              <GoogleIcon className="mr-2 h-4 w-4" />
-              {busy ? "Signing in…" : "Sign in with Google"}
-            </Button>
+            {useGis && (
+              <div
+                ref={gisContainerRef}
+                className="flex w-full justify-center"
+                aria-label="Sign in with Google"
+              />
+            )}
+            {showFallbackButton && (
+              <Button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={busy}
+                className={useGis ? "mt-3 w-full" : "w-full"}
+                variant="outline"
+              >
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                {busy ? "Signing in…" : "Sign in with Google"}
+              </Button>
+            )}
             {authError && (
               <p className="mt-3 text-center text-sm text-destructive">{authError}</p>
             )}
