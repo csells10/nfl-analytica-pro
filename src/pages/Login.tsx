@@ -23,13 +23,30 @@ import {
 } from "@/lib/auth-debug";
 
 export default function Login() {
-  const { signInWithGoogle, isLoading, isSigningIn, user, isReady, authError, clearAuthError } = useAuth();
+  const {
+    signInWithGoogle,
+    signInWithGoogleCredential,
+    isLoading,
+    isSigningIn,
+    user,
+    isReady,
+    authError,
+    clearAuthError,
+  } = useAuth();
   const busy = isLoading || isSigningIn;
   const navigate = useNavigate();
   const location = useLocation();
 
   const redirectTo =
     (location.state as { from?: string } | null)?.from || "/";
+
+  // iPhone Chrome (CriOS) only: render the official Google Identity
+  // Services button and exchange the returned ID token via
+  // signInWithCredential. Avoids /__/auth/handler entirely.
+  const [bucket] = useState(() => detectBrowserBucket());
+  const useGis = bucket === "ios_chrome";
+  const gisContainerRef = useRef<HTMLDivElement | null>(null);
+  const [gisFailed, setGisFailed] = useState(false);
 
   // Debug-only: record that the login page mounted (path + ready state only).
   useEffect(() => {
@@ -50,6 +67,63 @@ export default function Login() {
     }
   }, [isReady, user, navigate, redirectTo]);
 
+  // Mount the GIS button only on iPhone Chrome. Falls back to today's
+  // redirect button on any load/init failure.
+  useEffect(() => {
+    if (!useGis) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        await loadGisScript();
+        if (cancelled) return;
+        const container = gisContainerRef.current;
+        if (!container) return;
+
+        let initOk = true;
+        initializeGis({
+          clientId: GOOGLE_WEB_CLIENT_ID,
+          onCredential: (idToken) => {
+            void signInWithGoogleCredential(idToken);
+          },
+          onError: (reason) => {
+            recordAuthDebug("gis:promptSkipped", { errorCode: reason });
+            initOk = false;
+            if (!cancelled) setGisFailed(true);
+          },
+        });
+        if (!initOk || cancelled) return;
+
+        // Match container width so the GIS button visually replaces our
+        // existing full-width Sign in with Google button.
+        const width = Math.min(
+          400,
+          Math.max(200, Math.round(container.getBoundingClientRect().width)),
+        );
+        const isDark =
+          typeof document !== "undefined" &&
+          document.documentElement.classList.contains("dark");
+        renderGoogleButton(container, {
+          theme: isDark ? "filled_black" : "outline",
+          size: "large",
+          text: "signin_with",
+          shape: "rectangular",
+          logo_alignment: "left",
+          width,
+        });
+      } catch (err) {
+        const code = (err as { message?: string }).message ?? "load_error";
+        recordAuthDebug("gis:promptSkipped", { errorCode: code });
+        if (!cancelled) setGisFailed(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      cancelGis();
+    };
+  }, [useGis, signInWithGoogleCredential]);
+
   const handleGoogleSignIn = async () => {
     clearAuthError();
     try {
@@ -58,6 +132,8 @@ export default function Login() {
       /* error surfaced via authError */
     }
   };
+
+  const showFallbackButton = !useGis || gisFailed;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
