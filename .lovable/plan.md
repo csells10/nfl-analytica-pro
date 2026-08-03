@@ -1,6 +1,8 @@
 # Packet4 candidate backend — branch-only API_BASE swap
 
-Prerequisite (you): create branch `packet4-candidate-preview` from main via the Lovable branch switcher and switch to it, then approve this plan. I cannot create branches — branch/git state is platform-managed.
+Branch check (done): the sandbox checkout reports the working branch as an ephemeral platform edit branch (`edit/edt-b12e712b-...`), not `packet4-candidate-preview`. I cannot read or set the Lovable branch name from here — branch/git state is platform-managed. So I cannot self-confirm the precondition you asked for.
+
+Prerequisite (you): confirm in the Lovable branch switcher that the active branch is `packet4-candidate-preview`, then approve this plan. Approving is your confirmation; I will apply the edit to whatever branch Lovable has active.
 
 ## The change
 
