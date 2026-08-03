@@ -4,7 +4,7 @@ import { perfNow, perfTime } from "@/lib/perf";
 import { getAuthToken, firebaseAuth } from "@/lib/firebase";
 import { signOut as firebaseSignOut } from "firebase/auth";
 
-export const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
+export const API_BASE = "https://packet4-candidate---nfl-games-app-main-ids7lwjjta-uc.a.run.app";
 
 /**
  * Typed API error so the UI can render a safe, user-facing message based on
