@@ -1,59 +1,85 @@
-# v1.7.14 — Core Area Advantage display-strength wiring
+# GameLens backend cutover — pre-change inspection report
 
-UI-only patch. Make Core Area tile labels/captions prefer the newer backend `matchup_breakdown.core_area_summaries.display_*` fields so areas read as "Lean" / "Near Even" when the backend says so, instead of always rendering "Edge" from raw `leader`.
+Analysis only. No files were changed, no backend calls were made, no preview or publish was triggered.
 
-## Field precedence
+## A. Current API configuration
 
-**Tile label (edge text in the top-right of each tile):**
-1. If matching summary has a directional `display_strength` (`lean` / `edge` / `strong_edge`) AND a safe `leader_team`: `{leader_team} {mapped}` → e.g. `BUF Lean`, `ATL Edge`.
-2. Else if `display_strength === "near_even"`: `Near Even`.
-3. Else fall back to current logic from `core_area_comparison.leader` (`{ABBR} Edge` / `Even`).
+- Exact production base URL: `https://nfl-games-app-main-362530996210.us-central1.run.app`
+- Location: `src/lib/nfl-api.ts`, line 7, exported constant:
 
-Mapping: `near_even → Near Even`, `lean → Lean`, `edge → Edge`, `strong_edge → Strong Edge`. Unknown values fall through to legacy.
+```ts
+export const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run.app";
+```
 
-`leader_team` safety: reuse existing `safeTeam` regex/length check already in `buildTitle`.
+- It is **hardcoded in source**. There is no `.env` file in the project, no `import.meta.env` reference anywhere in `src/`, and no `VITE_*` variable used by the app. Confirmed by a repo-wide search for `run.app`, `API_BASE`, `import.meta.env`, and `VITE_`.
+- No secrets are involved in this constant. The Firebase web config in `src/lib/firebase.ts` (apiKey redacted here, publishable by design) and the OAuth Web Client ID are the only other embedded identifiers.
 
-**Tile caption (small line under the title):**
-1. `display_summary` (if passes existing `isUsableSummary`-style safety: length 16–240, no jargon tokens, not noise).
-2. Existing matched `summary` (same safety check — already used by the popover).
-3. Existing `RELATIONSHIP_LABEL[core_area]` fallback (unchanged).
+## B. All API URL consumers
 
-Caption rendered in the same `<p class="mb-2 text-[10px] text-muted-foreground/70">` slot that today holds `relationship` — no new DOM node, no new section.
+Only two files, and they share one constant — there is no duplicate definition.
 
-## Files
+| File | Usage |
+|---|---|
+| `src/lib/nfl-api.ts` | Defines `API_BASE` (line 7); uses it at line 119 (`/games?date=`) and line 382 (`/game/{id}`) |
+| `src/lib/admin-api.ts` | Imports it: `import { ApiError, API_BASE } from "@/lib/nfl-api";` (line 10); uses it at line 226 (`/admin/gamelens/claim-health`) and line 282 (`/me`) |
 
-**`src/lib/nfl-api.ts`** — extend `matchup_breakdown.core_area_summaries[]` type (additive, all optional):
-- `display_strength?: "near_even" | "lean" | "edge" | "strong_edge" | string | null`
-- `display_summary?: string | null`
-- `leader_source?: string | null` (typed only, never rendered)
-- `driver_alignment?: string | null` (typed only, never rendered)
-- `broad_score_gap?: number | null` (typed only, never rendered)
-- `headline_driver_leader?: string | null` (typed only, never rendered)
+Confirmed: `admin-api.ts` does **not** define its own URL. Changing line 7 of `nfl-api.ts` redirects every backend call in the app, including `/me`.
 
-**`src/components/CoreAreaAdvantage.tsx`** — inside the existing `rows.map`:
-- Resolve `matched` summary with current `findSummary` (already by normalized name, not index).
-- Compute `displayEdgeLabel` via precedence above; replace current `edgeLabel` string. Keep the same `<span>` and the same `isNeutral` styling rule (treat `near_even` as neutral for the muted-color branch).
-- Compute `displayCaption` via precedence above; render in the existing relationship `<p>` slot.
-- Reuse `isUsableSummary` for `display_summary` validation (rename internal var if needed; same rules).
-- Keep popover, score bars, percentages, metric count, ordering, classes, and tile layout exactly as-is.
+No other Cloud Run URLs exist in the frontend source.
 
-## Not changing
+## C. Preview/environment capabilities
 
-Score math, bars, percentages, metric counts, tile order, popover behavior, Matchup Lean, Team Comparison, Model Trust, Game Profile, routing/fetching, team colors, green/red colors, onboarding/tour. No new sections, badges, pills, or hover behavior. No exposure of `leader_source` / `driver_alignment` / `broad_score_gap` / `headline_driver_leader`.
+- This project has **no separate dev/preview/production environment variables**. Vite env files are absent and unused; one source constant serves all environments.
+- Lovable's preview URL and the published production site are built from the **same branch source**. Editing `API_BASE` on the working branch changes what the preview serves *and* what the next publish would ship.
+- Preview origin for this project: `https://id-preview--a37ecb52-9bbe-4bac-a777-e82669f80951.lovable.app`. Production: `https://nfl-analytica-pro.lovable.app`, `https://gamelens.io`, `https://www.gamelens.io`.
+- Key isolation fact: **the already-published production site does not change when the preview changes.** Live `gamelens.io` keeps serving the last published build until someone clicks Publish/Update. So a source edit is safe for production as long as no publish occurs.
+- Mechanisms that could give a genuinely isolated candidate frontend:
+  1. **Edit on a Lovable branch** (recommended) — a branch gets its own preview URL and cannot reach production without an explicit merge + publish.
+  2. **Remix/duplicate project** — strongest isolation, but a new Firebase authorized domain and new CORS entry are still required, and it drifts from main.
+  3. **Edit on the main working branch without publishing** — works, but one accidental Publish ships the candidate URL to `gamelens.io`. Higher risk.
+- `UNKNOWN`: the exact preview hostname a new branch would receive (Lovable assigns it at branch creation).
 
-## QA — `/matchup/20251013_BUF@ATL`
+## D. Firebase and CORS requirements
 
-- Disruption and Turnovers: expect `BUF Lean` (was `BUF Edge`) if backend sends `display_strength: "lean"` + `leader_team: "BUF"`.
-- Defensive Control: still ATL-directional (label follows backend; falls back to `ATL Edge` if no `display_*`).
-- Offensive Output / Scoring Efficiency: still BUF-directional.
-- Percentages, metric counts, bar widths unchanged.
-- No new badges/sections; tile heights stable.
-- Tiles missing `display_*` render identical to today.
+- Yes, Firebase Auth is used. Config in `src/lib/firebase.ts`: `authDomain: "auth.gamelens.io"`, `projectId: nfl-stream-406420`, plus `GOOGLE_WEB_CLIENT_ID` for the iOS-Chrome GIS path in `src/lib/gis.ts`. All values are publishable client identifiers; no secret is present in the frontend.
+- Auth configuration does **not** differ between preview and production — the same hardcoded Firebase config is used everywhere.
+- Before sign-in works on a preview origin you would need:
+  - Firebase Console → Authentication → Settings → **Authorized domains**: add the preview host (e.g. `id-preview--<id>.lovable.app` or the branch preview host). This is additive and does not affect `gamelens.io`.
+  - Google Cloud Console → Credentials → the Web client → **Authorized JavaScript origins**: add `https://<preview-host>` (required for the GIS path; also good hygiene for popup sign-in). Redirect URIs do not need a new entry because the handler stays on `auth.gamelens.io`.
+- CORS: yes. The candidate Cloud Run service must allow the preview origin for `/me`, `/games`, `/game/{id}` — including OPTIONS preflight, since requests carry an `Authorization` header. Without it, calls fail with `Failed to fetch` exactly like the earlier `/me` incident. Adding the preview origin to the candidate service only; production service untouched.
 
-## Post-build summary
+## E. Recommended isolated preview procedure
 
-- files changed
-- exact label precedence used
-- exact caption precedence used
-- confirmation legacy fallback remains
-- QA notes for `20251013_BUF@ATL`
+Smallest reversible sequence (to run only after approval):
+
+1. Create a Lovable **branch** (e.g. `packet4-candidate`) from current main. Nothing on production changes.
+2. On that branch, change **one line** — `src/lib/nfl-api.ts` line 7 — to the candidate URL. No other file.
+3. Note the branch preview origin Lovable reports.
+4. Add that origin to Firebase Authorized Domains and to Google OAuth Authorized JavaScript origins (additive only).
+5. Add that origin to the candidate backend's CORS allowlist (candidate service only).
+6. Sign in on the preview and exercise only: `/me` (via the access gate), `/games?date=2026-08-06` (Slate date picker), `/game/20260806_CAR@ARI` (matchup route). No POST `/`, no `/test`, no historical final game.
+   - Note: React Query persists responses to `localStorage` for 24h. Use a fresh/incognito profile for the preview so cached production responses don't mask candidate behavior, and so preview data doesn't linger.
+7. Teardown: delete the branch (or revert the one line). Optionally remove the preview origin from Firebase/Google/CORS.
+
+Rollback is a single-line revert back to `https://nfl-games-app-main-362530996210.us-central1.run.app`.
+
+Risks to keep in view:
+- **Publish is the only real danger.** Do not click Publish/Update while the candidate URL is in source.
+- Working on main instead of a branch makes that misclick production-affecting — prefer the branch.
+- Auth-domain and OAuth-origin edits are shared, project-wide Google settings: they are additive, but they are edits to production Google config, not to the app.
+- If the candidate backend lacks `/me`, the app will hang on "Checking access…" (the same failure mode as the earlier dev-over-prod deploy). Verify `/me` exists on the candidate before testing.
+
+## F. Files/settings that would eventually need temporary modification
+
+| Item | Change | Reversible by |
+|---|---|---|
+| `src/lib/nfl-api.ts` line 7 (`API_BASE`) | Point to candidate URL | One-line revert / delete branch |
+| Firebase Console → Authorized domains | Add preview host | Remove entry |
+| Google Cloud → OAuth Web client → JS origins | Add `https://<preview-host>` | Remove entry |
+| Candidate Cloud Run service CORS allowlist | Add preview origin | Remove entry |
+
+No other frontend file needs to change. `src/lib/admin-api.ts` follows automatically via the shared import.
+
+## G. Confirmation
+
+No files were created, edited, saved, committed, previewed, published, or deployed. No backend request was made. No project setting was changed. This document is the report only.
