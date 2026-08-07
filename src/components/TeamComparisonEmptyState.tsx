@@ -9,9 +9,9 @@ export function TeamComparisonEmptyState() {
   return (
     <div className="flex min-h-[190px] flex-col justify-center rounded-lg border border-border bg-muted/40 px-5 py-7 sm:px-7">
       <div className="mx-auto w-full max-w-md space-y-3 text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           <Info className="h-3 w-3" />
-          Current-season evidence
+          Season context
         </span>
         <h3 className="text-[15px] font-semibold leading-snug tracking-tight text-foreground">
           Season evidence is still being established.
@@ -20,7 +20,7 @@ export function TeamComparisonEmptyState() {
           GameLens builds Team Comparison from performance in the current season phase rather than
           carrying over historical seasons.
         </p>
-        <p className="text-[12px] leading-relaxed text-muted-foreground/80">
+        <p className="text-[12px] leading-relaxed text-muted-foreground">
           This comparison will appear once both teams have completed a game in this phase.
         </p>
       </div>
