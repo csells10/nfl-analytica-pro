@@ -30,6 +30,7 @@ import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { MatchupSupportBadge } from "@/components/MatchupSupportBadge";
 import { CoreAreaAdvantage } from "@/components/CoreAreaAdvantage";
+import { TeamComparisonEmptyState } from "@/components/TeamComparisonEmptyState";
 
 import { SectionGuide } from "@/components/SectionGuide";
 
@@ -1472,7 +1473,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
       title: "Team Comparison",
       body: "Team Comparison shows the metric-level gaps behind the matchup read.",
       icon: Columns,
-      available: !!(team_comparison && team_comparison.length > 0),
+      available: true,
     },
     {
       key: "model-trust",
@@ -1727,8 +1728,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           body="Team Comparison shows the metric-level gaps behind the matchup read."
         />
       )}
-      {team_comparison && team_comparison.length > 0 && (
-        <Card data-tour="team-comparison" className="mb-10 border-border/80 bg-gradient-to-b from-card to-card/60 shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_20px_40px_-24px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
+      <Card data-tour="team-comparison" className="mb-10 border-border/80 bg-gradient-to-b from-card to-card/60 shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_20px_40px_-24px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
           <CardContent className="p-7 sm:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1737,9 +1737,11 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                 </div>
                 <h2 className="text-lg font-semibold leading-tight text-foreground">Team Comparison</h2>
               </div>
-              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
-                Season averages
-              </span>
+              {team_comparison && team_comparison.length > 0 && (
+                <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+                  Season averages
+                </span>
+              )}
             </div>
 
             {/* Team header row */}
@@ -1757,6 +1759,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
               </div>
             </div>
 
+            {team_comparison && team_comparison.length > 0 ? (
             <div className="space-y-1">
               {team_comparison.map((r) => {
                 // v1.7.15: treat backend-marked near-even rows as visually neutral
@@ -1824,9 +1827,11 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
                 );
               })}
             </div>
+            ) : (
+              <TeamComparisonEmptyState />
+            )}
           </CardContent>
         </Card>
-      )}
       <SectionSpotlightTour
         open={tourOpen}
         steps={tourSteps}
