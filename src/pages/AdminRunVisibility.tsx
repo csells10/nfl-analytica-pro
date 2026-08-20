@@ -230,16 +230,57 @@ export default function AdminRunVisibility() {
         ) : data ? (
           <>
             <OverviewCards overview={data.overview} />
-            <WeekCards weeks={data.overview.weeks} selected={gameWeek} onSelect={setGameWeek} />
-            <AttentionSections
+            <WeekCards
+              weeks={data.overview.weeks}
+              selected={gameWeek}
+              onSelect={(week) => {
+                setGameWeek(week);
+                selectDay(undefined);
+              }}
+            />
+            <AttentionSummary
+              days={allDays}
               needsAttention={data.attention.needs_attention}
               knownGaps={data.attention.known_gaps}
-              onOpenGame={setOpenGameId}
+              onSelectDay={(date) => {
+                setAttentionOnly(false);
+                selectDay(date);
+              }}
+              onShowAttentionDays={() => {
+                setAttentionOnly(true);
+                selectDay(undefined);
+              }}
             />
-            <GameJourneyTable games={data.games} onOpenGame={setOpenGameId} />
-            <RecentRuns runs={data.recent_runs} />
+
+            {attentionOnly && (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2">
+                <p className="text-xs text-muted-foreground">Showing only days with active attention.</p>
+                <Button variant="ghost" size="sm" onClick={() => setAttentionOnly(false)}>
+                  Show all days
+                </Button>
+              </div>
+            )}
+
+            <DaySummaryList days={visibleDays} selectedDate={selectedDate} onSelect={selectDay} />
+
+            {selectedDay ? (
+              <GameJourneyTable games={dayGames} dayLabel={selectedDay.label} onOpenGame={setOpenGameId} />
+            ) : (
+              <Card className="border-border bg-card">
+                <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                  Select a day above to review its games.
+                </CardContent>
+              </Card>
+            )}
+
+            <RecentRuns
+              runs={data.recent_runs}
+              selectedDate={selectedDate}
+              selectedDayLabel={selectedDay?.label}
+            />
           </>
         ) : null}
+
 
         <GameDetailDrawer
           gameId={openGameId}
