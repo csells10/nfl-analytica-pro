@@ -197,6 +197,8 @@ export interface AttentionItem {
   game_id: string;
   matchup: string;
   week_label: string;
+  game_date: string;
+  day_label: string;
   clock: string;
   stage: string;
   status: StageStatus;
@@ -220,6 +222,8 @@ export interface RunAttempt {
   input_count: number;
   output_count: number;
   raw_reason?: string;
+  /** Operational days this attempt covered; used to relate runs to a day. */
+  related_dates: string[];
 }
 
 export interface RunVisibilityOverview {
@@ -230,6 +234,7 @@ export interface RunVisibilityOverview {
   needs_attention: number;
   known_gaps: number;
   weeks: WeekSummary[];
+  days: DaySummary[];
   games: GameRow[];
 }
 
