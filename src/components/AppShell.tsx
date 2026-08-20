@@ -28,7 +28,11 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   // Frontend-only UX gate. Backend remains source of truth for admin auth.
   const { data: me } = useMe(Boolean(user));
   const navItems = me?.is_admin
-    ? [...baseNavItems, { label: "Admin", path: "/admin/claim-health", icon: ShieldCheck }]
+    ? [
+        ...baseNavItems,
+        { label: "Admin", path: "/admin/claim-health", icon: ShieldCheck },
+        { label: "Run Visibility", path: "/admin/run-visibility", icon: Activity },
+      ]
     : baseNavItems;
 
   // Show a subtle pulse on the Guide button for the first few visits so users discover it.
