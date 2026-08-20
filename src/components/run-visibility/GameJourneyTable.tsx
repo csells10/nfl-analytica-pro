@@ -89,7 +89,7 @@ export default function GameJourneyTable({ games, onOpenGame }: Props) {
                 </div>
                 <StatusChip {...game.overall} />
               </div>
-              <div className="grid grid-cols-1 gap-2 text-xs xs:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-muted-foreground">Daily load</span>
                   <StatusChip {...game.daily_data_load} />
