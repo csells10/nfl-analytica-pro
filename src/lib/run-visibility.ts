@@ -654,6 +654,7 @@ const RECENT_RUNS: RunAttempt[] = [
     input_count: 8,
     output_count: 3,
     raw_reason: "PARTIAL_SCOPE: 5 games past kickoff_utc at invocation time",
+    related_dates: ["2026-08-15"],
   },
   {
     attempt_id: "att_20260818_1756_learning",
@@ -671,6 +672,7 @@ const RECENT_RUNS: RunAttempt[] = [
     input_count: 7,
     output_count: 2,
     raw_reason: "ELIGIBLE=2 SKIPPED=5 reason=missing_canonical_snapshot",
+    related_dates: ["2026-08-13", "2026-08-14", "2026-08-15"],
   },
   {
     attempt_id: "att_20260816_0652_daily",
@@ -686,6 +688,7 @@ const RECENT_RUNS: RunAttempt[] = [
     duration_seconds: 2927,
     input_count: 17,
     output_count: 17,
+    related_dates: ["2026-08-06", "2026-08-13", "2026-08-14", "2026-08-15"],
   },
 ];
 
