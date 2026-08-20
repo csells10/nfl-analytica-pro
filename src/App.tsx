@@ -18,6 +18,7 @@ const Matchup = lazy(() => import("@/pages/Matchup"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
 const Placeholder = lazy(() => import("@/pages/Placeholder"));
 const AdminClaimHealth = lazy(() => import("@/pages/AdminClaimHealth"));
+const AdminRunVisibility = lazy(() => import("@/pages/AdminRunVisibility"));
 
 // Persist React Query cache so revisits/refreshes hydrate instantly
 // from the previous successful response and only re-fetch in the
