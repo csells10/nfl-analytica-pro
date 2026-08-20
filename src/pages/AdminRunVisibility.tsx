@@ -55,6 +55,8 @@ export default function AdminRunVisibility() {
   const [startDate, setStartDate] = useState("2026-08-03");
   const [endDate, setEndDate] = useState("2026-08-20");
   const [gameWeek, setGameWeek] = useState<string | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
+  const [attentionOnly, setAttentionOnly] = useState(false);
   const [openGameId, setOpenGameId] = useState<string | null>(null);
 
   const filters = useMemo<RunVisibilityFilters>(
@@ -73,8 +75,19 @@ export default function AdminRunVisibility() {
   const { data, isLoading } = useRunVisibility(filters);
   const { data: detailData, isLoading: detailLoading } = useRunVisibilityGame(filters, openGameId);
 
+  const allDays = data?.overview.days ?? [];
+  const visibleDays = attentionOnly ? allDays.filter((day) => day.needs_attention > 0) : allDays;
+  const selectedDay = allDays.find((day) => day.game_date === selectedDate);
+  const dayGames = selectedDate ? (data?.games ?? []).filter((game) => game.game_date === selectedDate) : [];
+
+  const selectDay = (date?: string) => {
+    setSelectedDate(date);
+    setOpenGameId(null);
+  };
+
   const range = resolveRange(filters);
   const isAdmin = me?.is_admin === true;
+
 
   if (meLoading) {
     return (
