@@ -693,8 +693,25 @@ function sourceHealth(health: Record<string, unknown> | undefined): { available:
     const tables = health as Array<{ available?: boolean }>;
     return { available: tables.filter((t) => t.available !== false).length, total: tables.length };
   }
-  const available = readCount(health, ["available", "tables_available", "sources_available"]);
-  const total = readCount(health, ["total", "tables_total", "sources_total"]);
+  if (!health) return { available: 0, total: 0 };
+
+  // Primary backend count fields (documented contract).
+  let available = readCount(health, ["available_count"]);
+  let total = readCount(health, ["table_count"]);
+
+  // Defensive fallbacks for older or alternate shapes.
+  if (available === 0) available = readCount(health, ["available", "tables_available", "sources_available"]);
+  if (total === 0) total = readCount(health, ["total", "tables_total", "sources_total"]);
+
+  // Final fallback: the tables array length.
+  const tables = health.tables;
+  if (total === 0 && Array.isArray(tables)) {
+    total = tables.length;
+    if (available === 0) {
+      available = (tables as Array<{ available?: boolean }>).filter((t) => t.available !== false).length;
+    }
+  }
+
   return { available, total };
 }
 
