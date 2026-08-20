@@ -249,6 +249,7 @@ export interface RunVisibilityResponse {
     known_gaps: AttentionItem[];
   };
   recent_runs: RunAttempt[];
+  days: DaySummary[];
   games: GameRow[];
   selected_game: GameDetail | null;
 }
