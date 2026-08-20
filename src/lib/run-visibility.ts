@@ -710,6 +710,8 @@ function buildAttention(details: GameDetail[]): { needs_attention: AttentionItem
           game_id: game.game_id,
           matchup: game.matchup,
           week_label: game.week_label,
+          game_date: game.game_date,
+          day_label: game.day_label,
           clock: CLOCK_LABEL[clock.key],
           stage: stage.name,
           status: stage.status,
