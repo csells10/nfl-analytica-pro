@@ -806,6 +806,7 @@ export async function getRunVisibility(filters: RunVisibilityFilters): Promise<R
 
   const { needs_attention, known_gaps } = buildAttention(inRange);
   const rows = inRange.map(toRow);
+  const days = buildDays(inRange);
   const selected = filters.gameId ? (allDetails.find((g) => g.game_id === filters.gameId) ?? null) : null;
 
   return {
@@ -821,10 +822,12 @@ export async function getRunVisibility(filters: RunVisibilityFilters): Promise<R
       needs_attention: needs_attention.length,
       known_gaps: known_gaps.length,
       weeks: buildWeeks(allDetails),
+      days,
       games: rows,
     },
     attention: { needs_attention, known_gaps },
     recent_runs: RECENT_RUNS,
+    days,
     games: rows,
     selected_game: selected,
   };
