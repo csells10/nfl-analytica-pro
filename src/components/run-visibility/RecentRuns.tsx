@@ -48,8 +48,16 @@ function RunRow({ run }: { run: RunAttempt }) {
   );
 }
 
-export default function RecentRuns({ runs }: { runs: RunAttempt[] }) {
+interface RecentRunsProps {
+  runs: RunAttempt[];
+  /** When a day is selected, only attempts that covered that day are listed. */
+  selectedDate?: string;
+  selectedDayLabel?: string;
+}
+
+export default function RecentRuns({ runs, selectedDate, selectedDayLabel }: RecentRunsProps) {
   const [open, setOpen] = useState(false);
+  const visibleRuns = selectedDate ? runs.filter((run) => run.related_dates.includes(selectedDate)) : runs;
 
   return (
     <Card className="border-border bg-card">
@@ -58,20 +66,23 @@ export default function RecentRuns({ runs }: { runs: RunAttempt[] }) {
           <Play className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-foreground">
-              Recent Runs <span className="text-muted-foreground">({runs.length})</span>
+              Recent Runs <span className="text-muted-foreground">({visibleRuns.length})</span>
             </p>
             <p className="text-xs text-muted-foreground">
-              An attempt is one bounded coordinator invocation. It may cover one game or many, and is not the same as a
-              game ID.
+              {selectedDate
+                ? `Attempts that covered ${selectedDayLabel ?? selectedDate}. An attempt is one bounded coordinator invocation, not a game.`
+                : "An attempt is one bounded coordinator invocation. It may cover one game or many, and is not the same as a game ID."}
             </p>
           </div>
           <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="space-y-2 p-4 pt-0">
-            {runs.map((run) => (
-              <RunRow key={run.attempt_id} run={run} />
-            ))}
+            {visibleRuns.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No attempts recorded for this day.</p>
+            ) : (
+              visibleRuns.map((run) => <RunRow key={run.attempt_id} run={run} />)
+            )}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
