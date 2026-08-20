@@ -62,8 +62,11 @@ const App = () => (
       buster: "v2-calibration",
       dehydrateOptions: {
         // Only persist successful queries — never store error states.
-        shouldDehydrateQuery: (query) => query.state.status === "success",
+        // Operational queries opt out with meta.persist = false.
+        shouldDehydrateQuery: (query) =>
+          query.state.status === "success" && query.meta?.persist !== false,
       },
+
     }}
     onSuccess={() => perfTime("query cache restore", restoreStart)}
   >

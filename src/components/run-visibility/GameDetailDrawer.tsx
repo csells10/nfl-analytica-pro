@@ -3,6 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import StatusChip from "./StatusChip";
 import StageTimeline from "./StageTimeline";
 import type { GameDetail } from "@/lib/run-visibility";
+import { safeErrorMessage } from "@/lib/run-visibility-api";
+
 
 function HeaderField({ label, value }: { label: string; value: string }) {
   return (
@@ -17,10 +19,12 @@ interface Props {
   gameId: string | null;
   game: GameDetail | null;
   isLoading: boolean;
+  error?: unknown;
   onClose: () => void;
 }
 
-export default function GameDetailDrawer({ gameId, game, isLoading, onClose }: Props) {
+export default function GameDetailDrawer({ gameId, game, isLoading, error, onClose }: Props) {
+
   return (
     <Sheet open={Boolean(gameId)} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
@@ -49,6 +53,11 @@ export default function GameDetailDrawer({ gameId, game, isLoading, onClose }: P
         </SheetHeader>
 
         <div className="space-y-3 p-4">
+          {error && !game && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-foreground">
+              {safeErrorMessage(error)}
+            </p>
+          )}
           {isLoading && !game && (
             <>
               <Skeleton className="h-40 w-full" />
@@ -56,6 +65,7 @@ export default function GameDetailDrawer({ gameId, game, isLoading, onClose }: P
               <Skeleton className="h-36 w-full" />
             </>
           )}
+
           {game?.clocks.map((clock) => (
             <StageTimeline key={clock.key} clock={clock} />
           ))}
