@@ -301,10 +301,32 @@ const SEEDS: Seed[] = [
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+const FULL_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 function kickoffLabel(date: string, time: string): string {
   const [, m, d] = date.split("-");
   return `${MONTHS[Number(m) - 1]} ${Number(d)}, 2026 · ${time} UTC`;
 }
+
+/** "Thursday, August 13" */
+function dayLabel(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${weekday}, ${FULL_MONTHS[m - 1]} ${d}`;
+}
+
+/** "Thu Aug 13" */
+function shortDayLabel(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()].slice(0, 3);
+  return `${weekday} ${MONTHS[m - 1]} ${d}`;
+}
+
 
 function dailyLoadStages(matchup: string): StageEvidence[] {
   return [
