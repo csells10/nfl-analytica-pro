@@ -747,6 +747,44 @@ function buildWeeks(details: GameDetail[]): WeekSummary[] {
   });
 }
 
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+/**
+ * Day summaries are derived from the same canonical game rows — no component
+ * ever reclassifies a backend status.
+ */
+function buildDays(details: GameDetail[]): DaySummary[] {
+  const dates = Array.from(new Set(details.map((g) => g.game_date))).sort();
+
+  return dates.map((date) => {
+    const games = details.filter((g) => g.game_date === date);
+    const { needs_attention, known_gaps } = buildAttention(games);
+    const captured = games.filter((g) => Boolean(g.capture_id)).length;
+
+    const parts = [plural(games.length, "game"), `${captured} captured`];
+    if (needs_attention.length > 0) parts.push(`${needs_attention.length} needs attention`);
+    if (known_gaps.length > 0) parts.push(plural(known_gaps.length, "known gap"));
+
+    return {
+      game_date: date,
+      label: dayLabel(date),
+      short_label: shortDayLabel(date),
+      game_week: games[0].game_week,
+      week_label: games[0].week_label,
+      scheduled: games.length,
+      captured,
+      needs_attention: needs_attention.length,
+      known_gaps: known_gaps.length,
+      overall: overallRollup(games.map((g) => g.overall)),
+      summary: parts.join(" · "),
+    };
+  });
+}
+
+
+
 /**
  * Single replaceable data source.
  *
