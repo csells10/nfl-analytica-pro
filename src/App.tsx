@@ -80,6 +80,8 @@ const App = () => (
               <Route path="/matchup-lens" element={<ProtectedRoute><Placeholder title="Matchup Lens" /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/admin/claim-health" element={<ProtectedRoute><AdminClaimHealth /></ProtectedRoute>} />
+              <Route path="/admin/run-visibility" element={<ProtectedRoute><AdminRunVisibility /></ProtectedRoute>} />
+
             </Routes>
           </Suspense>
         </BrowserRouter>
