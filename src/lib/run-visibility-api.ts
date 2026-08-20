@@ -41,6 +41,8 @@ export class RunVisibilityError extends Error {
   readonly status?: number;
   /** Backend error code, e.g. "development_source_unavailable". */
   readonly code?: string;
+  /** Safe backend copy, only populated for request-shape (400) problems. */
+  backendMessage?: string;
 
   constructor(kind: RunVisibilityErrorKind, message: string, status?: number, code?: string) {
     super(message);
@@ -113,11 +115,6 @@ export interface RunVisibilityErrorBody {
   code?: string;
   message?: string;
   detail?: string;
-}
-
-// Augment the class with an optional backend message without widening the ctor.
-export interface RunVisibilityError {
-  backendMessage?: string;
 }
 
 function parseErrorBody(text: string): RunVisibilityErrorBody {
