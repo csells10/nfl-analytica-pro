@@ -100,15 +100,15 @@ export default function StatusChip({
   const isMixedRollup = Boolean(mixed) && attention !== "none";
   const understate = quiet && attention === "none" && status !== "failed";
 
-
   return (
     <span
       className={cn(
         "inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
-        look.className,
+        understate ? "border-border bg-muted/50 text-muted-foreground" : look.className,
         className,
       )}
     >
+
       <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <span className="truncate">{look.label}</span>
       {isMixedRollup && showMixedHint && (
