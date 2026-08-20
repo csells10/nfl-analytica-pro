@@ -154,6 +154,32 @@ describe("error mapping", () => {
 describe("normalization", () => {
   const result = normalizeRunVisibility(RUN_VISIBILITY_FIXTURE, DEFAULT_LEARNING_RUN_ID);
 
+  it("reads source_health from available_count and table_count first", () => {
+    expect(result.overview.source_tables_available).toBe(6);
+    expect(result.overview.source_tables_total).toBe(6);
+  });
+
+  it("falls back to tables.length when primary count fields are missing", () => {
+    const payload = {
+      ...RUN_VISIBILITY_FIXTURE,
+      overview: {
+        ...RUN_VISIBILITY_FIXTURE.overview,
+        source_health: {
+          duplicate_key_count: 1,
+          missing_key_row_count: 2,
+          tables: [
+            { name: "nfl_schedule", available: true },
+            { name: "gamelens_capture_receipt", available: false },
+            { name: "gamelens_pregame_snapshot", available: true },
+          ],
+        },
+      },
+    };
+    const parsed = normalizeRunVisibility(payload, DEFAULT_LEARNING_RUN_ID);
+    expect(parsed.overview.source_tables_available).toBe(2);
+    expect(parsed.overview.source_tables_total).toBe(3);
+  });
+
   it("counts a game as captured only when the pregame snapshot stage completed", () => {
     const captured = result.games.find((game) => game.game_id === "20260813_ARI@LV");
     const gap = result.games.find((game) => game.game_id === "20260813_BUF@NYG");
