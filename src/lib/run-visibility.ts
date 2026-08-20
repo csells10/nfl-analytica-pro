@@ -142,6 +142,11 @@ export interface GameRow {
   home: string;
   kickoff_utc: string;
   kickoff_label: string;
+  kickoff_time_label: string;
+  /** Calendar day the game belongs to, e.g. "2026-08-13". */
+  game_date: string;
+  /** Friendly day label, e.g. "Thursday, August 13". */
+  day_label: string;
   game_week: string;
   week_label: string;
   game_status: string;
