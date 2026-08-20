@@ -18,6 +18,7 @@ const Matchup = lazy(() => import("@/pages/Matchup"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
 const Placeholder = lazy(() => import("@/pages/Placeholder"));
 const AdminClaimHealth = lazy(() => import("@/pages/AdminClaimHealth"));
+const AdminRunVisibility = lazy(() => import("@/pages/AdminRunVisibility"));
 
 // Persist React Query cache so revisits/refreshes hydrate instantly
 // from the previous successful response and only re-fetch in the
@@ -79,6 +80,8 @@ const App = () => (
               <Route path="/matchup-lens" element={<ProtectedRoute><Placeholder title="Matchup Lens" /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/admin/claim-health" element={<ProtectedRoute><AdminClaimHealth /></ProtectedRoute>} />
+              <Route path="/admin/run-visibility" element={<ProtectedRoute><AdminRunVisibility /></ProtectedRoute>} />
+
             </Routes>
           </Suspense>
         </BrowserRouter>

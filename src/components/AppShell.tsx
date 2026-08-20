@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
-import { CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck } from "lucide-react";
+import { CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck, Activity } from "lucide-react";
 import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,11 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   // Frontend-only UX gate. Backend remains source of truth for admin auth.
   const { data: me } = useMe(Boolean(user));
   const navItems = me?.is_admin
-    ? [...baseNavItems, { label: "Admin", path: "/admin/claim-health", icon: ShieldCheck }]
+    ? [
+        ...baseNavItems,
+        { label: "Admin", path: "/admin/claim-health", icon: ShieldCheck },
+        { label: "Run Visibility", path: "/admin/run-visibility", icon: Activity },
+      ]
     : baseNavItems;
 
   // Show a subtle pulse on the Guide button for the first few visits so users discover it.
