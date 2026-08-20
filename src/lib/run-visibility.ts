@@ -173,6 +173,25 @@ export interface WeekSummary {
   known_gaps: number;
 }
 
+/** One operational day, derived from each game's game_date. */
+export interface DaySummary {
+  game_date: string;
+  label: string;
+  short_label: string;
+  game_week: string;
+  week_label: string;
+  scheduled: number;
+  captured: number;
+  needs_attention: number;
+  known_gaps: number;
+  /** One calm rollup state for the collapsed day row. */
+  overall: StateCell;
+  /** e.g. "6 games · 5 captured · 1 known gap". */
+  summary: string;
+}
+
+
+
 export interface AttentionItem {
   id: string;
   game_id: string;
