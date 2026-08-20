@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
-import { CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck } from "lucide-react";
+import { CalendarDays, Target, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck, Activity } from "lucide-react";
 import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 import { Button } from "@/components/ui/button";
