@@ -1,56 +1,89 @@
-# GameLens Run Visibility — admin wireframe
+# Run Visibility — real backend integration
 
-A new protected admin page that traces every scheduled game through the GameLens pipeline, built entirely on static mock data behind a single swappable adapter.
+Replace the mock adapter behind the existing Run Visibility page with the protected development endpoint, keeping the day-first design, drawer, and status treatments exactly as they are.
 
-## Route and shell
+## Files inspected
 
-- New route `/admin/run-visibility`, lazy-loaded and wrapped in `ProtectedRoute`, matching how `/admin/claim-health` is registered.
-- Rendered inside the existing `AppShell`, so nav, theme toggle and sign-out stay intact.
-- Admin nav entry added next to the existing Admin link (visible only when `me.is_admin`).
+- `src/lib/run-visibility.ts` — types, `toApiParams`, `resolveRange`, `buildDays`, mock `SEEDS`, `getRunVisibility`
+- `src/lib/admin-api.ts` — the existing authenticated admin fetch pattern (`getAuthToken` → `Authorization: Bearer`, 401 sign-out, 403 forbidden, `useMe`)
+- `src/lib/nfl-api.ts` — `API_BASE` (`https://nfl-games-app-main-...run.app`) and `ApiError`
+- `src/hooks/useRunVisibility.ts`, `src/pages/AdminRunVisibility.tsx`, `src/components/run-visibility/*`
+- `src/App.tsx` — global React Query defaults: `staleTime` 5 min, `gcTime` 24h, `PersistQueryClientProvider` with 24h `maxAge`
+- `vitest.config.ts`, `src/test/`
 
-## Data layer
+Confirmed by these reads: no development service URL and no env/config mechanism for one exists anywhere in the repo (no `.env`, no `VITE_*` usage). `API_BASE` is a single hardcoded production constant shared by `/games`, `/game`, `/me`, and Claim Health.
 
-One file, `src/lib/run-visibility.ts`:
+## Blocking configuration value
 
-- `RunVisibilityFilters` — season, seasonType, datePreset (`current_week` | `recent_18_days` | `custom` | `season_to_date`), custom range, week key.
-- `getRunVisibility(filters): Promise<RunVisibilityResponse>` — the single replaceable call. Returns the mock payload shaped exactly like the future `GET /admin/gamelens/run-visibility`: `overview`, `overview.weeks`, `overview.games`, `attention.needs_attention`, `attention.known_gaps`, `recent_runs`, `games`, `selected_game`.
-- Mock rows live in one `MOCK_RUN_VISIBILITY` constant in that file; no mock data in components.
-- `season_to_date` is isolated: the preset is flagged `unsupportedByBackend: true`, and the UI shows a small note that the protected endpoint currently accepts a 31-day maximum range. No pretending it works.
-- Consumed through a `useRunVisibility(filters)` React Query hook so swapping in `fetch` later changes nothing above it.
+The development base URL `https://nfl-games-app-dev-362530996210.us-central1.run.app` cannot be confirmed from the repository — it appears nowhere in code, config, or docs. It will be introduced as a new named constant used only by this adapter, and must be confirmed by you before the integration is trusted. No fallback to the production API base, and `API_BASE` is not touched.
 
-## Page structure
+Also needs confirmation: `season_type` casing. The UI holds lowercase (`preseason`), while the stated initial value is `Preseason`. The adapter will send the backend-facing casing (capitalized) via an explicit map so the UI type stays unchanged.
 
-1. **Header** — title, subtitle, "Development / Read Only" badge, last-refreshed timestamp.
-2. **Filter bar** — season, season type, date-preset (4 presets incl. Custom Range inputs), week selector with "All visible weeks".
-3. **Overview cards (5)** — Source Tables 6 of 6, Scheduled Games 17, Canonical Captures 7, Needs Attention 0, Known Gaps 16. Needs Attention uses alert styling only when > 0; Known Gaps uses a calm amber/neutral treatment.
-4. **Week cards** — Hall of Fame Weekend and Preseason Week 1 with date, scheduled/captured/attention/gap counts. Selecting one filters the table; selection is reflected in the week selector.
-5. **Attention sections** — two collapsibles: Needs Attention (open when count > 0, shows game/clock/stage/status/reason) and Known Gaps (collapsed, explanatory copy, rows open the game drawer).
-6. **Game journey table** — one row per game: matchup (+ game ID), kickoff, overall state, Daily Data Load, GameLens Pregame, Postgame Learning, first issue, Details. Horizontally scrollable on narrow screens; on phones rows collapse to stacked cards with the three clock chips.
-7. **Recent Runs** — collapsed section with friendly labels ("Snapshot capture · Aug 15, 2026 · 23:42 UTC"), status, games in scope, completed, reason. Expanding a row reveals raw attempt ID, stage, receipt table, start/finish, duration, input/output counts, raw reason, plus a one-line note that an attempt is a coordinator invocation, not a game.
+## Files that would change
 
-## Status chips
+| File | Change |
+| --- | --- |
+| `src/lib/run-visibility-api.ts` (new) | `RUN_VISIBILITY_API_BASE` dev constant, authenticated `fetch`, param serialization, error mapping |
+| `src/lib/run-visibility.ts` | `getRunVisibility` calls the API; response normalizer + day derivation kept; mock moves out |
+| `src/lib/run-visibility.fixture.ts` (new) | Existing `SEEDS`/builders moved here, test-only, never imported by app code |
+| `src/hooks/useRunVisibility.ts` | Full query keys, ~45s `staleTime`, no persistence, no retry on auth errors |
+| `src/pages/AdminRunVisibility.tsx` | Error/empty/truncated states, Refresh action, "Evidence generated" + "Loaded" timestamps, day selection re-query |
+| `src/components/run-visibility/GameDetailDrawer.tsx` | Detail error state; overview untouched while detail loads |
+| `src/components/run-visibility/RecentRuns.tsx` | Use `display_label` / `scope_label`; `attempt_id` stays in the drill-down |
+| `src/lib/run-visibility.test.ts` (new) | Param, guard, header, error, truncation tests |
 
-Single `StatusChip` component with icon + text + token-based color, never color alone: Complete (green/check), No Work Needed (teal/check), Waiting (blue/clock), Not Applicable (gray/minus), Known Gap (amber/history), Needs Attention (red/alert), Failed (red/x-circle). All colors from existing semantic tokens (`success`, `primary`, `muted`, `level-*`, `destructive`).
+## Adapter
 
-## Game detail
+`getRunVisibility(filters)` stays the only data entry point.
 
-- Desktop: right-side drawer (`Sheet`). Mobile: full-screen panel (same component, `side="bottom"` / full height).
-- Header: matchup, game ID, week, scheduled kickoff, game status, overall state, capture ID when present, learning run ID.
-- Three vertical timeline "clocks":
-  - Daily Data Load — Schedule, Final Score and Stats, Facts, Windowed Metrics, Rankings.
-  - GameLens Pregame — Snapshot, Frozen Context, Level 1. Copy makes clear a missed pregame snapshot is permanent.
-  - Postgame Learning — Game Grade, Level 2, Level 3, Level 4. Level 4 always Not Applicable with the "weekly learning, not a per-game worker" explanation.
-- Selecting a stage expands: friendly name, status, count, human-readable reason, canonical source, timestamp, retryable state, extra evidence. Technical field names sit in a secondary collapsed "Raw evidence" block.
-- Cascade rule encoded in the mock data: a downstream stage blocked by a missing canonical pregame snapshot is Not Applicable, not a second active failure — one root cause, one alert.
+- Builds `URLSearchParams` from `toApiParams`, omitting `game_week`, `game_id`, `limit` when blank.
+- Required: `season`, `season_type`, `learning_run_id`, `start_date`, `end_date` (`YYYY-MM-DD`). Defaults: season `2026`, `Preseason`, `gamelens_2026_preseason_v1`, `limit=50`.
+- Client guard rejects ranges over 31 inclusive days before any network call, surfacing a filter-level message instead of a 400.
+- Token via the existing `getAuthToken()`; header `Authorization: Bearer <token>`. No new auth system, no token storage, no Supabase.
+- On any failure it throws a typed error. No mock fallback — the fixture is imported only by tests.
 
-## Explicitly out of scope
+Response normalization (adapter-internal, no component reclassifies status):
 
-No API/Supabase/auth wiring, no write, retry, backfill or reconstruct actions, no Level 4 behavior, no changes to `/game` or any public page, no decorative charts.
+- `overview.source_health` → source-table card; `overview.games.{scheduled,captured,need_attention,known_gaps,returned,truncated}` → overview cards + truncation notice; `overview.weeks` → week cards and week selector.
+- Compact `games[]` (`game_id`, `game_week`, `matchup`, `game_date`, `scheduled_kickoff`, `game_status`, `state`, `first_issue`, `clocks`, `detail_available`) map to the existing `GameRow`, with kickoff/day labels formatted in the adapter and the three clock states read from `clocks[]` for `JourneyTicks`.
+- Day summaries continue to be derived by `buildDays` from `game_date`, capture state, overall state, and attention — the backend returns no day rollups.
+- `selected_game` (with `lineage.learning_run_id`, `lineage.capture_id`, detailed `clocks[].stages[].{reason,source,details}`, `traceability`) maps to `GameDetail` for the drawer.
+- `attention.needs_attention` / `attention.known_gaps` feed the existing summary banner and ledger.
+- Unknown status/attention/state values render through a neutral fallback rather than throwing. `warning` stays a warning; it is not promoted to active attention.
 
-## Files
+## Three request shapes
 
-- `src/pages/AdminRunVisibility.tsx` (page composition)
-- `src/lib/run-visibility.ts` (types + `getRunVisibility` + mock payload)
-- `src/hooks/useRunVisibility.ts`
-- `src/components/run-visibility/` — `StatusChip.tsx`, `OverviewCards.tsx`, `WeekCards.tsx`, `GameJourneyTable.tsx`, `AttentionSections.tsx`, `RecentRuns.tsx`, `GameDetailDrawer.tsx`, `StageTimeline.tsx`
-- Edits: `src/App.tsx` (route), `src/components/AppShell.tsx` (nav item)
+1. **Overview** — bounded range from the preset, optional `game_week`, `limit=50`, no `game_id`.
+2. **Day selection** — same endpoint with `start_date = end_date = selected day`, season/type/run/week preserved. Separate query key, so the range-level result stays cached.
+3. **Game detail** — same endpoint plus `game_id`, scoped to the relevant day and week. Runs as its own query; the overview query is never invalidated or replaced while it loads.
+
+Query keys include season, seasonType, learningRunId, startDate, endDate, gameWeek, gameId, limit. `staleTime` ~45s, `gcTime` short, and these keys are excluded from the 24h persister via `shouldDehydrateQuery` so operational data is never restored from storage. A read-only Refresh button re-fetches the visible queries.
+
+Header shows `generated_at` as "Evidence generated" and a client timestamp as "Loaded".
+
+## States
+
+- **Loading**: existing skeletons for overview; day list keeps previous data via `keepPreviousData`; drawer has its own loading state.
+- **Empty**: "No scheduled games in this range" card in place of the day list.
+- **Truncated** (`overview.games.truncated`): calm inline notice "Result limit reached — narrow the date range or week", and derived day counts are labelled as partial. Nothing is silently hidden.
+- **401 unauthorized**: existing expired-session/sign-in path from `admin-api`.
+- **403 forbidden**: existing "Admin access required" panel; route stays protected for authenticated non-admins.
+- **403 development_source_unavailable**: dedicated message that development Run Visibility is unavailable. No retry, never against production.
+- **404 game_week_not_found**: clear the week selection, refetch the unfiltered bounded range, show a one-line note.
+- **404 game_not_found**: close/reset the drawer, overview untouched.
+- **400 invalid_run_visibility_request**: safe backend message rendered near the filters.
+- **500 run_visibility_query_failed**: retryable read error, no exception detail exposed.
+
+Season to Date stays disabled/Future — the endpoint caps at 31 inclusive days and no background range splitting will be added.
+
+## Tests (`src/lib/run-visibility.test.ts`, mocked `fetch`)
+
+Exact query-string serialization; blank optional params omitted; 31-day guard; `limit=50`; `Authorization` header present; distinct query keys for overview/day/game; `game_id` request populates `selected_game`; failures throw and never return mock data; each documented error code maps to its state; `truncated: true` surfaces the warning; non-admin is rejected at the route; and an assertion that `API_BASE` in `src/lib/nfl-api.ts` is unchanged and unused by the Run Visibility adapter.
+
+## Preview without publishing
+
+Work lands on a branch and is verified in the Lovable preview URL with an admin account. Nothing is published or merged, and no Firebase, CORS, Cloud Run, or backend change is part of this work. If the dev service rejects the preview origin via CORS, I will stop and report rather than adjust any infrastructure.
+
+## Out of scope
+
+Visual hierarchy changes, `API_BASE`, `/games`, `/game`, `/me`, Claim Health, BigQuery, Supabase, any write/retry/backfill action, Level 4, Packet 6, publishing or merging.
