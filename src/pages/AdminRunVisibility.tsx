@@ -15,8 +15,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import OverviewCards from "@/components/run-visibility/OverviewCards";
 import WeekCards from "@/components/run-visibility/WeekCards";
+import DaySummaryList from "@/components/run-visibility/DaySummaryList";
 import GameJourneyTable from "@/components/run-visibility/GameJourneyTable";
-import AttentionSections from "@/components/run-visibility/AttentionSections";
+import AttentionSummary from "@/components/run-visibility/AttentionSummary";
 import RecentRuns from "@/components/run-visibility/RecentRuns";
 import GameDetailDrawer from "@/components/run-visibility/GameDetailDrawer";
 import { useRunVisibility, useRunVisibilityGame } from "@/hooks/useRunVisibility";
