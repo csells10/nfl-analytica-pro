@@ -78,6 +78,8 @@ interface StatusChipProps {
   className?: string;
   /** Renders the small dashed "partial" hint next to a rollup chip. */
   showMixedHint?: boolean;
+  /** Collapsed rollups: understate everything that is not actionable. */
+  quiet?: boolean;
 }
 
 /**
@@ -91,10 +93,13 @@ export default function StatusChip({
   label,
   className,
   showMixedHint = true,
+  quiet = false,
 }: StatusChipProps) {
   const look = resolveLook({ status, attention, mixed, label });
   const Icon = look.icon;
   const isMixedRollup = Boolean(mixed) && attention !== "none";
+  const understate = quiet && attention === "none" && status !== "failed";
+
 
   return (
     <span
