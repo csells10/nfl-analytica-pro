@@ -142,6 +142,11 @@ export interface GameRow {
   home: string;
   kickoff_utc: string;
   kickoff_label: string;
+  kickoff_time_label: string;
+  /** Calendar day the game belongs to, e.g. "2026-08-13". */
+  game_date: string;
+  /** Friendly day label, e.g. "Thursday, August 13". */
+  day_label: string;
   game_week: string;
   week_label: string;
   game_status: string;
@@ -168,11 +173,32 @@ export interface WeekSummary {
   known_gaps: number;
 }
 
+/** One operational day, derived from each game's game_date. */
+export interface DaySummary {
+  game_date: string;
+  label: string;
+  short_label: string;
+  game_week: string;
+  week_label: string;
+  scheduled: number;
+  captured: number;
+  needs_attention: number;
+  known_gaps: number;
+  /** One calm rollup state for the collapsed day row. */
+  overall: StateCell;
+  /** e.g. "6 games · 5 captured · 1 known gap". */
+  summary: string;
+}
+
+
+
 export interface AttentionItem {
   id: string;
   game_id: string;
   matchup: string;
   week_label: string;
+  game_date: string;
+  day_label: string;
   clock: string;
   stage: string;
   status: StageStatus;
@@ -196,6 +222,8 @@ export interface RunAttempt {
   input_count: number;
   output_count: number;
   raw_reason?: string;
+  /** Operational days this attempt covered; used to relate runs to a day. */
+  related_dates: string[];
 }
 
 export interface RunVisibilityOverview {
@@ -206,6 +234,7 @@ export interface RunVisibilityOverview {
   needs_attention: number;
   known_gaps: number;
   weeks: WeekSummary[];
+  days: DaySummary[];
   games: GameRow[];
 }
 
@@ -220,6 +249,7 @@ export interface RunVisibilityResponse {
     known_gaps: AttentionItem[];
   };
   recent_runs: RunAttempt[];
+  days: DaySummary[];
   games: GameRow[];
   selected_game: GameDetail | null;
 }
@@ -271,10 +301,32 @@ const SEEDS: Seed[] = [
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+const FULL_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 function kickoffLabel(date: string, time: string): string {
   const [, m, d] = date.split("-");
   return `${MONTHS[Number(m) - 1]} ${Number(d)}, 2026 · ${time} UTC`;
 }
+
+/** "Thursday, August 13" */
+function dayLabel(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${weekday}, ${FULL_MONTHS[m - 1]} ${d}`;
+}
+
+/** "Thu Aug 13" */
+function shortDayLabel(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()].slice(0, 3);
+  return `${weekday} ${MONTHS[m - 1]} ${d}`;
+}
+
 
 function dailyLoadStages(matchup: string): StageEvidence[] {
   return [
@@ -559,6 +611,9 @@ function buildDetail(seed: Seed, learningRunId: string): GameDetail {
     home: seed.home,
     kickoff_utc: `${seed.date}T${seed.time}:00Z`,
     kickoff_label: kickoffLabel(seed.date, seed.time),
+    kickoff_time_label: `${seed.time} UTC`,
+    game_date: seed.date,
+    day_label: dayLabel(seed.date),
     game_week: seed.week,
     week_label: WEEK_LABELS[seed.week],
     game_status: "Final",
@@ -599,6 +654,7 @@ const RECENT_RUNS: RunAttempt[] = [
     input_count: 8,
     output_count: 3,
     raw_reason: "PARTIAL_SCOPE: 5 games past kickoff_utc at invocation time",
+    related_dates: ["2026-08-15"],
   },
   {
     attempt_id: "att_20260818_1756_learning",
@@ -616,6 +672,7 @@ const RECENT_RUNS: RunAttempt[] = [
     input_count: 7,
     output_count: 2,
     raw_reason: "ELIGIBLE=2 SKIPPED=5 reason=missing_canonical_snapshot",
+    related_dates: ["2026-08-13", "2026-08-14", "2026-08-15"],
   },
   {
     attempt_id: "att_20260816_0652_daily",
@@ -631,6 +688,7 @@ const RECENT_RUNS: RunAttempt[] = [
     duration_seconds: 2927,
     input_count: 17,
     output_count: 17,
+    related_dates: ["2026-08-06", "2026-08-13", "2026-08-14", "2026-08-15"],
   },
 ];
 
@@ -655,6 +713,8 @@ function buildAttention(details: GameDetail[]): { needs_attention: AttentionItem
           game_id: game.game_id,
           matchup: game.matchup,
           week_label: game.week_label,
+          game_date: game.game_date,
+          day_label: game.day_label,
           clock: CLOCK_LABEL[clock.key],
           stage: stage.name,
           status: stage.status,
@@ -690,6 +750,44 @@ function buildWeeks(details: GameDetail[]): WeekSummary[] {
   });
 }
 
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+/**
+ * Day summaries are derived from the same canonical game rows — no component
+ * ever reclassifies a backend status.
+ */
+function buildDays(details: GameDetail[]): DaySummary[] {
+  const dates = Array.from(new Set(details.map((g) => g.game_date))).sort();
+
+  return dates.map((date) => {
+    const games = details.filter((g) => g.game_date === date);
+    const { needs_attention, known_gaps } = buildAttention(games);
+    const captured = games.filter((g) => Boolean(g.capture_id)).length;
+
+    const parts = [plural(games.length, "game"), `${captured} captured`];
+    if (needs_attention.length > 0) parts.push(`${needs_attention.length} needs attention`);
+    if (known_gaps.length > 0) parts.push(plural(known_gaps.length, "known gap"));
+
+    return {
+      game_date: date,
+      label: dayLabel(date),
+      short_label: shortDayLabel(date),
+      game_week: games[0].game_week,
+      week_label: games[0].week_label,
+      scheduled: games.length,
+      captured,
+      needs_attention: needs_attention.length,
+      known_gaps: known_gaps.length,
+      overall: overallRollup(games.map((g) => g.overall)),
+      summary: parts.join(" · "),
+    };
+  });
+}
+
+
+
 /**
  * Single replaceable data source.
  *
@@ -711,6 +809,7 @@ export async function getRunVisibility(filters: RunVisibilityFilters): Promise<R
 
   const { needs_attention, known_gaps } = buildAttention(inRange);
   const rows = inRange.map(toRow);
+  const days = buildDays(inRange);
   const selected = filters.gameId ? (allDetails.find((g) => g.game_id === filters.gameId) ?? null) : null;
 
   return {
@@ -726,10 +825,12 @@ export async function getRunVisibility(filters: RunVisibilityFilters): Promise<R
       needs_attention: needs_attention.length,
       known_gaps: known_gaps.length,
       weeks: buildWeeks(allDetails),
+      days,
       games: rows,
     },
     attention: { needs_attention, known_gaps },
     recent_runs: RECENT_RUNS,
+    days,
     games: rows,
     selected_game: selected,
   };

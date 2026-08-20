@@ -3,26 +3,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import StatusChip from "./StatusChip";
+import JourneyTicks from "./JourneyTicks";
 import type { GameRow } from "@/lib/run-visibility";
 
 interface Props {
   games: GameRow[];
+  dayLabel: string;
   onOpenGame: (gameId: string) => void;
 }
 
-export default function GameJourneyTable({ games, onOpenGame }: Props) {
+/** Games for one selected day. Detailed stage colour lives in the drawer. */
+export default function GameJourneyTable({ games, dayLabel, onOpenGame }: Props) {
   if (games.length === 0) {
     return (
       <Card className="border-border bg-card">
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          No scheduled games in this selection.
+          No scheduled games on this day.
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <>
+    <section className="space-y-2">
+      <h3 className="text-sm font-semibold text-foreground">
+        {dayLabel} <span className="font-normal text-muted-foreground">· {games.length} games</span>
+      </h3>
+
       {/* Desktop / tablet */}
       <Card className="hidden border-border bg-card md:block">
         <CardContent className="p-0">
@@ -31,12 +38,10 @@ export default function GameJourneyTable({ games, onOpenGame }: Props) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[180px]">Game / Matchup</TableHead>
-                  <TableHead className="min-w-[150px]">Kickoff</TableHead>
-                  <TableHead>Overall State</TableHead>
-                  <TableHead>Daily Data Load</TableHead>
-                  <TableHead>GameLens Pregame</TableHead>
-                  <TableHead>Postgame Learning</TableHead>
-                  <TableHead className="min-w-[220px]">First Issue</TableHead>
+                  <TableHead className="min-w-[110px]">Kickoff</TableHead>
+                  <TableHead className="min-w-[140px]">Overall State</TableHead>
+                  <TableHead className="min-w-[280px]">Journey</TableHead>
+                  <TableHead className="min-w-[220px]">First issue or known gap</TableHead>
                   <TableHead className="text-right">Details</TableHead>
                 </TableRow>
               </TableHeader>
@@ -46,20 +51,13 @@ export default function GameJourneyTable({ games, onOpenGame }: Props) {
                     <TableCell>
                       <p className="font-medium text-foreground">{game.matchup}</p>
                       <p className="font-mono text-[11px] text-muted-foreground">{game.game_id}</p>
-                      <p className="text-[11px] text-muted-foreground">{game.week_label}</p>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{game.kickoff_label}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{game.kickoff_time_label}</TableCell>
                     <TableCell>
-                      <StatusChip {...game.overall} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusChip {...game.daily_data_load} />
+                      <StatusChip {...game.overall} quiet />
                     </TableCell>
                     <TableCell>
-                      <StatusChip {...game.gamelens_pregame} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusChip {...game.postgame_learning} />
+                      <JourneyTicks game={game} />
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{game.first_issue ?? "—"}</TableCell>
                     <TableCell className="text-right">
@@ -85,24 +83,11 @@ export default function GameJourneyTable({ games, onOpenGame }: Props) {
                 <div className="min-w-0">
                   <p className="font-medium text-foreground">{game.matchup}</p>
                   <p className="truncate font-mono text-[11px] text-muted-foreground">{game.game_id}</p>
-                  <p className="text-[11px] text-muted-foreground">{game.kickoff_label}</p>
+                  <p className="text-[11px] text-muted-foreground">{game.kickoff_time_label}</p>
                 </div>
-                <StatusChip {...game.overall} />
+                <StatusChip {...game.overall} quiet />
               </div>
-              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">Daily load</span>
-                  <StatusChip {...game.daily_data_load} />
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">Pregame</span>
-                  <StatusChip {...game.gamelens_pregame} />
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">Postgame</span>
-                  <StatusChip {...game.postgame_learning} />
-                </div>
-              </div>
+              <JourneyTicks game={game} />
               {game.first_issue && <p className="text-xs text-muted-foreground">{game.first_issue}</p>}
               <Button variant="outline" size="sm" className="w-full" onClick={() => onOpenGame(game.game_id)}>
                 View details
@@ -111,6 +96,6 @@ export default function GameJourneyTable({ games, onOpenGame }: Props) {
           </Card>
         ))}
       </div>
-    </>
+    </section>
   );
 }
