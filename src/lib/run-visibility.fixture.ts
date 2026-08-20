@@ -28,7 +28,20 @@ export const RUN_VISIBILITY_FIXTURE = {
     selected_game_id: null,
   },
   overview: {
-    source_health: { available: 6, total: 6 },
+    source_health: {
+      available_count: 6,
+      table_count: 6,
+      duplicate_key_count: 0,
+      missing_key_row_count: 0,
+      tables: [
+        { name: "nfl_schedule", available: true },
+        { name: "gamelens_capture_receipt", available: true },
+        { name: "gamelens_pregame_snapshot", available: true },
+        { name: "gamelens_game_grade", available: true },
+        { name: "gamelens_level_1", available: true },
+        { name: "gamelens_level_2", available: true },
+      ],
+    },
     weeks: [
       {
         game_week: "preseason_week_1",
