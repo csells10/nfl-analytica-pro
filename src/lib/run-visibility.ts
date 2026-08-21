@@ -768,7 +768,10 @@ export function buildDays(rows: GameRow[], attention: { needs_attention: Attenti
 
 export function normalizeRunVisibility(raw: unknown, learningRunId: string): RunVisibilityResponse {
   if (typeof raw !== "object" || raw === null) {
-    throw new RunVisibilityError("invalid_response", "Run Visibility returned an unreadable response.");
+    const error = new RunVisibilityError("invalid_response", "Run Visibility returned an unreadable response.");
+    error.phase = "normalization";
+    error.field = "body";
+    throw error;
   }
   const body = raw as ApiResponse;
 
