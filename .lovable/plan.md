@@ -1,89 +1,50 @@
-# Run Visibility — real backend integration
+# Run Visibility live-request diagnostic (branch-only)
 
-Replace the mock adapter behind the existing Run Visibility page with the protected development endpoint, keeping the day-first design, drawer, and status treatments exactly as they are.
+## What the code already proves
 
-## Files inspected
+The string "Run Visibility could not read evidence right now." exists in exactly one place: `SAFE_MESSAGE.server` in `src/lib/run-visibility-api.ts`. It is rendered by `ErrorPanel` in `src/pages/AdminRunVisibility.tsx` (line 65) via `safeErrorMessage(error)`.
 
-- `src/lib/run-visibility.ts` — types, `toApiParams`, `resolveRange`, `buildDays`, mock `SEEDS`, `getRunVisibility`
-- `src/lib/admin-api.ts` — the existing authenticated admin fetch pattern (`getAuthToken` → `Authorization: Bearer`, 401 sign-out, 403 forbidden, `useMe`)
-- `src/lib/nfl-api.ts` — `API_BASE` (`https://nfl-games-app-main-...run.app`) and `ApiError`
-- `src/hooks/useRunVisibility.ts`, `src/pages/AdminRunVisibility.tsx`, `src/components/run-visibility/*`
-- `src/App.tsx` — global React Query defaults: `staleTime` 5 min, `gcTime` 24h, `PersistQueryClientProvider` with 24h `maxAge`
-- `vitest.config.ts`, `src/test/`
+`safeErrorMessage` returns that string only when the thrown value is a `RunVisibilityError` with `kind === "server"`. That kind is produced in `kindForResponse` only after an HTTP response has been received, when either:
 
-Confirmed by these reads: no development service URL and no env/config mechanism for one exists anywhere in the repo (no `.env`, no `VITE_*` usage). `API_BASE` is a single hardcoded production constant shared by `/games`, `/game`, `/me`, and Claim Health.
+- the backend body carries `code`/`error` = `run_visibility_query_failed`, or
+- the status is >= 500, or
+- the status is a non-ok status that matches none of 400/401/403/404 (fallback branch).
 
-## Blocking configuration value
+This narrows the failure boundary already:
 
-The development base URL `https://nfl-games-app-dev-362530996210.us-central1.run.app` cannot be confirmed from the repository — it appears nowhere in code, config, or docs. It will be introduced as a new named constant used only by this adapter, and must be confirmed by you before the integration is trusted. No fallback to the production API base, and `API_BASE` is not touched.
+- It is not a token/pre-request failure — a missing token throws `unauthenticated` ("Your session has expired…").
+- It is not a network/CORS failure — that throws `network` ("Could not reach the development Run Visibility service.").
+- It is not a JSON-parse failure — that throws `invalid_response`.
+- It is not a normalization/render failure — normalization throws plain errors, which render "Something went wrong reading Run Visibility."
 
-Also needs confirmation: `season_type` casing. The UI holds lowercase (`preseason`), while the stated initial value is `Preseason`. The adapter will send the backend-facing casing (capitalized) via an explicit map so the UI type stays unchanged.
+So an HTTP response was received and it was non-ok. What is still unknown, and what this pass must capture: the exact status, the backend `code`, and the exact request URL sent.
 
-## Files that would change
+## Why a code change is needed
 
-| File | Change |
-| --- | --- |
-| `src/lib/run-visibility-api.ts` (new) | `RUN_VISIBILITY_API_BASE` dev constant, authenticated `fetch`, param serialization, error mapping |
-| `src/lib/run-visibility.ts` | `getRunVisibility` calls the API; response normalizer + day derivation kept; mock moves out |
-| `src/lib/run-visibility.fixture.ts` (new) | Existing `SEEDS`/builders moved here, test-only, never imported by app code |
-| `src/hooks/useRunVisibility.ts` | Full query keys, ~45s `staleTime`, no persistence, no retry on auth errors |
-| `src/pages/AdminRunVisibility.tsx` | Error/empty/truncated states, Refresh action, "Evidence generated" + "Loaded" timestamps, day selection re-query |
-| `src/components/run-visibility/GameDetailDrawer.tsx` | Detail error state; overview untouched while detail loads |
-| `src/components/run-visibility/RecentRuns.tsx` | Use `display_label` / `scope_label`; `attempt_id` stays in the drill-down |
-| `src/lib/run-visibility.test.ts` (new) | Param, guard, header, error, truncation tests |
+Lovable cannot read the user's live production browser request. The current panel discards `error.status` and `error.code` before rendering. The smallest way to obtain the missing facts is to surface them in the panel.
 
-## Adapter
+## Change (diagnostic only, no fix)
 
-`getRunVisibility(filters)` stays the only data entry point.
+1. `src/lib/run-visibility-api.ts`
+   - Add a `phase` field to `RunVisibilityError`: `"token" | "network" | "response" | "normalization"`, set at each existing throw site. No new behavior, no new requests.
+   - Record `requestPath` on the error: path + query string only, from the already-built `URLSearchParams`. No host credentials, no headers, no token.
+   - Add `authAttached: boolean` — `true` when a non-empty bearer token was attached. Boolean only; the token is never stored, logged, or rendered.
+   - Add `safeDiagnostic(error): string | null` returning a single line such as: `phase: response · status: 500 · code: run_visibility_query_failed · auth: true · /admin/gamelens/run-visibility?season=2026&…`. Returns `null` for non-`RunVisibilityError` values.
+   - Normalization failures get wrapped into a `RunVisibilityError` with `phase: "normalization"` and the offending field name only (e.g. `field: overview.source_health`) — never the response body.
 
-- Builds `URLSearchParams` from `toApiParams`, omitting `game_week`, `game_id`, `limit` when blank.
-- Required: `season`, `season_type`, `learning_run_id`, `start_date`, `end_date` (`YYYY-MM-DD`). Defaults: season `2026`, `Preseason`, `gamelens_2026_preseason_v1`, `limit=50`.
-- Client guard rejects ranges over 31 inclusive days before any network call, surfacing a filter-level message instead of a 400.
-- Token via the existing `getAuthToken()`; header `Authorization: Bearer <token>`. No new auth system, no token storage, no Supabase.
-- On any failure it throws a typed error. No mock fallback — the fixture is imported only by tests.
+2. `src/pages/AdminRunVisibility.tsx`
+   - `ErrorPanel` keeps the friendly message exactly as-is on the first line, and renders the diagnostic line below it in small muted monospace text when `safeDiagnostic` is non-null. Retry button behavior unchanged.
 
-Response normalization (adapter-internal, no component reclassifies status):
+3. `src/lib/run-visibility.test.ts`
+   - Focused tests: `safeDiagnostic` includes status/code/phase/auth-boolean and the query string; it never contains the token value, an `Authorization` header, or a stack trace; each phase maps correctly (401 token path, fetch rejection network path, 500 response path, bad-shape normalization path).
 
-- `overview.source_health` → source-table card; `overview.games.{scheduled,captured,need_attention,known_gaps,returned,truncated}` → overview cards + truncation notice; `overview.weeks` → week cards and week selector.
-- Compact `games[]` (`game_id`, `game_week`, `matchup`, `game_date`, `scheduled_kickoff`, `game_status`, `state`, `first_issue`, `clocks`, `detail_available`) map to the existing `GameRow`, with kickoff/day labels formatted in the adapter and the three clock states read from `clocks[]` for `JourneyTicks`.
-- Day summaries continue to be derived by `buildDays` from `game_date`, capture state, overall state, and attention — the backend returns no day rollups.
-- `selected_game` (with `lineage.learning_run_id`, `lineage.capture_id`, detailed `clocks[].stages[].{reason,source,details}`, `traceability`) maps to `GameDetail` for the drawer.
-- `attention.needs_attention` / `attention.known_gaps` feed the existing summary banner and ledger.
-- Unknown status/attention/state values render through a neutral fallback rather than throwing. `warning` stays a warning; it is not promoted to active attention.
+4. `src/test/run-visibility-page.test.tsx`
+   - One test asserting the panel shows both the friendly message and the diagnostic line.
 
-## Three request shapes
+## Explicitly not changed
 
-1. **Overview** — bounded range from the preset, optional `game_week`, `limit=50`, no `game_id`.
-2. **Day selection** — same endpoint with `start_date = end_date = selected day`, season/type/run/week preserved. Separate query key, so the range-level result stays cached.
-3. **Game detail** — same endpoint plus `game_id`, scoped to the relevant day and week. Runs as its own query; the overview query is never invalidated or replaced while it loads.
+Firebase config, CORS, Cloud Run, auth flow, backend, the production `API_BASE`, and the development base URL. No fix attempt, no publish, no merge.
 
-Query keys include season, seasonType, learningRunId, startDate, endDate, gameWeek, gameId, limit. `staleTime` ~45s, `gcTime` short, and these keys are excluded from the 24h persister via `shouldDehydrateQuery` so operational data is never restored from storage. A read-only Refresh button re-fetches the visible queries.
+## Deliverable
 
-Header shows `generated_at` as "Evidence generated" and a client timestamp as "Loaded".
-
-## States
-
-- **Loading**: existing skeletons for overview; day list keeps previous data via `keepPreviousData`; drawer has its own loading state.
-- **Empty**: "No scheduled games in this range" card in place of the day list.
-- **Truncated** (`overview.games.truncated`): calm inline notice "Result limit reached — narrow the date range or week", and derived day counts are labelled as partial. Nothing is silently hidden.
-- **401 unauthorized**: existing expired-session/sign-in path from `admin-api`.
-- **403 forbidden**: existing "Admin access required" panel; route stays protected for authenticated non-admins.
-- **403 development_source_unavailable**: dedicated message that development Run Visibility is unavailable. No retry, never against production.
-- **404 game_week_not_found**: clear the week selection, refetch the unfiltered bounded range, show a one-line note.
-- **404 game_not_found**: close/reset the drawer, overview untouched.
-- **400 invalid_run_visibility_request**: safe backend message rendered near the filters.
-- **500 run_visibility_query_failed**: retryable read error, no exception detail exposed.
-
-Season to Date stays disabled/Future — the endpoint caps at 31 inclusive days and no background range splitting will be added.
-
-## Tests (`src/lib/run-visibility.test.ts`, mocked `fetch`)
-
-Exact query-string serialization; blank optional params omitted; 31-day guard; `limit=50`; `Authorization` header present; distinct query keys for overview/day/game; `game_id` request populates `selected_game`; failures throw and never return mock data; each documented error code maps to its state; `truncated: true` surfaces the warning; non-admin is rejected at the route; and an assertion that `API_BASE` in `src/lib/nfl-api.ts` is unchanged and unused by the Run Visibility adapter.
-
-## Preview without publishing
-
-Work lands on a branch and is verified in the Lovable preview URL with an admin account. Nothing is published or merged, and no Firebase, CORS, Cloud Run, or backend change is part of this work. If the dev service rejects the preview origin via CORS, I will stop and report rather than adjust any infrastructure.
-
-## Out of scope
-
-Visual hierarchy changes, `API_BASE`, `/games`, `/game`, `/me`, Claim Health, BigQuery, Supabase, any write/retry/backfill action, Level 4, Packet 6, publishing or merging.
+Run tests and typecheck, then hand back the preview URL. You reload `/admin/run-visibility` as an admin, read the one diagnostic line, and paste it back. That line names the proven failure boundary, and the smallest next action follows from it (backend 500 → server-side query; unexpected non-ok status → route/edge; normalization → one named field).
