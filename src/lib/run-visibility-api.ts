@@ -36,6 +36,9 @@ export type RunVisibilityErrorKind =
   | "invalid_response"
   | "range_too_large";
 
+/** Failure boundary. Diagnostic only; never changes behavior. */
+export type RunVisibilityPhase = "token" | "network" | "response" | "normalization";
+
 export class RunVisibilityError extends Error {
   readonly kind: RunVisibilityErrorKind;
   readonly status?: number;
@@ -43,6 +46,17 @@ export class RunVisibilityError extends Error {
   readonly code?: string;
   /** Safe backend copy, only populated for request-shape (400) problems. */
   backendMessage?: string;
+  /** Where the failure happened. */
+  phase?: RunVisibilityPhase;
+  /** Path + query string only. Never a header, credential or token. */
+  requestPath?: string;
+  /**
+   * True only as proof that a non-empty bearer token was attached to the
+   * request. It is never proof that the token was valid or accepted.
+   */
+  authAttached?: boolean;
+  /** Field name that failed normalization. Never a response body value. */
+  field?: string;
 
   constructor(kind: RunVisibilityErrorKind, message: string, status?: number, code?: string) {
     super(message);
@@ -52,6 +66,7 @@ export class RunVisibilityError extends Error {
     this.code = code;
   }
 }
+
 
 /**
  * Serializes request parameters, omitting optional values that are blank.
