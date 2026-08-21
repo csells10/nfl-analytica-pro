@@ -32,7 +32,7 @@ import {
   type RunVisibilityFilters,
   type SeasonType,
 } from "@/lib/run-visibility";
-import { RunVisibilityError, safeErrorMessage } from "@/lib/run-visibility-api";
+import { RunVisibilityError, safeDiagnostic, safeErrorMessage } from "@/lib/run-visibility-api";
 import { useMe } from "@/lib/admin-api";
 import { useAuth } from "@/contexts/AuthContext";
 
