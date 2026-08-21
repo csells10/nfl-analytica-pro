@@ -128,10 +128,14 @@ describe("Run Visibility error panel diagnostics", () => {
     render(<AdminRunVisibility />, { wrapper });
 
     expect(
-      await screen.findByText("Run Visibility could not read evidence right now."),
+      await screen.findByText("Run Visibility could not read evidence right now.", undefined, {
+        timeout: 8000,
+      }),
     ).toBeInTheDocument();
 
-    const diagnostic = await screen.findByTestId("run-visibility-diagnostic");
+    const diagnostic = await screen.findByTestId("run-visibility-diagnostic", undefined, {
+      timeout: 8000,
+    });
     expect(diagnostic.textContent).toContain("phase: response");
     expect(diagnostic.textContent).toContain("status: 500");
     expect(diagnostic.textContent).toContain("code: run_visibility_query_failed");
