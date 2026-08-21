@@ -36,6 +36,9 @@ export type RunVisibilityErrorKind =
   | "invalid_response"
   | "range_too_large";
 
+/** Failure boundary. Diagnostic only; never changes behavior. */
+export type RunVisibilityPhase = "token" | "network" | "response" | "normalization";
+
 export class RunVisibilityError extends Error {
   readonly kind: RunVisibilityErrorKind;
   readonly status?: number;
@@ -43,6 +46,17 @@ export class RunVisibilityError extends Error {
   readonly code?: string;
   /** Safe backend copy, only populated for request-shape (400) problems. */
   backendMessage?: string;
+  /** Where the failure happened. */
+  phase?: RunVisibilityPhase;
+  /** Path + query string only. Never a header, credential or token. */
+  requestPath?: string;
+  /**
+   * True only as proof that a non-empty bearer token was attached to the
+   * request. It is never proof that the token was valid or accepted.
+   */
+  authAttached?: boolean;
+  /** Field name that failed normalization. Never a response body value. */
+  field?: string;
 
   constructor(kind: RunVisibilityErrorKind, message: string, status?: number, code?: string) {
     super(message);
@@ -52,6 +66,7 @@ export class RunVisibilityError extends Error {
     this.code = code;
   }
 }
+
 
 /**
  * Serializes request parameters, omitting optional values that are blank.
@@ -74,8 +89,13 @@ export function buildRunVisibilityQuery(params: RunVisibilityApiParams): URLSear
   return search;
 }
 
+/** Path + query string only — safe to display. */
+export function runVisibilityPath(params: RunVisibilityApiParams): string {
+  return `${RUN_VISIBILITY_PATH}?${buildRunVisibilityQuery(params).toString()}`;
+}
+
 export function runVisibilityUrl(params: RunVisibilityApiParams): string {
-  return `${RUN_VISIBILITY_API_BASE}${RUN_VISIBILITY_PATH}?${buildRunVisibilityQuery(params).toString()}`;
+  return `${RUN_VISIBILITY_API_BASE}${runVisibilityPath(params)}`;
 }
 
 const CODE_TO_KIND: Record<string, RunVisibilityErrorKind> = {
@@ -107,6 +127,28 @@ export function safeErrorMessage(error: unknown): string {
   }
   return "Something went wrong reading Run Visibility.";
 }
+
+/**
+ * One-line, secret-free failure summary for the admin error panel.
+ *
+ * Contains only: phase, HTTP status, backend error code, whether a non-empty
+ * bearer token was attached, the failing field name, and the request path with
+ * its query string. Never a token, header, response body or stack trace.
+ */
+export function safeDiagnostic(error: unknown): string | null {
+  if (!(error instanceof RunVisibilityError)) return null;
+
+  const parts: string[] = [];
+  if (error.phase) parts.push(`phase: ${error.phase}`);
+  if (typeof error.status === "number") parts.push(`status: ${error.status}`);
+  if (error.code) parts.push(`code: ${error.code}`);
+  if (typeof error.authAttached === "boolean") parts.push(`auth: ${error.authAttached}`);
+  if (error.field) parts.push(`field: ${error.field}`);
+  if (error.requestPath) parts.push(error.requestPath);
+
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 
 // Backend-supplied human message, only used for 400s where it is safe copy.
 export interface RunVisibilityErrorBody {
@@ -142,9 +184,15 @@ function kindForResponse(status: number, body: RunVisibilityErrorBody): RunVisib
  * the production API base.
  */
 export async function requestRunVisibility(params: RunVisibilityApiParams): Promise<unknown> {
+  const path = runVisibilityPath(params);
   const token = await getAuthToken();
   if (!token) {
-    throw new RunVisibilityError("unauthenticated", SAFE_MESSAGE.unauthenticated, 401, "unauthorized");
+    // Local failure: no token was ever attached, so no backend status exists.
+    const error = new RunVisibilityError("unauthenticated", SAFE_MESSAGE.unauthenticated);
+    error.phase = "token";
+    error.requestPath = path;
+    error.authAttached = false;
+    throw error;
   }
 
   let res: Response;
@@ -154,7 +202,11 @@ export async function requestRunVisibility(params: RunVisibilityApiParams): Prom
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
   } catch {
-    throw new RunVisibilityError("network", SAFE_MESSAGE.network);
+    const error = new RunVisibilityError("network", SAFE_MESSAGE.network);
+    error.phase = "network";
+    error.requestPath = path;
+    error.authAttached = true;
+    throw error;
   }
 
   if (!res.ok) {
@@ -165,12 +217,21 @@ export async function requestRunVisibility(params: RunVisibilityApiParams): Prom
     if (kind === "invalid_request" && typeof body.message === "string") {
       error.backendMessage = body.message;
     }
+    // A 401 here came from the backend: a token was attached but not accepted.
+    error.phase = "response";
+    error.requestPath = path;
+    error.authAttached = true;
     throw error;
   }
 
   try {
     return (await res.json()) as unknown;
   } catch {
-    throw new RunVisibilityError("invalid_response", SAFE_MESSAGE.invalid_response, res.status);
+    const error = new RunVisibilityError("invalid_response", SAFE_MESSAGE.invalid_response, res.status);
+    error.phase = "response";
+    error.requestPath = path;
+    error.authAttached = true;
+    throw error;
   }
 }
+

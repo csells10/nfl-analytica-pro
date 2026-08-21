@@ -11,7 +11,7 @@
  * failed request surfaces as an honest error state in the UI.
  */
 
-import { requestRunVisibility, RunVisibilityError } from "@/lib/run-visibility-api";
+import { requestRunVisibility, runVisibilityPath, RunVisibilityError } from "@/lib/run-visibility-api";
 
 // ---------- Filters ----------
 
@@ -768,7 +768,10 @@ export function buildDays(rows: GameRow[], attention: { needs_attention: Attenti
 
 export function normalizeRunVisibility(raw: unknown, learningRunId: string): RunVisibilityResponse {
   if (typeof raw !== "object" || raw === null) {
-    throw new RunVisibilityError("invalid_response", "Run Visibility returned an unreadable response.");
+    const error = new RunVisibilityError("invalid_response", "Run Visibility returned an unreadable response.");
+    error.phase = "normalization";
+    error.field = "body";
+    throw error;
   }
   const body = raw as ApiResponse;
 
@@ -845,5 +848,21 @@ export async function getRunVisibility(filters: RunVisibilityFilters): Promise<R
   }
 
   const raw = await requestRunVisibility(params);
-  return normalizeRunVisibility(raw, params.learning_run_id);
+  try {
+    return normalizeRunVisibility(raw, params.learning_run_id);
+  } catch (error) {
+    if (error instanceof RunVisibilityError) {
+      error.phase ??= "normalization";
+      error.requestPath ??= runVisibilityPath(params);
+      throw error;
+    }
+    const wrapped = new RunVisibilityError(
+      "invalid_response",
+      "Run Visibility returned a response the app could not read.",
+    );
+    wrapped.phase = "normalization";
+    wrapped.requestPath = runVisibilityPath(params);
+    throw wrapped;
+  }
 }
+
