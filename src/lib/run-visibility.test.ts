@@ -151,6 +151,79 @@ describe("error mapping", () => {
   });
 });
 
+describe("safe diagnostics", () => {
+  it("returns null for values that are not RunVisibilityError", () => {
+    expect(safeDiagnostic(new Error("boom"))).toBeNull();
+    expect(safeDiagnostic("nope")).toBeNull();
+  });
+
+  it("reports a locally missing token as phase token with auth false and no status", async () => {
+    vi.mocked(getAuthToken).mockResolvedValueOnce(null as unknown as string);
+    const fetchMock = mockFetch(RUN_VISIBILITY_FIXTURE);
+
+    const error = await getRunVisibility(BASE_FILTERS).catch((e: unknown) => e);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(error).toMatchObject({ phase: "token", authAttached: false });
+    expect((error as RunVisibilityError).status).toBeUndefined();
+
+    const line = safeDiagnostic(error);
+    expect(line).toContain("phase: token");
+    expect(line).toContain("auth: false");
+    expect(line).not.toContain("status:");
+  });
+
+  it("reports a backend 401 as phase response with auth true (token attached, not proven valid)", async () => {
+    mockFetch({ error: "unauthorized" }, { status: 401 });
+
+    const error = await getRunVisibility(BASE_FILTERS).catch((e: unknown) => e);
+    expect(error).toMatchObject({ phase: "response", status: 401, authAttached: true });
+
+    const line = safeDiagnostic(error);
+    expect(line).toContain("phase: response");
+    expect(line).toContain("status: 401");
+    expect(line).toContain("code: unauthorized");
+    expect(line).toContain("auth: true");
+  });
+
+  it("reports a transport failure as phase network", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
+    const error = await getRunVisibility(BASE_FILTERS).catch((e: unknown) => e);
+    expect(safeDiagnostic(error)).toContain("phase: network");
+  });
+
+  it("reports a 500 as phase response with the backend code and request path", async () => {
+    mockFetch({ error: "run_visibility_query_failed" }, { status: 500 });
+    const line = safeDiagnostic(await getRunVisibility(BASE_FILTERS).catch((e: unknown) => e));
+
+    expect(line).toContain("phase: response");
+    expect(line).toContain("status: 500");
+    expect(line).toContain("code: run_visibility_query_failed");
+    expect(line).toContain("/admin/gamelens/run-visibility?season=2026");
+  });
+
+  it("reports an unreadable body as phase normalization", async () => {
+    mockFetch("not-an-object");
+    const line = safeDiagnostic(await getRunVisibility(BASE_FILTERS).catch((e: unknown) => e));
+    expect(line).toContain("phase: normalization");
+  });
+
+  it("never leaks the token, headers, response body or a stack trace", async () => {
+    mockFetch(
+      { error: "run_visibility_query_failed", message: "psycopg2 traceback", detail: "secret-detail" },
+      { status: 500 },
+    );
+    const line = safeDiagnostic(await getRunVisibility(BASE_FILTERS).catch((e: unknown) => e)) ?? "";
+
+    expect(line).not.toContain("test-id-token");
+    expect(line).not.toContain("Bearer");
+    expect(line).not.toContain("Authorization");
+    expect(line).not.toContain("psycopg2");
+    expect(line).not.toContain("secret-detail");
+    expect(line).not.toContain("at ");
+  });
+});
+
+
 describe("normalization", () => {
   const result = normalizeRunVisibility(RUN_VISIBILITY_FIXTURE, DEFAULT_LEARNING_RUN_ID);
 
