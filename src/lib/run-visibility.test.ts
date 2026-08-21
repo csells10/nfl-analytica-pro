@@ -154,10 +154,24 @@ describe("error mapping", () => {
 });
 
 describe("safe diagnostics", () => {
-  it("returns null for values that are not RunVisibilityError", () => {
-    expect(safeDiagnostic(new Error("boom"))).toBeNull();
-    expect(safeDiagnostic("nope")).toBeNull();
+  it("always returns a marked fallback line for values without diagnostic fields", () => {
+    expect(safeDiagnostic(new Error("boom"))).toBe(
+      "dx1 · phase: unknown · error: Error · no diagnostic fields",
+    );
+    expect(safeDiagnostic("nope")).toBe(
+      "dx1 · phase: unknown · error: string · no diagnostic fields",
+    );
+    expect(safeDiagnostic(new RunVisibilityError("server", "x"))).toBe(
+      "dx1 · phase: unknown · error: RunVisibilityError · no diagnostic fields",
+    );
   });
+
+  it("prefixes populated diagnostics with the dx1 build marker", async () => {
+    mockFetch({ error: "run_visibility_query_failed" }, { status: 500 });
+    const line = safeDiagnostic(await getRunVisibility(BASE_FILTERS).catch((e: unknown) => e));
+    expect(line.startsWith("dx1 · ")).toBe(true);
+  });
+
 
   it("reports a locally missing token as phase token with auth false and no status", async () => {
     vi.mocked(getAuthToken).mockResolvedValueOnce(null as unknown as string);
