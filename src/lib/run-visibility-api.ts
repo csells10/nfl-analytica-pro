@@ -128,26 +128,43 @@ export function safeErrorMessage(error: unknown): string {
   return "Something went wrong reading Run Visibility.";
 }
 
+/** Build marker so a stale bundle is obvious at a glance. */
+export const RUN_VISIBILITY_DIAGNOSTIC_MARKER = "dx1";
+
+/** Constructor name only — never a message, body or stack. */
+function safeErrorName(error: unknown): string {
+  if (error instanceof Error) return error.name || error.constructor.name;
+  if (typeof error === "object" && error !== null) return error.constructor?.name ?? "object";
+  return typeof error;
+}
+
 /**
  * One-line, secret-free failure summary for the admin error panel.
  *
- * Contains only: phase, HTTP status, backend error code, whether a non-empty
- * bearer token was attached, the failing field name, and the request path with
- * its query string. Never a token, header, response body or stack trace.
+ * Always returns a line. Contains only: the build marker, phase, HTTP status,
+ * backend error code, whether a non-empty bearer token was attached, the
+ * failing field name, and the request path with its query string.
+ * Never a token, header, response body or stack trace.
  */
-export function safeDiagnostic(error: unknown): string | null {
-  if (!(error instanceof RunVisibilityError)) return null;
+export function safeDiagnostic(error: unknown): string {
+  const parts: string[] = [RUN_VISIBILITY_DIAGNOSTIC_MARKER];
 
-  const parts: string[] = [];
-  if (error.phase) parts.push(`phase: ${error.phase}`);
-  if (typeof error.status === "number") parts.push(`status: ${error.status}`);
-  if (error.code) parts.push(`code: ${error.code}`);
-  if (typeof error.authAttached === "boolean") parts.push(`auth: ${error.authAttached}`);
-  if (error.field) parts.push(`field: ${error.field}`);
-  if (error.requestPath) parts.push(error.requestPath);
+  if (error instanceof RunVisibilityError) {
+    if (error.phase) parts.push(`phase: ${error.phase}`);
+    if (typeof error.status === "number") parts.push(`status: ${error.status}`);
+    if (error.code) parts.push(`code: ${error.code}`);
+    if (typeof error.authAttached === "boolean") parts.push(`auth: ${error.authAttached}`);
+    if (error.field) parts.push(`field: ${error.field}`);
+    if (error.requestPath) parts.push(error.requestPath);
+  }
 
-  return parts.length > 0 ? parts.join(" · ") : null;
+  if (parts.length === 1) {
+    parts.push("phase: unknown", `error: ${safeErrorName(error)}`, "no diagnostic fields");
+  }
+
+  return parts.join(" · ");
 }
+
 
 
 // Backend-supplied human message, only used for 400s where it is safe copy.
