@@ -89,8 +89,13 @@ export function buildRunVisibilityQuery(params: RunVisibilityApiParams): URLSear
   return search;
 }
 
+/** Path + query string only — safe to display. */
+export function runVisibilityPath(params: RunVisibilityApiParams): string {
+  return `${RUN_VISIBILITY_PATH}?${buildRunVisibilityQuery(params).toString()}`;
+}
+
 export function runVisibilityUrl(params: RunVisibilityApiParams): string {
-  return `${RUN_VISIBILITY_API_BASE}${RUN_VISIBILITY_PATH}?${buildRunVisibilityQuery(params).toString()}`;
+  return `${RUN_VISIBILITY_API_BASE}${runVisibilityPath(params)}`;
 }
 
 const CODE_TO_KIND: Record<string, RunVisibilityErrorKind> = {
