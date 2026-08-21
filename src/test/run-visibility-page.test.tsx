@@ -110,3 +110,35 @@ describe("React Query keys", () => {
     expect(client.getQueryCache().getAll()[0].meta?.persist).toBe(false);
   });
 });
+
+describe("Run Visibility error panel diagnostics", () => {
+  it("shows the friendly message plus one safe diagnostic line on a backend failure", async () => {
+    meMock.mockReturnValue({ data: { is_admin: true, email: "admin@gamelens.io" }, isLoading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ error: "run_visibility_query_failed", message: "psycopg2 traceback" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }),
+      ),
+    );
+
+    render(<AdminRunVisibility />, { wrapper });
+
+    expect(
+      await screen.findByText("Run Visibility could not read evidence right now."),
+    ).toBeInTheDocument();
+
+    const diagnostic = await screen.findByTestId("run-visibility-diagnostic");
+    expect(diagnostic.textContent).toContain("phase: response");
+    expect(diagnostic.textContent).toContain("status: 500");
+    expect(diagnostic.textContent).toContain("code: run_visibility_query_failed");
+    // auth: true means a non-empty token was attached, not that it was accepted.
+    expect(diagnostic.textContent).toContain("auth: true");
+    expect(diagnostic.textContent).not.toContain("test-id-token");
+    expect(diagnostic.textContent).not.toContain("Bearer");
+    expect(diagnostic.textContent).not.toContain("psycopg2");
+  });
+});
