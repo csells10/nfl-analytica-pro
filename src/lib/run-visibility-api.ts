@@ -224,10 +224,14 @@ export async function requestRunVisibility(params: RunVisibilityApiParams): Prom
     throw error;
   }
 
-
   try {
     return (await res.json()) as unknown;
   } catch {
-    throw new RunVisibilityError("invalid_response", SAFE_MESSAGE.invalid_response, res.status);
+    const error = new RunVisibilityError("invalid_response", SAFE_MESSAGE.invalid_response, res.status);
+    error.phase = "response";
+    error.requestPath = path;
+    error.authAttached = true;
+    throw error;
   }
 }
+
