@@ -16,7 +16,9 @@ import {
   RUN_VISIBILITY_API_BASE,
   RunVisibilityError,
   buildRunVisibilityQuery,
+  safeDiagnostic,
 } from "@/lib/run-visibility-api";
+import { getAuthToken } from "@/lib/firebase";
 import { API_BASE } from "@/lib/nfl-api";
 
 vi.mock("@/lib/firebase", () => ({
