@@ -184,9 +184,15 @@ function kindForResponse(status: number, body: RunVisibilityErrorBody): RunVisib
  * the production API base.
  */
 export async function requestRunVisibility(params: RunVisibilityApiParams): Promise<unknown> {
+  const path = runVisibilityPath(params);
   const token = await getAuthToken();
   if (!token) {
-    throw new RunVisibilityError("unauthenticated", SAFE_MESSAGE.unauthenticated, 401, "unauthorized");
+    // Local failure: no token was ever attached, so no backend status exists.
+    const error = new RunVisibilityError("unauthenticated", SAFE_MESSAGE.unauthenticated);
+    error.phase = "token";
+    error.requestPath = path;
+    error.authAttached = false;
+    throw error;
   }
 
   let res: Response;
@@ -196,7 +202,11 @@ export async function requestRunVisibility(params: RunVisibilityApiParams): Prom
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
   } catch {
-    throw new RunVisibilityError("network", SAFE_MESSAGE.network);
+    const error = new RunVisibilityError("network", SAFE_MESSAGE.network);
+    error.phase = "network";
+    error.requestPath = path;
+    error.authAttached = true;
+    throw error;
   }
 
   if (!res.ok) {
@@ -207,8 +217,13 @@ export async function requestRunVisibility(params: RunVisibilityApiParams): Prom
     if (kind === "invalid_request" && typeof body.message === "string") {
       error.backendMessage = body.message;
     }
+    // A 401 here came from the backend: a token was attached but not accepted.
+    error.phase = "response";
+    error.requestPath = path;
+    error.authAttached = true;
     throw error;
   }
+
 
   try {
     return (await res.json()) as unknown;
