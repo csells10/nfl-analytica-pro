@@ -28,7 +28,9 @@ Lovable cannot read the user's live production browser request. The current pane
 1. `src/lib/run-visibility-api.ts`
    - Add a `phase` field to `RunVisibilityError`: `"token" | "network" | "response" | "normalization"`, set at each existing throw site. No new behavior, no new requests.
    - Record `requestPath` on the error: path + query string only, from the already-built `URLSearchParams`. No host credentials, no headers, no token.
-   - Add `authAttached: boolean` — `true` when a non-empty bearer token was attached. Boolean only; the token is never stored, logged, or rendered.
+   - Add `authAttached: boolean` — `true` only as proof that a non-empty bearer token was attached to the request, never proof that the token was valid or accepted. Boolean only; the token is never stored, logged, or rendered.
+   - Phase rules: a locally missing/unavailable Firebase token is `phase: token` with `authAttached: false`. An HTTP 401 returned by the backend is `phase: response`, with `authAttached` reflecting whether a Bearer token was included in that request.
+
    - Add `safeDiagnostic(error): string | null` returning a single line such as: `phase: response · status: 500 · code: run_visibility_query_failed · auth: true · /admin/gamelens/run-visibility?season=2026&…`. Returns `null` for non-`RunVisibilityError` values.
    - Normalization failures get wrapped into a `RunVisibilityError` with `phase: "normalization"` and the offending field name only (e.g. `field: overview.source_health`) — never the response body.
 
@@ -36,7 +38,7 @@ Lovable cannot read the user's live production browser request. The current pane
    - `ErrorPanel` keeps the friendly message exactly as-is on the first line, and renders the diagnostic line below it in small muted monospace text when `safeDiagnostic` is non-null. Retry button behavior unchanged.
 
 3. `src/lib/run-visibility.test.ts`
-   - Focused tests: `safeDiagnostic` includes status/code/phase/auth-boolean and the query string; it never contains the token value, an `Authorization` header, or a stack trace; each phase maps correctly (401 token path, fetch rejection network path, 500 response path, bad-shape normalization path).
+   - Focused tests: `safeDiagnostic` includes status/code/phase/auth-boolean and the query string; it never contains the token value, an `Authorization` header, or a stack trace. Phase mapping tests: missing local token → `phase: token`, `auth: false`; backend HTTP 401 → `phase: response` with `auth: true` when a token was attached; fetch rejection → `phase: network`; HTTP 500 → `phase: response`; bad response shape → `phase: normalization`.
 
 4. `src/test/run-visibility-page.test.tsx`
    - One test asserting the panel shows both the friendly message and the diagnostic line.
