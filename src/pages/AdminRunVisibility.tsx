@@ -56,14 +56,25 @@ function errorKind(error: unknown): string | undefined {
 function ErrorPanel({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const kind = errorKind(error);
   const retryable = kind !== "forbidden" && kind !== "unauthenticated" && kind !== "source_unavailable";
+  const diagnostic = safeDiagnostic(error);
 
   return (
     <Card className="border-destructive/40 bg-destructive/5">
-      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-start gap-2 text-sm text-foreground">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--destructive))]" aria-hidden />
-          {safeErrorMessage(error)}
-        </p>
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1.5">
+          <p className="flex items-start gap-2 text-sm text-foreground">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--destructive))]" aria-hidden />
+            {safeErrorMessage(error)}
+          </p>
+          {diagnostic && (
+            <p
+              data-testid="run-visibility-diagnostic"
+              className="break-all pl-6 font-mono text-[11px] leading-relaxed text-muted-foreground"
+            >
+              {diagnostic}
+            </p>
+          )}
+        </div>
         {retryable && (
           <Button variant="outline" size="sm" onClick={onRetry}>
             Try again
