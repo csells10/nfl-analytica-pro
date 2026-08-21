@@ -11,7 +11,7 @@
  * failed request surfaces as an honest error state in the UI.
  */
 
-import { requestRunVisibility, RunVisibilityError } from "@/lib/run-visibility-api";
+import { requestRunVisibility, runVisibilityPath, RunVisibilityError } from "@/lib/run-visibility-api";
 
 // ---------- Filters ----------
 
