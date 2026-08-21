@@ -28,7 +28,9 @@ Lovable cannot read the user's live production browser request. The current pane
 1. `src/lib/run-visibility-api.ts`
    - Add a `phase` field to `RunVisibilityError`: `"token" | "network" | "response" | "normalization"`, set at each existing throw site. No new behavior, no new requests.
    - Record `requestPath` on the error: path + query string only, from the already-built `URLSearchParams`. No host credentials, no headers, no token.
-   - Add `authAttached: boolean` — `true` when a non-empty bearer token was attached. Boolean only; the token is never stored, logged, or rendered.
+   - Add `authAttached: boolean` — `true` only as proof that a non-empty bearer token was attached to the request, never proof that the token was valid or accepted. Boolean only; the token is never stored, logged, or rendered.
+   - Phase rules: a locally missing/unavailable Firebase token is `phase: token` with `authAttached: false`. An HTTP 401 returned by the backend is `phase: response`, with `authAttached` reflecting whether a Bearer token was included in that request.
+
    - Add `safeDiagnostic(error): string | null` returning a single line such as: `phase: response · status: 500 · code: run_visibility_query_failed · auth: true · /admin/gamelens/run-visibility?season=2026&…`. Returns `null` for non-`RunVisibilityError` values.
    - Normalization failures get wrapped into a `RunVisibilityError` with `phase: "normalization"` and the offending field name only (e.g. `field: overview.source_health`) — never the response body.
 
