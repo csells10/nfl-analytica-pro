@@ -38,7 +38,7 @@ Lovable cannot read the user's live production browser request. The current pane
    - `ErrorPanel` keeps the friendly message exactly as-is on the first line, and renders the diagnostic line below it in small muted monospace text when `safeDiagnostic` is non-null. Retry button behavior unchanged.
 
 3. `src/lib/run-visibility.test.ts`
-   - Focused tests: `safeDiagnostic` includes status/code/phase/auth-boolean and the query string; it never contains the token value, an `Authorization` header, or a stack trace; each phase maps correctly (401 token path, fetch rejection network path, 500 response path, bad-shape normalization path).
+   - Focused tests: `safeDiagnostic` includes status/code/phase/auth-boolean and the query string; it never contains the token value, an `Authorization` header, or a stack trace. Phase mapping tests: missing local token → `phase: token`, `auth: false`; backend HTTP 401 → `phase: response` with `auth: true` when a token was attached; fetch rejection → `phase: network`; HTTP 500 → `phase: response`; bad response shape → `phase: normalization`.
 
 4. `src/test/run-visibility-page.test.tsx`
    - One test asserting the panel shows both the friendly message and the diagnostic line.
