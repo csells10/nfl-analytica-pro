@@ -848,5 +848,21 @@ export async function getRunVisibility(filters: RunVisibilityFilters): Promise<R
   }
 
   const raw = await requestRunVisibility(params);
-  return normalizeRunVisibility(raw, params.learning_run_id);
+  try {
+    return normalizeRunVisibility(raw, params.learning_run_id);
+  } catch (error) {
+    if (error instanceof RunVisibilityError) {
+      error.phase ??= "normalization";
+      error.requestPath ??= runVisibilityPath(params);
+      throw error;
+    }
+    const wrapped = new RunVisibilityError(
+      "invalid_response",
+      "Run Visibility returned a response the app could not read.",
+    );
+    wrapped.phase = "normalization";
+    wrapped.requestPath = runVisibilityPath(params);
+    throw wrapped;
+  }
 }
+
