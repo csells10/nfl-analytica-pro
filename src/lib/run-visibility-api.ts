@@ -128,6 +128,28 @@ export function safeErrorMessage(error: unknown): string {
   return "Something went wrong reading Run Visibility.";
 }
 
+/**
+ * One-line, secret-free failure summary for the admin error panel.
+ *
+ * Contains only: phase, HTTP status, backend error code, whether a non-empty
+ * bearer token was attached, the failing field name, and the request path with
+ * its query string. Never a token, header, response body or stack trace.
+ */
+export function safeDiagnostic(error: unknown): string | null {
+  if (!(error instanceof RunVisibilityError)) return null;
+
+  const parts: string[] = [];
+  if (error.phase) parts.push(`phase: ${error.phase}`);
+  if (typeof error.status === "number") parts.push(`status: ${error.status}`);
+  if (error.code) parts.push(`code: ${error.code}`);
+  if (typeof error.authAttached === "boolean") parts.push(`auth: ${error.authAttached}`);
+  if (error.field) parts.push(`field: ${error.field}`);
+  if (error.requestPath) parts.push(error.requestPath);
+
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+
 // Backend-supplied human message, only used for 400s where it is safe copy.
 export interface RunVisibilityErrorBody {
 
