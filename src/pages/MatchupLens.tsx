@@ -12,7 +12,15 @@ import {
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
 import { LensDetail } from "@/components/matchup-lens/LensDetail";
 import { EventPulse } from "@/components/matchup-lens/EventPulse";
+import { AdvantageMap, type AdvantageOrder } from "@/components/matchup-lens/AdvantageMap";
+import { TeamFingerprint } from "@/components/matchup-lens/TeamFingerprint";
+import { ComparisonSummary } from "@/components/matchup-lens/ComparisonSummary";
+import {
+  PresentationSwitcher,
+  type PresentationMode,
+} from "@/components/matchup-lens/PresentationSwitcher";
 import { getLensSnapshotSource } from "@/lib/matchup-lens-source";
+import { lensGaps } from "@/lib/matchup-lens-compare";
 import {
   LENSES,
   eventPulseForTeam,
@@ -20,6 +28,7 @@ import {
   scoreAllLenses,
 } from "@/lib/matchup-lens";
 import { getTeam, teamLogoUrl } from "@/lib/nfl-teams";
+
 
 const DEFAULT_AWAY = "LAR";
 const DEFAULT_HOME = "CLE";
