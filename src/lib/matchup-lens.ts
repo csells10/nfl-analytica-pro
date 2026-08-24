@@ -60,17 +60,6 @@ export const LENSES: LensDefinition[] = [
   },
 ];
 
-/** Rare-event metrics surfaced separately in Event Pulse. */
-export const EVENT_PULSE_METRICS = [
-  "defensive_tds",
-  "defensive_two_point_returns",
-  "safeties",
-  "blocked_fg",
-  "blocked_punt",
-  "blocked_xp",
-  "two_point_conversions",
-] as const;
-
 /** Weight rules: strong = 2, otherwise 1; volume-sensitive x0.5; volatility x0.75. */
 export function metricWeight(definition: MetricDefinition): number {
   let weight = definition.signalStrength === "strong" ? 2 : 1;
@@ -151,56 +140,4 @@ export function scoreAllLenses(snapshot: LensSnapshot, team: TeamMetricRow): Len
 
 export function findTeam(snapshot: LensSnapshot, teamAbv: string): TeamMetricRow | undefined {
   return snapshot.teams.find((team) => team.teamAbv === teamAbv);
-}
-
-// ── Event Pulse ──────────────────────────────────────────────
-
-export interface EventPulseEntry {
-  metric: string;
-  label: string;
-  percentile: number | null;
-  /** Competition rank within the snapshot; equal percentiles share a rank. */
-  rank: number | null;
-  /** How many teams share this rank. */
-  tiedWith: number;
-  teamCount: number;
-}
-
-/**
- * Ranks a team against the league on each rare-event metric. Ties are reported
- * honestly — several of these metrics are tied league-wide at the 100th percentile.
- */
-export function eventPulseForTeam(snapshot: LensSnapshot, team: TeamMetricRow): EventPulseEntry[] {
-  const byKey = new Map(snapshot.metrics.map((definition) => [definition.metric, definition]));
-
-  return EVENT_PULSE_METRICS.map((metric) => {
-    const definition = byKey.get(metric);
-    const percentile = team.percentiles[metric];
-    const values = snapshot.teams
-      .map((row) => row.percentiles[metric])
-      .filter((value): value is number => typeof value === "number");
-
-    if (typeof percentile !== "number" || values.length === 0) {
-      return {
-        metric,
-        label: definition?.label ?? metric,
-        percentile: null,
-        rank: null,
-        tiedWith: 0,
-        teamCount: values.length,
-      };
-    }
-
-    const better = values.filter((value) => value > percentile).length;
-    const tiedWith = values.filter((value) => value === percentile).length;
-
-    return {
-      metric,
-      label: definition?.label ?? metric,
-      percentile,
-      rank: better + 1,
-      tiedWith,
-      teamCount: values.length,
-    };
-  });
 }

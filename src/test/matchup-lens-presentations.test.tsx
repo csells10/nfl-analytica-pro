@@ -5,11 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import {
   comparisonHighlights,
-  eventPulsePairs,
   lensGaps,
   sortBySeparation,
 } from "@/lib/matchup-lens-compare";
-import { LENSES, eventPulseForTeam, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
+import { LENSES, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
 import { PRESEASON_2026_SNAPSHOT as snapshot } from "@/lib/matchup-lens-snapshot";
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -27,11 +26,16 @@ function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/matchup-lens"]}>
         <MatchupLens />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+async function switchMode(user: ReturnType<typeof userEvent.setup>, mode: string) {
+  const button = document.querySelector(`button[data-mode="${mode}"]`) as HTMLButtonElement;
+  await user.click(button);
 }
 
 describe("comparison arithmetic", () => {
@@ -58,24 +62,14 @@ describe("comparison arithmetic", () => {
   });
 });
 
-describe("event pulse pairing", () => {
-  it("flags only rare events where the two teams sit at different percentiles", () => {
-    const pairs = eventPulsePairs(eventPulseForTeam(snapshot, lar), eventPulseForTeam(snapshot, cle));
-    expect(pairs).toHaveLength(7);
-    for (const pair of pairs) {
-      expect(pair.differs).toBe(pair.a.percentile !== pair.b.percentile);
-    }
-  });
-});
-
-describe("MatchupLens presentations", () => {
+describe("MatchupLens experiences", () => {
   it("keeps teams and selected lens shared across mode switches", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByText("Event Pulse")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
 
     await user.click(screen.getByRole("button", { name: /Turnover Balance/ }));
-    await user.click(screen.getByRole("radio", { name: "Advantage Map" }));
+    await switchMode(user, "map");
 
     const rows = screen.getByTestId("advantage-rows");
     const selected = within(rows)
@@ -83,17 +77,17 @@ describe("MatchupLens presentations", () => {
       .find((button) => button.getAttribute("aria-pressed") === "true");
     expect(selected?.getAttribute("data-lens-key")).toBe("turnover-balance");
 
-    await user.click(screen.getByRole("radio", { name: "Team Fingerprint" }));
-    expect(screen.getByText(/Los Angeles Rams/)).toBeTruthy();
-    expect(screen.getByText(/Cleveland Browns/)).toBeTruthy();
+    await switchMode(user, "fingerprint");
+    expect(screen.getAllByText(/Los Angeles Rams/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Cleveland Browns/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Turnover Balance").length).toBeGreaterThan(0);
   });
 
-  it("renders the advantage map ordered by gap and supports the canonical toggle", async () => {
+  it("renders the matchup map ordered by gap and supports the canonical toggle", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByText("Event Pulse")).toBeTruthy());
-    await user.click(screen.getByRole("radio", { name: "Advantage Map" }));
+    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
+    await switchMode(user, "map");
 
     const keys = () =>
       within(screen.getByTestId("advantage-rows"))
@@ -108,8 +102,8 @@ describe("MatchupLens presentations", () => {
   it("renders two fingerprints with identical axis order and fixed scale", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByText("Event Pulse")).toBeTruthy());
-    await user.click(screen.getByRole("radio", { name: "Team Fingerprint" }));
+    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
+    await switchMode(user, "fingerprint");
 
     const a = screen.getByTestId("fingerprint-radar-a");
     const b = screen.getByTestId("fingerprint-radar-b");
@@ -119,25 +113,11 @@ describe("MatchupLens presentations", () => {
     expect(b.getAttribute("data-scale-max")).toBe("100");
   });
 
-  it("keeps Event Pulse independent of lens selection and collapses ties by default", async () => {
+  it("shows an honest unavailable state for Momentum Shift", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByText("Event Pulse")).toBeTruthy());
-
-    const pulse = screen.getByTestId("event-pulse");
-    expect(
-      within(pulse).getByText(/does not change when you select a lens/i),
-    ).toBeTruthy();
-    const before = within(pulse).getByTestId("event-pulse-summary").textContent;
-
-    await user.click(screen.getByRole("button", { name: /Explosiveness/ }));
-    expect(within(pulse).getByTestId("event-pulse-summary").textContent).toBe(before);
-
-    const disclosure = within(pulse).getByRole("button", { name: /show all 7 rare events/i });
-    const collapsedRows = within(pulse).queryByTestId("event-pulse-rows");
-    const collapsedCount = collapsedRows ? within(collapsedRows).getAllByRole("row").length : 0;
-    await user.click(disclosure);
-    expect(within(within(pulse).getByTestId("event-pulse-rows")).getAllByRole("row")).toHaveLength(7);
-    expect(collapsedCount).toBeLessThanOrEqual(7);
+    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
+    await switchMode(user, "momentum");
+    expect(screen.getByTestId("momentum-unavailable")).toBeTruthy();
   });
 });
