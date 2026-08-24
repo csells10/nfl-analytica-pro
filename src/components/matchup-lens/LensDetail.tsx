@@ -1,16 +1,17 @@
+import { useMemo, useState } from "react";
+import { X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { LensDefinition, LensScore } from "@/lib/matchup-lens";
 import type { LensSnapshot, TeamMetricRow } from "@/lib/matchup-lens-types";
-import { lensStanding, metricStanding } from "@/lib/matchup-lens-rank";
+import { lensStanding } from "@/lib/matchup-lens-rank";
 import {
   LENS_SCORE_EXPLANATION,
   LENS_SCORE_MATH,
-  betterThanText,
-  influenceNotes,
+  scoreText,
   rankText,
-  signalRoleLabel,
 } from "@/lib/matchup-lens-language";
-import { RoleBadge, ScoreBlock, TagChip, type TraceHandlers } from "./TraceChips";
+import { ScoreBlock, TagChip, type TraceHandlers } from "./TraceChips";
+import { EvidenceRail } from "./EvidenceRail";
 
 interface LensDetailProps extends TraceHandlers {
   lens: LensDefinition;
@@ -23,23 +24,17 @@ interface LensDetailProps extends TraceHandlers {
   labelB: string;
   nameA: string;
   nameB: string;
+  onClose?: () => void;
 }
 
-function PercentileBar({ value, tone }: { value: number; tone: "a" | "b" }) {
-  return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-      <div
-        className={`h-full rounded-full ${tone === "a" ? "bg-accent-cool" : "bg-primary"}`}
-        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
-      />
-    </div>
-  );
-}
+/** A lens is "close" when the two profiles sit within a few points of each other. */
+const CLOSE_THRESHOLD = 5;
+
+const FIRST_CARDS = 4;
 
 /**
- * Shared evidence panel for every experience: Lens Score, league standing, the
- * lens tags behind it and each supporting metric. Tags and metrics open the
- * reverse trace.
+ * Evidence for one deliberately selected lens: what the score means, where each
+ * team stands, the most explanatory metrics, and the signals behind them.
  */
 export function LensDetail({
   lens,
@@ -53,20 +48,59 @@ export function LensDetail({
   nameA,
   nameB,
   onOpenTrace,
+  onClose,
 }: LensDetailProps) {
-  const percentileB = new Map(scoreB.contributions.map((c) => [c.metric, c.percentile]));
+  const [showAll, setShowAll] = useState(false);
+
+  const percentileB = useMemo(
+    () => new Map(scoreB.contributions.map((c) => [c.metric, c.percentile])),
+    [scoreB],
+  );
   const rows = scoreA.contributions.length > 0 ? scoreA.contributions : scoreB.contributions;
+
+  /** Most explanatory first: influence, then the widest matchup difference. */
+  const ordered = useMemo(
+    () =>
+      [...rows].sort((left, right) => {
+        if (right.weight !== left.weight) return right.weight - left.weight;
+        const gapLeft = Math.abs(left.percentile - (percentileB.get(left.metric) ?? left.percentile));
+        const gapRight = Math.abs(
+          right.percentile - (percentileB.get(right.metric) ?? right.percentile),
+        );
+        return gapRight - gapLeft;
+      }),
+    [rows, percentileB],
+  );
+
+  const visible = showAll ? ordered : ordered.slice(0, FIRST_CARDS);
+
   const standingA = lensStanding(snapshot, lens.key, teamA.teamAbv);
   const standingB = lensStanding(snapshot, lens.key, teamB.teamAbv);
 
+  const a = scoreA.score;
+  const b = scoreB.score;
+  const heading =
+    a === null || b === null
+      ? `${lens.name} evidence`
+      : Math.abs(a - b) < CLOSE_THRESHOLD
+        ? `Why these teams are close in ${lens.name}`
+        : `Why ${a > b ? labelA : labelB} leads in ${lens.name}`;
+
   return (
-    <Card className="border-border bg-card" data-testid="lens-evidence">
+    <Card className="border-border bg-card" data-testid="lens-evidence" data-lens-key={lens.key}>
       <CardContent className="p-4 sm:p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="text-sm font-semibold tracking-tight text-foreground">{lens.name}</h3>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
-            Lens Score
-          </span>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <h3 className="text-sm font-semibold tracking-tight text-foreground">{heading}</h3>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close lens evidence"
+              className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
           {LENS_SCORE_EXPLANATION}
@@ -89,22 +123,40 @@ export function LensDetail({
           />
         </div>
 
-        <details className="mt-3 rounded-md border border-border bg-muted/10 p-2.5">
-          <summary className="cursor-pointer text-[11px] font-semibold text-foreground">
-            How this score is built
-          </summary>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-            {LENS_SCORE_MATH}
-          </p>
-          <ul className="mt-1.5 space-y-0.5 font-mono text-[10px] text-muted-foreground">
-            <li>Primary signal = weight 2 · Supporting context = weight 1</li>
-            <li>volume-sensitive × 0.5 · volatility × 0.75</li>
-          </ul>
-        </details>
+        <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+          {labelA} {scoreText(scoreA.score)} · {rankText(standingA.rank, standingA.total)} ·{" "}
+          {labelB} {scoreText(scoreB.score)} · {rankText(standingB.rank, standingB.total)}
+        </p>
 
         <div className="mt-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Lens tags — select one to trace it
+          <EvidenceRail
+            rows={visible}
+            percentileB={percentileB}
+            snapshot={snapshot}
+            teamAbvA={teamA.teamAbv}
+            teamAbvB={teamB.teamAbv}
+            labelA={labelA}
+            labelB={labelB}
+            onOpenTrace={onOpenTrace}
+          />
+          {ordered.length > FIRST_CARDS && (
+            <button
+              type="button"
+              data-testid="toggle-all-evidence"
+              onClick={() => setShowAll((value) => !value)}
+              className="mt-2 min-h-[44px] rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {showAll ? "Show key evidence only" : `View all evidence (${ordered.length})`}
+            </button>
+          )}
+        </div>
+
+        <details className="mt-4 rounded-md border border-border bg-muted/10 p-2.5">
+          <summary className="cursor-pointer text-[11px] font-semibold text-foreground">
+            Signals used
+          </summary>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            Select a signal to trace which metrics and lenses it connects.
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {lens.tags.map((tag) => (
@@ -114,70 +166,20 @@ export function LensDetail({
               <TagChip key={tag} tag={tag} excluded onOpenTrace={onOpenTrace} />
             ))}
           </div>
-        </div>
+        </details>
 
-        <div className="mt-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Supporting metrics ({rows.length}) — select one to trace it
+        <details className="mt-2 rounded-md border border-border bg-muted/10 p-2.5">
+          <summary className="cursor-pointer text-[11px] font-semibold text-foreground">
+            How this score is built
+          </summary>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            {LENS_SCORE_MATH}
           </p>
-          <ul className="mt-2 space-y-3">
-            {rows.map((row) => {
-              const other = percentileB.get(row.metric);
-              const rankA = metricStanding(snapshot, row.metric, teamA.teamAbv);
-              const rankB = metricStanding(snapshot, row.metric, teamB.teamAbv);
-              const notes = influenceNotes(row.lensTags);
-              return (
-                <li key={row.metric}>
-                  <button
-                    type="button"
-                    data-metric={row.metric}
-                    onClick={() => onOpenTrace({ type: "metric", id: row.metric })}
-                    className="w-full rounded-md border border-transparent p-2 text-left transition-colors hover:border-border hover:bg-muted/30 focus-visible:border-border focus-visible:bg-muted/30"
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <span className="text-xs font-medium text-foreground">{row.label}</span>
-                      <span className="flex flex-wrap items-center gap-1">
-                        <RoleBadge label={signalRoleLabel(row.signalStrength)} />
-                        {notes.map((note) => (
-                          <RoleBadge key={note} label={note} muted />
-                        ))}
-                      </span>
-                    </div>
-
-                    <div className="mt-2 space-y-1.5">
-                      {[
-                        { label: labelA, value: row.percentile, tone: "a" as const, standing: rankA },
-                        {
-                          label: labelB,
-                          value: typeof other === "number" ? other : null,
-                          tone: "b" as const,
-                          standing: rankB,
-                        },
-                      ].map((side) => (
-                        <div key={side.label}>
-                          <div className="flex items-baseline justify-between gap-2 text-[11px]">
-                            <span
-                              className={
-                                side.tone === "a" ? "text-accent-cool" : "text-primary"
-                              }
-                            >
-                              {side.label}
-                            </span>
-                            <span className="text-muted-foreground">
-                              {betterThanText(side.value)} ·{" "}
-                              {rankText(side.standing.rank, side.standing.total)}
-                            </span>
-                          </div>
-                          <PercentileBar value={side.value ?? 0} tone={side.tone} />
-                        </div>
-                      ))}
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
+          <ul className="mt-1.5 space-y-0.5 font-mono text-[10px] text-muted-foreground">
+            <li>Primary signal = weight 2 · Supporting signal = weight 1</li>
+            <li>volume-sensitive × 0.5 · volatility × 0.75</li>
           </ul>
-        </div>
+        </details>
       </CardContent>
     </Card>
   );

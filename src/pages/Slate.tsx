@@ -79,7 +79,8 @@ const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: s
               navigate(
                 `/matchup-lens?a=${encodeURIComponent(game.awayTeam)}&b=${encodeURIComponent(
                   game.homeTeam,
-                )}&mode=brief&game=${encodeURIComponent(game.id)}`,
+                )}&view=overview&game=${encodeURIComponent(game.id)}`,
+
               )
             }
             className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"

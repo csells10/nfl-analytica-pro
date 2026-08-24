@@ -33,10 +33,8 @@ function renderPage() {
   );
 }
 
-async function switchMode(user: ReturnType<typeof userEvent.setup>, mode: string) {
-  const button = document.querySelector(`button[data-mode="${mode}"]`) as HTMLButtonElement;
-  await user.click(button);
-}
+
+
 
 describe("comparison arithmetic", () => {
   it("produces one signed gap per canonical lens", () => {
@@ -62,62 +60,62 @@ describe("comparison arithmetic", () => {
   });
 });
 
-describe("MatchupLens experiences", () => {
-  it("keeps teams and selected lens shared across mode switches", async () => {
+describe("Matchup Dashboard presentations", () => {
+  it("keeps the selected lens shared between the rail, radar and evidence", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("lens-rail")).toBeTruthy());
 
-    await user.click(screen.getByRole("button", { name: /Turnover Balance/ }));
-    await switchMode(user, "map");
+    const rail = screen.getByTestId("lens-rail");
+    await user.click(
+      rail.querySelector('button[data-lens-key="turnover-balance"]') as HTMLButtonElement,
+    );
 
-    const rows = screen.getByTestId("advantage-rows");
-    const selected = within(rows)
+    await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
+    expect(screen.getByTestId("lens-evidence").getAttribute("data-lens-key")).toBe(
+      "turnover-balance",
+    );
+
+    const tiles = Array.from(
+      screen.getByTestId("lens-constellation").querySelectorAll("button[data-lens-key]"),
+    );
+    const pressed = tiles.find((button) => button.getAttribute("aria-pressed") === "true");
+    expect(pressed?.getAttribute("data-lens-key")).toBe("turnover-balance");
+  });
+
+  it("previews only the three widest profile gaps, ordered by separation", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId("top-profile-gaps")).toBeTruthy());
+
+    const keys = within(screen.getByTestId("gap-rows"))
       .getAllByRole("button")
-      .find((button) => button.getAttribute("aria-pressed") === "true");
-    expect(selected?.getAttribute("data-lens-key")).toBe("turnover-balance");
-
-    await switchMode(user, "fingerprint");
-    expect(screen.getAllByText(/Los Angeles Rams/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Cleveland Browns/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Turnover Balance").length).toBeGreaterThan(0);
+      .map((button) => button.getAttribute("data-lens-key"));
+    expect(keys).toEqual(sortBySeparation(gaps).slice(0, 3).map((gap) => gap.key));
   });
 
-  it("renders the matchup map ordered by gap and supports the canonical toggle", async () => {
+  it("offers side-by-side as a Constellation layout with identical axes and scale", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
-    await switchMode(user, "map");
+    await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
+    expect(screen.getByTestId("constellation-overlay")).toBeTruthy();
 
-    const keys = () =>
-      within(screen.getByTestId("advantage-rows"))
-        .getAllByRole("button")
-        .map((button) => button.getAttribute("data-lens-key"));
+    await user.click(
+      document.querySelector('button[data-layout-option="side"]') as HTMLButtonElement,
+    );
 
-    expect(keys()).toEqual(sortBySeparation(gaps).map((gap) => gap.key));
-    await user.click(screen.getByRole("button", { name: /sorted by gap/i }));
-    expect(keys()).toEqual(LENSES.map((lens) => lens.key));
-  });
-
-  it("renders two fingerprints with identical axis order and fixed scale", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
-    await switchMode(user, "fingerprint");
-
-    const a = screen.getByTestId("fingerprint-radar-a");
-    const b = screen.getByTestId("fingerprint-radar-b");
+    const side = screen.getByTestId("constellation-side");
+    const [a, b] = within(side).getAllByRole("img");
     expect(a.getAttribute("data-axis-order")).toBe(LENSES.map((lens) => lens.key).join(","));
     expect(b.getAttribute("data-axis-order")).toBe(a.getAttribute("data-axis-order"));
     expect(a.getAttribute("data-scale-max")).toBe("100");
     expect(b.getAttribute("data-scale-max")).toBe("100");
   });
 
-  it("shows an honest unavailable state for Momentum Shift", async () => {
-    const user = userEvent.setup();
+  it("hides Momentum entirely while there is no comparable history", async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
-    await switchMode(user, "momentum");
-    expect(screen.getByTestId("momentum-unavailable")).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId("lens-rail")).toBeTruthy());
+    expect(screen.queryByTestId("momentum-shift")).toBeNull();
+    expect(screen.queryByText(/Momentum/)).toBeNull();
   });
 });
+

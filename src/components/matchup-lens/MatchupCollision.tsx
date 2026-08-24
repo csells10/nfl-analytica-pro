@@ -6,7 +6,7 @@ import type {
 } from "@/lib/matchup-lens-collision";
 import { collisionHighlights } from "@/lib/matchup-lens-collision";
 import { betterThanText, scoreText } from "@/lib/matchup-lens-language";
-import { RoleBadge, type TraceHandlers } from "./TraceChips";
+import type { TraceHandlers } from "./TraceChips";
 
 interface MatchupCollisionProps extends TraceHandlers {
   directions: CollisionDirection[];
@@ -129,29 +129,35 @@ export function MatchupCollision({
   return (
     <Card className="border-border bg-card" data-testid="matchup-collision">
       <CardContent className="p-4 sm:p-5">
-        <h3 className="text-sm font-semibold tracking-tight text-foreground">Matchup Collision</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Each lane pairs the team holding the ball against the opposing side of the same
-          interaction. Nothing is compared where the snapshot lacks a counterpart metric.
+        <h3 className="text-sm font-semibold tracking-tight text-foreground">
+          Where profiles collide
+        </h3>
+        {strongest ? (
+          <p className="mt-1.5 text-xs leading-relaxed text-foreground" data-testid="collision-lead">
+            With {strongest.direction.offenseAbv} holding the ball, their{" "}
+            {strongest.lane.offense.label.toLowerCase()} profile meets{" "}
+            {strongest.direction.defenseAbv}&rsquo;s {strongest.lane.defense.label.toLowerCase()}{" "}
+            profile — the widest supported pairing in this matchup. Every other supported pairing
+            follows below.
+          </p>
+        ) : (
+          <p className="mt-1.5 text-xs text-muted-foreground" data-testid="collision-unsupported">
+            No supported collision identified — the snapshot lacks a counterpart metric for one side
+            of every interaction.
+          </p>
+        )}
+        <p className="mt-1 text-[11px] italic text-muted-foreground/80">
+          Profile matchup, not a forecast. Each lane pairs the team holding the ball against the
+          opposing side of the same interaction.
         </p>
 
-        <div className="mt-3 flex flex-wrap gap-2" data-testid="collision-highlights">
-          <RoleBadge
-            label={
-              strongest
-                ? `Strongest supported: ${strongest.lane.definition.name} (${strongest.direction.offenseAbv} with the ball)`
-                : "No supported collision to highlight"
-            }
-          />
-          <RoleBadge
-            muted
-            label={
-              closest
-                ? `Closest supported: ${closest.lane.definition.name} (${closest.direction.offenseAbv} with the ball)`
-                : "Coverage insufficient for a closest lane"
-            }
-          />
-        </div>
+        {closest && (
+          <p className="mt-2 text-[11px] text-muted-foreground" data-testid="collision-highlights">
+            Closest supported pairing: {closest.lane.definition.name} (
+            {closest.direction.offenseAbv} with the ball).
+          </p>
+        )}
+
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {directions.map((direction) => (

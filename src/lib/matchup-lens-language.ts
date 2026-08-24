@@ -9,10 +9,13 @@ import type { LensContribution } from "./matchup-lens";
 export const LENS_SCORE_NAME = "Lens Score";
 
 export const LENS_SCORE_EXPLANATION =
-  "A league-relative summary of the supporting metrics below. Higher means a stronger profile; it is not a prediction.";
+  "A league-relative profile score built from the supporting metrics below. Higher means a stronger league standing; it is not a prediction.";
 
 export const LENS_SCORE_MATH =
   "Each supporting metric contributes its league-relative standing. Primary signals count double. Volume-sensitive metrics are halved and volatile metrics are reduced to three-quarters. The Lens Score is the weighted average of those standings on a 0–100 scale.";
+
+export const DASHBOARD_PURPOSE =
+  "See what separates the teams, where they match up, and the evidence behind each profile.";
 
 /** Tag keys whose auto-generated title case reads badly. */
 const TAG_LABEL_OVERRIDES: Record<string, string> = {
@@ -49,7 +52,7 @@ export function signalRole(strength: LensContribution["signalStrength"]): Signal
 }
 
 export function signalRoleLabel(strength: LensContribution["signalStrength"]): string {
-  return strength === "strong" ? "Primary signal" : "Supporting context";
+  return strength === "strong" ? "Primary signal" : "Supporting signal";
 }
 
 /** Plain-English replacements for the raw weight multipliers. */
