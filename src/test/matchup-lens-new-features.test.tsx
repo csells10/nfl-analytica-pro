@@ -52,9 +52,9 @@ describe("league standing", () => {
   it("ranks every snapshot team on a lens with no gaps or duplicates", () => {
     const table = lensScoreTable(snapshot, LENSES[0].key);
     expect(table).toHaveLength(snapshot.teams.length);
-    const ranks = table.map((row) => row.rank);
-    expect(Math.min(...ranks)).toBe(1);
-    expect(Math.max(...ranks)).toBeLessThanOrEqual(snapshot.teams.length);
+    const scores = table.map((row) => row.score ?? -1);
+    expect([...scores].sort((a, b) => b - a)).toEqual(scores);
+    expect(new Set(table.map((row) => row.teamAbv)).size).toBe(snapshot.teams.length);
   });
 
   it("returns a consistent standing for a team and metric", () => {
