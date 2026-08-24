@@ -3,9 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import {
-  EVENT_PULSE_METRICS,
   LENSES,
-  eventPulseForTeam,
   findTeam,
   metricWeight,
   metricsForLens,
@@ -13,7 +11,6 @@ import {
 } from "@/lib/matchup-lens";
 import { PRESEASON_2026_SNAPSHOT } from "@/lib/matchup-lens-snapshot";
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
-import { EventPulse } from "@/components/matchup-lens/EventPulse";
 import type { MetricDefinition } from "@/lib/matchup-lens-types";
 
 const snapshot = PRESEASON_2026_SNAPSHOT;
@@ -115,19 +112,6 @@ describe("lens scoring", () => {
   });
 });
 
-describe("event pulse", () => {
-  it("reports the seven rare-event metrics with honest tie counts", () => {
-    const team = findTeam(snapshot, "LAR")!;
-    const entries = eventPulseForTeam(snapshot, team);
-    expect(entries.map((e) => e.metric)).toEqual([...EVENT_PULSE_METRICS]);
-    const tied = entries.filter((e) => e.tiedWith > 1);
-    expect(tied.length).toBeGreaterThan(0);
-    for (const entry of entries) {
-      if (entry.rank !== null) expect(entry.rank).toBeGreaterThanOrEqual(1);
-    }
-  });
-});
-
 describe("rendering", () => {
   it("renders all six axes with both team scores", () => {
     const client = new QueryClient();
@@ -144,6 +128,8 @@ describe("rendering", () => {
             axes={axes}
             labelA="LAR"
             labelB="CLE"
+            nameA="Los Angeles Rams"
+            nameB="Cleveland Browns"
             selectedKey="explosiveness"
             onSelect={() => undefined}
             onHover={() => undefined}
@@ -155,20 +141,5 @@ describe("rendering", () => {
       expect(screen.getAllByText(lens.name).length).toBeGreaterThan(0);
     }
     expect(screen.getByText("50.0")).toBeTruthy();
-  });
-
-  it("renders Event Pulse tie language", () => {
-    const team = findTeam(snapshot, "LAR")!;
-    const other = findTeam(snapshot, "CLE")!;
-    render(
-      <EventPulse
-        entriesA={eventPulseForTeam(snapshot, team)}
-        entriesB={eventPulseForTeam(snapshot, other)}
-        labelA="LAR"
-        labelB="CLE"
-      />,
-    );
-    expect(screen.getByText("Event Pulse")).toBeTruthy();
-    expect(screen.getAllByText(/tied,/).length).toBeGreaterThan(0);
   });
 });
