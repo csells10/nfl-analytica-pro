@@ -16,7 +16,8 @@ import { perfMark, perfNow, perfTime } from "@/lib/perf";
 const Slate = lazy(() => import("@/pages/Slate"));
 const Matchup = lazy(() => import("@/pages/Matchup"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
-const Placeholder = lazy(() => import("@/pages/Placeholder"));
+
+const MatchupLens = lazy(() => import("@/pages/MatchupLens"));
 const AdminClaimHealth = lazy(() => import("@/pages/AdminClaimHealth"));
 const AdminRunVisibility = lazy(() => import("@/pages/AdminRunVisibility"));
 
@@ -78,9 +79,10 @@ const App = () => (
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/lens-qa" element={<MatchupLens />} />
               <Route path="/" element={<ProtectedRoute><Slate /></ProtectedRoute>} />
               <Route path="/matchup/:id" element={<ProtectedRoute><Matchup /></ProtectedRoute>} />
-              <Route path="/matchup-lens" element={<ProtectedRoute><Placeholder title="Matchup Lens" /></ProtectedRoute>} />
+              <Route path="/matchup-lens" element={<ProtectedRoute><MatchupLens /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/admin/claim-health" element={<ProtectedRoute><AdminClaimHealth /></ProtectedRoute>} />
               <Route path="/admin/run-visibility" element={<ProtectedRoute><AdminRunVisibility /></ProtectedRoute>} />
