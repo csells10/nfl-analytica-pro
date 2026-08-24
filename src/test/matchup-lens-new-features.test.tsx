@@ -10,7 +10,7 @@ import { collisionDirections } from "@/lib/matchup-lens-collision";
 import { buildTrace } from "@/lib/matchup-lens-trace";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
 import { ordinal, rankText, scoreText, signalRoleLabel } from "@/lib/matchup-lens-language";
-import { lensMode } from "@/components/matchup-lens/ExperienceLauncher";
+import { parseView } from "@/lib/matchup-lens-view";
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { email: "qa@gamelens.io" }, signOut: vi.fn() }),
@@ -36,7 +36,7 @@ function renderPage(entry = "/matchup-lens") {
 describe("language translation", () => {
   it("uses plain signal roles instead of weighting jargon", () => {
     expect(signalRoleLabel("strong")).toBe("Primary signal");
-    expect(signalRoleLabel("supporting")).toBe("Supporting context");
+    expect(signalRoleLabel("supporting")).toBe("Supporting signal");
   });
 
   it("formats ranks and scores for humans", () => {
@@ -118,19 +118,29 @@ describe("game brief", () => {
   });
 });
 
-describe("mode parsing", () => {
-  it("falls back to constellation for unknown modes", () => {
-    expect(lensMode("brief")).toBe("brief");
-    expect(lensMode("nonsense")).toBe("constellation");
-    expect(lensMode(null)).toBe("constellation");
+describe("view parsing", () => {
+  it("defaults to overview and maps legacy modes forward", () => {
+    expect(parseView("collision", null).view).toBe("collision");
+    expect(parseView(null, "brief").view).toBe("overview");
+    expect(parseView(null, "fingerprint")).toEqual({ view: "constellation", layout: "side" });
+    expect(parseView(null, "map").view).toBe("gaps");
+    expect(parseView("nonsense", null).view).toBe("overview");
+    expect(parseView(null, null).view).toBe("overview");
   });
 });
+
 
 describe("trace drawer integration", () => {
   it("opens the reverse trace from a lens tag in the evidence panel", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByTestId("experience-launcher")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("lens-rail")).toBeTruthy());
+    await user.click(
+      screen.getByTestId("lens-rail").querySelector("button[data-lens-key]") as HTMLButtonElement,
+    );
+    await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
+    const signals = document.querySelector('[data-testid="signals-used"] button') as HTMLButtonElement | null;
+    if (signals) await user.click(signals);
 
     const chip = document.querySelector("button[data-tag]") as HTMLButtonElement;
     expect(chip).toBeTruthy();

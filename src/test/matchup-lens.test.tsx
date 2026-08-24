@@ -133,6 +133,9 @@ describe("rendering", () => {
             selectedKey="explosiveness"
             onSelect={() => undefined}
             onHover={() => undefined}
+            layout="overlay"
+            onLayoutChange={() => undefined}
+
           />
         </MemoryRouter>
       </QueryClientProvider>,

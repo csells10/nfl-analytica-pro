@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -12,25 +13,28 @@ import {
 } from "@/components/ui/select";
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
 import { LensDetail } from "@/components/matchup-lens/LensDetail";
-import { MatchupMap, type MatchupMapOrder } from "@/components/matchup-lens/MatchupMap";
-import { TeamFingerprint } from "@/components/matchup-lens/TeamFingerprint";
-import { ComparisonSummary } from "@/components/matchup-lens/ComparisonSummary";
+import { LensRail } from "@/components/matchup-lens/LensRail";
+import { InsightCards } from "@/components/matchup-lens/InsightCards";
+import { TopProfileGaps } from "@/components/matchup-lens/TopProfileGaps";
 import { GameBrief } from "@/components/matchup-lens/GameBrief";
+import { CollisionPreview } from "@/components/matchup-lens/CollisionPreview";
 import { MatchupCollision } from "@/components/matchup-lens/MatchupCollision";
-import { LensGalaxy } from "@/components/matchup-lens/LensGalaxy";
-import { LensPortrait } from "@/components/matchup-lens/LensPortrait";
 import { MomentumShift } from "@/components/matchup-lens/MomentumShift";
 import { TraceDrawer } from "@/components/matchup-lens/TraceDrawer";
-import {
-  ExperienceLauncher,
-  lensMode,
-  type LensMode,
-} from "@/components/matchup-lens/ExperienceLauncher";
 import { getLensSnapshotSource } from "@/lib/matchup-lens-source";
 import { lensGaps } from "@/lib/matchup-lens-compare";
 import { collisionDirections } from "@/lib/matchup-lens-collision";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
+import { buildProfileAngle } from "@/lib/matchup-lens-angle";
+import { momentumReadiness } from "@/lib/matchup-lens-momentum";
 import { buildTrace, type TraceTarget } from "@/lib/matchup-lens-trace";
+import {
+  parseLayout,
+  parseView,
+  type ConstellationLayout,
+  type LensView,
+} from "@/lib/matchup-lens-view";
+import { DASHBOARD_PURPOSE } from "@/lib/matchup-lens-language";
 import { LENSES, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
 import { getTeam, teamLogoUrl } from "@/lib/nfl-teams";
 
@@ -67,7 +71,7 @@ function TeamPicker({
   return (
     <div className="min-w-0 flex-1">
       <p
-        className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${
+        className={`mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
           tone === "a" ? "text-accent-cool" : "text-primary"
         }`}
       >
@@ -106,16 +110,22 @@ export default function MatchupLens() {
   });
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const initial = parseView(searchParams.get("view"), searchParams.get("mode"));
 
   const [awayAbv, setAwayAbv] = useState(() => snapshotAbbr(searchParams.get("a") ?? DEFAULT_AWAY));
   const [homeAbv, setHomeAbv] = useState(() => snapshotAbbr(searchParams.get("b") ?? DEFAULT_HOME));
-  const [selectedLens, setSelectedLens] = useState(
-    () => LENSES.find((lens) => lens.key === searchParams.get("lens"))?.key ?? LENSES[0].key,
+  const [view, setView] = useState<LensView>(initial.view);
+  const [layout, setLayout] = useState<ConstellationLayout>(() =>
+    parseLayout(searchParams.get("layout"), initial.layout),
+  );
+  /** No lens evidence is shown until the user deliberately selects one. */
+  const [selectedLens, setSelectedLens] = useState<string | null>(
+    () => LENSES.find((lens) => lens.key === searchParams.get("lens"))?.key ?? null,
   );
   const [hoveredLens, setHoveredLens] = useState<string | null>(null);
-  const [mode, setMode] = useState<LensMode>(() => lensMode(searchParams.get("mode")));
-  const [order, setOrder] = useState<MatchupMapOrder>("separation");
-  const [collisionKey, setCollisionKey] = useState<string | null>(null);
+  const [collisionKey, setCollisionKey] = useState<string | null>(
+    () => searchParams.get("collision"),
+  );
   const [trace, setTrace] = useState<TraceTarget | null>(() => {
     const raw = searchParams.get("trace");
     if (!raw) return null;
@@ -145,19 +155,32 @@ export default function MatchupLens() {
     }
   }, [awayAbv, homeAbv, teamOptions]);
 
+  const momentum = useMemo(() => momentumReadiness(snapshot ? [snapshot] : []), [snapshot]);
+
+  // Momentum is never reachable without real comparable history.
+  useEffect(() => {
+    if (view === "momentum" && !momentum.eligible && snapshot) setView("overview");
+  }, [view, momentum.eligible, snapshot]);
+
   // Shared state lives in the URL so the matchup survives reload, back and share.
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
+    next.delete("mode");
     next.set("a", awayAbv);
     next.set("b", homeAbv);
-    next.set("mode", mode);
-    next.set("lens", selectedLens);
+    next.set("view", view);
+    if (view === "constellation" && layout === "side") next.set("layout", "side");
+    else next.delete("layout");
+    if (selectedLens) next.set("lens", selectedLens);
+    else next.delete("lens");
+    if (collisionKey) next.set("collision", collisionKey);
+    else next.delete("collision");
     if (trace) next.set("trace", `${trace.type}:${trace.id}`);
     else next.delete("trace");
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [awayAbv, homeAbv, mode, selectedLens, trace, searchParams, setSearchParams]);
+  }, [awayAbv, homeAbv, view, layout, selectedLens, collisionKey, trace, searchParams, setSearchParams]);
 
   const away = snapshot ? findTeam(snapshot, awayAbv) : undefined;
   const home = snapshot ? findTeam(snapshot, homeAbv) : undefined;
@@ -171,11 +194,6 @@ export default function MatchupLens() {
     [snapshot, home],
   );
 
-  const activeKey = mode === "constellation" ? (hoveredLens ?? selectedLens) : selectedLens;
-  const activeLens = LENSES.find((lens) => lens.key === activeKey) ?? LENSES[0];
-  const activeA = scoresA.find((score) => score.lensKey === activeLens.key);
-  const activeB = scoresB.find((score) => score.lensKey === activeLens.key);
-
   const gaps = useMemo(() => lensGaps(scoresA, scoresB), [scoresA, scoresB]);
   const axes = LENSES.map((lens, index) => ({
     key: lens.key,
@@ -184,35 +202,46 @@ export default function MatchupLens() {
     scoreB: scoresB[index]?.score ?? null,
   }));
 
+  const activeKey = view === "constellation" ? (hoveredLens ?? selectedLens) : selectedLens;
+  const activeLens = LENSES.find((lens) => lens.key === activeKey) ?? null;
+  const activeA = activeLens ? scoresA.find((score) => score.lensKey === activeLens.key) : undefined;
+  const activeB = activeLens ? scoresB.find((score) => score.lensKey === activeLens.key) : undefined;
+
   const directions = useMemo(
     () => (snapshot && away && home ? collisionDirections(snapshot, away, home) : []),
     [snapshot, away, home],
   );
 
   const brief = useMemo(
-    () =>
-      snapshot && away && home
-        ? buildGameBrief(snapshot, away, home, awayAbv, homeAbv)
-        : null,
+    () => (snapshot && away && home ? buildGameBrief(snapshot, away, home, awayAbv, homeAbv) : null),
     [snapshot, away, home, awayAbv, homeAbv],
   );
+
+  const angle = useMemo(() => {
+    if (!snapshot || !away || !home || !brief) return null;
+    const exclude = [brief.largest?.key, brief.closest?.key].filter(
+      (key): key is string => typeof key === "string",
+    );
+    return buildProfileAngle(snapshot, away, home, awayAbv, homeAbv, gaps, exclude);
+  }, [snapshot, away, home, brief, gaps, awayAbv, homeAbv]);
 
   const traceData = useMemo(
     () =>
       snapshot && away && home && trace
-        ? buildTrace(snapshot, trace, selectedLens, [away, home])
+        ? buildTrace(snapshot, trace, selectedLens ?? LENSES[0].key, [away, home])
         : null,
     [snapshot, away, home, trace, selectedLens],
   );
 
   const openTrace = useCallback((target: TraceTarget) => setTrace(target), []);
-  const openCollision = useCallback((key: string) => {
+  const selectLens = useCallback((key: string) => setSelectedLens(key), []);
+  const openCollision = useCallback((key: string | null) => {
     setCollisionKey(key);
-    setMode("collision");
+    setView("collision");
   }, []);
 
   const evidence =
-    snapshot && away && home && activeA && activeB ? (
+    snapshot && away && home && activeLens && activeA && activeB ? (
       <LensDetail
         lens={activeLens}
         snapshot={snapshot}
@@ -225,22 +254,28 @@ export default function MatchupLens() {
         nameA={teamName(awayAbv)}
         nameB={teamName(homeAbv)}
         onOpenTrace={openTrace}
+        onClose={() => setSelectedLens(null)}
       />
     ) : null;
 
+  const backToDashboard = (
+    <button
+      type="button"
+      data-testid="back-to-dashboard"
+      onClick={() => setView("overview")}
+      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" />
+      Back to {awayAbv} vs {homeAbv} dashboard
+    </button>
+  );
+
   return (
     <AppShell showGuide={false}>
-      <div className="space-y-5">
+      <div className="space-y-4">
         <header>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Matchup Lens</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Understand where two teams are strongest, where their styles collide, and what changed
-            before kickoff.
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground" data-testid="lens-context-label">
-            {snapshot?.contextLabel ??
-              "Preseason-to-date \u00b7 Aug 23, 2026 \u00b7 2\u20133 games \u00b7 comparison, not forecast."}
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground">Matchup Dashboard</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">{DASHBOARD_PURPOSE}</p>
         </header>
 
         {isLoading || !snapshot || !away || !home ? (
@@ -252,8 +287,8 @@ export default function MatchupLens() {
         ) : (
           <>
             <Card className="border-border bg-card">
-              <CardContent className="p-4 sm:p-5">
-                <div className="flex items-end gap-3">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
                   <TeamPicker
                     value={awayAbv}
                     options={teamOptions}
@@ -261,7 +296,7 @@ export default function MatchupLens() {
                     role="Team A"
                     tone="a"
                   />
-                  <span className="pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:pb-3">
                     vs
                   </span>
                   <TeamPicker
@@ -272,47 +307,93 @@ export default function MatchupLens() {
                     tone="b"
                   />
                 </div>
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  <span className="text-accent-cool">{teamName(awayAbv)}</span>
-                  {" · "}
-                  {away.gamesInWindow} games
-                  {"  |  "}
-                  <span className="text-primary">{teamName(homeAbv)}</span>
-                  {" · "}
-                  {home.gamesInWindow} games
+                <p
+                  className="mt-2 font-mono text-[11px] text-muted-foreground"
+                  data-testid="lens-context-label"
+                >
+                  {snapshot.windowLabel} · as of {snapshot.asOfDate} · {awayAbv}{" "}
+                  {away.gamesInWindow} games / {homeAbv} {home.gamesInWindow} games
                 </p>
-                <div className="mt-4">
-                  <ExperienceLauncher value={mode} onChange={setMode} />
-                </div>
               </CardContent>
             </Card>
 
-            {mode !== "momentum" && (
-              <ComparisonSummary
-                gaps={gaps}
-                labelA={awayAbv}
-                labelB={homeAbv}
-                onSelect={setSelectedLens}
-              />
-            )}
+            <LensRail
+              gaps={gaps}
+              labelA={awayAbv}
+              labelB={homeAbv}
+              selectedKey={selectedLens}
+              onSelect={selectLens}
+            />
 
-            {mode === "brief" && brief && (
-              <div className="space-y-5">
-                <GameBrief
-                  brief={brief}
+            {view === "overview" && brief && (
+              <>
+                <InsightCards
+                  largest={brief.largest}
+                  closest={brief.closest}
+                  angle={angle}
                   labelA={awayAbv}
                   labelB={homeAbv}
-                  nameA={teamName(awayAbv)}
-                  nameB={teamName(homeAbv)}
-                  onSelectLens={setSelectedLens}
+                  onSelectLens={selectLens}
                   onOpenCollision={openCollision}
                 />
+
+                <div className="grid gap-4 lg:grid-cols-12">
+                  <div className="lg:col-span-5">
+                    <GameBrief
+                      brief={brief}
+                      labelA={awayAbv}
+                      labelB={homeAbv}
+                      nameA={teamName(awayAbv)}
+                      nameB={teamName(homeAbv)}
+                      onSelectLens={selectLens}
+                      onOpenCollision={openCollision}
+                    />
+                  </div>
+                  <div className="lg:col-span-7">
+                    <Card className="border-border bg-card">
+                      <CardContent className="p-4 sm:p-5">
+                        <LensConstellation
+                          axes={axes}
+                          labelA={awayAbv}
+                          labelB={homeAbv}
+                          nameA={teamName(awayAbv)}
+                          nameB={teamName(homeAbv)}
+                          selectedKey={selectedLens}
+                          onSelect={selectLens}
+                          onHover={setHoveredLens}
+                          layout={layout}
+                          onLayoutChange={setLayout}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
                 {evidence}
-              </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <CollisionPreview directions={directions} onOpen={openCollision} />
+                  <TopProfileGaps
+                    gaps={gaps}
+                    snapshot={snapshot}
+                    teamAbvA={awayAbv}
+                    teamAbvB={homeAbv}
+                    labelA={awayAbv}
+                    labelB={homeAbv}
+                    nameA={teamName(awayAbv)}
+                    nameB={teamName(homeAbv)}
+                    selectedKey={selectedLens}
+                    onSelect={selectLens}
+                    limit={3}
+                    onOpenAll={() => setView("gaps")}
+                  />
+                </div>
+              </>
             )}
 
-            {mode === "constellation" && (
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+            {view === "constellation" && (
+              <div className="space-y-4">
+                {backToDashboard}
                 <Card className="border-border bg-card">
                   <CardContent className="p-4 sm:p-5">
                     <LensConstellation
@@ -322,8 +403,10 @@ export default function MatchupLens() {
                       nameA={teamName(awayAbv)}
                       nameB={teamName(homeAbv)}
                       selectedKey={selectedLens}
-                      onSelect={setSelectedLens}
+                      onSelect={selectLens}
                       onHover={setHoveredLens}
+                      layout={layout}
+                      onLayoutChange={setLayout}
                     />
                   </CardContent>
                 </Card>
@@ -331,8 +414,9 @@ export default function MatchupLens() {
               </div>
             )}
 
-            {mode === "collision" && (
-              <div className="space-y-5">
+            {view === "collision" && (
+              <div className="space-y-4">
+                {backToDashboard}
                 <MatchupCollision
                   directions={directions}
                   selectedKey={collisionKey}
@@ -343,28 +427,10 @@ export default function MatchupLens() {
               </div>
             )}
 
-            {mode === "fingerprint" && (
-              <div className="space-y-5">
-                <TeamFingerprint
-                  axes={axes}
-                  snapshot={snapshot}
-                  teamAbvA={awayAbv}
-                  teamAbvB={homeAbv}
-                  labelA={awayAbv}
-                  labelB={homeAbv}
-                  nameA={teamName(awayAbv)}
-                  nameB={teamName(homeAbv)}
-                  selectedKey={selectedLens}
-                  onSelect={setSelectedLens}
-                  selectedGap={gaps.find((gap) => gap.key === activeLens.key)}
-                />
-                {evidence}
-              </div>
-            )}
-
-            {mode === "map" && (
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-                <MatchupMap
+            {view === "gaps" && (
+              <div className="space-y-4">
+                {backToDashboard}
+                <TopProfileGaps
                   gaps={gaps}
                   snapshot={snapshot}
                   teamAbvA={awayAbv}
@@ -374,46 +440,23 @@ export default function MatchupLens() {
                   nameA={teamName(awayAbv)}
                   nameB={teamName(homeAbv)}
                   selectedKey={selectedLens}
-                  onSelect={setSelectedLens}
-                  order={order}
-                  onOrderChange={setOrder}
+                  onSelect={selectLens}
                 />
                 {evidence}
               </div>
             )}
 
-            {mode === "galaxy" && activeA && (
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-                <LensGalaxy
-                  lens={activeLens}
-                  score={activeA}
-                  teamLabel={awayAbv}
-                  onOpenTrace={openTrace}
-                />
-                {evidence}
+            {view === "momentum" && momentum.eligible && (
+              <div className="space-y-4">
+                {backToDashboard}
+                <MomentumShift snapshots={[snapshot]} />
               </div>
             )}
-
-            {mode === "portrait" && activeA && activeB && (
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-                <LensPortrait
-                  lens={activeLens}
-                  snapshot={snapshot}
-                  scoreA={activeA}
-                  scoreB={activeB}
-                  teamAbvA={awayAbv}
-                  labelA={awayAbv}
-                  labelB={homeAbv}
-                  onOpenTrace={openTrace}
-                />
-                {evidence}
-              </div>
-            )}
-
-            {mode === "momentum" && <MomentumShift snapshots={[snapshot]} />}
 
             <TraceDrawer
               trace={traceData}
+              target={trace}
+              snapshot={snapshot}
               open={trace !== null}
               onOpenChange={(open) => !open && setTrace(null)}
               onOpenTrace={openTrace}
@@ -421,7 +464,8 @@ export default function MatchupLens() {
                 setSelectedLens(key);
                 setTrace(null);
               }}
-              selectedLensName={activeLens.name}
+              selectedLensName={activeLens?.name ?? "no selected lens"}
+              matchupLabel={`${awayAbv} vs ${homeAbv}`}
             />
           </>
         )}

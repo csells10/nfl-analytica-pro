@@ -1,6 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
 import type { GameBrief as GameBriefData } from "@/lib/matchup-lens-brief";
-import { scoreText } from "@/lib/matchup-lens-language";
 
 interface GameBriefProps {
   brief: GameBriefData;
@@ -13,8 +12,9 @@ interface GameBriefProps {
 }
 
 /**
- * The human entry point: what is different, where it is closest, and what the
- * data can and cannot say. Every line is a calculation, never a forecast.
+ * The human entry point: the two or three strongest supported statements about
+ * this matchup. Separation and closest-lens live in the headline cards, so they
+ * are not repeated here.
  */
 export function GameBrief({
   brief,
@@ -25,84 +25,54 @@ export function GameBrief({
   onSelectLens,
   onOpenCollision,
 }: GameBriefProps) {
-  const headline = [
-    { title: "Biggest profile difference", gap: brief.largest },
-    { title: "Closest battleground", gap: brief.closest },
-  ];
-
   return (
     <Card className="border-border bg-card" data-testid="game-brief">
       <CardContent className="p-4 sm:p-5">
         <h2 className="text-sm font-semibold tracking-tight text-foreground">Game Brief</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
           <span className="text-accent-cool">{nameA}</span> ({labelA}) versus{" "}
-          <span className="text-primary">{nameB}</span> ({labelB}) — where they are strongest,
-          where their profiles collide, and what the snapshot can support.
+          <span className="text-primary">{nameB}</span> ({labelB}) — where each team is strongest and
+          where their profiles collide.
+        </p>
+        <p className="mt-1.5 font-mono text-[11px] text-muted-foreground" data-testid="brief-status">
+          {brief.statusLine}
         </p>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {headline.map((card) =>
-            card.gap ? (
+        <ul className="mt-3 space-y-1.5" data-testid="brief-observations">
+          {brief.observations.map((observation) => (
+            <li key={observation.id}>
               <button
-                key={card.title}
                 type="button"
-                data-lens-key={card.gap.key}
-                onClick={() => onSelectLens(card.gap!.key)}
-                className="rounded-md border border-border bg-muted/20 p-3 text-left transition-colors hover:border-foreground/30"
+                data-observation={observation.id}
+                data-lens-key={observation.lensKey ?? ""}
+                data-collision-key={observation.collisionKey ?? ""}
+                onClick={() => {
+                  if (observation.collisionKey) onOpenCollision(observation.collisionKey);
+                  else if (observation.lensKey) onSelectLens(observation.lensKey);
+                }}
+                className="min-h-[44px] w-full rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-border hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  {card.title}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{card.gap.name}</p>
-                <p className="mt-1 text-[11px] text-accent-cool">
-                  {labelA} {scoreText(card.gap.scoreA)}
-                </p>
-                <p className="text-[11px] text-primary">
-                  {labelB} {scoreText(card.gap.scoreB)}
-                </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {(card.gap.absGap ?? 0).toFixed(1)} points apart
-                </p>
-              </button>
-            ) : null,
-          )}
-        </div>
-
-        <div className="mt-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Matchup observations
-          </p>
-          <ul className="mt-2 space-y-1.5" data-testid="brief-observations">
-            {brief.observations.map((observation) => (
-              <li key={observation.id}>
-                <button
-                  type="button"
-                  data-observation={observation.id}
-                  data-lens-key={observation.lensKey ?? ""}
-                  data-collision-key={observation.collisionKey ?? ""}
-                  onClick={() => {
-                    if (observation.collisionKey) onOpenCollision(observation.collisionKey);
-                    else if (observation.lensKey) onSelectLens(observation.lensKey);
-                  }}
-                  className="w-full rounded-md border border-transparent px-2.5 py-2 text-left text-xs leading-relaxed text-foreground transition-colors hover:border-border hover:bg-muted/30"
-                >
+                <span className="block text-xs leading-relaxed text-foreground">
                   {observation.text}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+                </span>
+                <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">
+                  {observation.detail}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
 
-        <div className="mt-4 rounded-md border border-border bg-muted/10 p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Data readiness
-          </p>
+        <details className="mt-3 rounded-md border border-border bg-muted/10 p-2.5">
+          <summary className="cursor-pointer text-[11px] font-semibold text-foreground">
+            Data readiness &amp; method
+          </summary>
           <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-muted-foreground">
             {brief.caveats.map((caveat) => (
               <li key={caveat}>{caveat}</li>
             ))}
           </ul>
-        </div>
+        </details>
       </CardContent>
     </Card>
   );
