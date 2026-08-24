@@ -79,7 +79,6 @@ const App = () => (
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/lens-qa" element={<MatchupLens />} />
               <Route path="/" element={<ProtectedRoute><Slate /></ProtectedRoute>} />
               <Route path="/matchup/:id" element={<ProtectedRoute><Matchup /></ProtectedRoute>} />
               <Route path="/matchup-lens" element={<ProtectedRoute><MatchupLens /></ProtectedRoute>} />
