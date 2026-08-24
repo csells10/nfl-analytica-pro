@@ -56,14 +56,27 @@ export function LensConstellation({
 
   return (
     <div className="w-full">
+      <div className="mb-2 flex flex-wrap items-center gap-3 text-[11px]">
+        <span className="flex items-center gap-1.5 font-semibold text-accent-cool">
+          <span className="h-2.5 w-2.5 rounded-full bg-accent-cool" aria-hidden />
+          {labelA}
+        </span>
+        <span className="flex items-center gap-1.5 font-semibold text-primary">
+          <span className="h-2.5 w-2.5 rounded-full bg-primary" aria-hidden />
+          {labelB}
+        </span>
+        <span className="text-muted-foreground">Rings 25 / 50 / 75 / 100 percentile</span>
+      </div>
       <svg
         viewBox={`-58 -6 ${SIZE + 116} ${SIZE + 12}`}
         className="mx-auto block h-auto w-full max-w-[480px]"
         role="img"
-        aria-label={`Six-lens comparison between ${labelA} and ${labelB}`}
+        aria-label={`Six-lens comparison between ${labelA} and ${labelB}, fixed 0 to 100 scale`}
+        data-scale-max="100"
       >
         {/* Rings */}
         {RINGS.map((ratio) => (
+
           <polygon
             key={ratio}
             points={axes.map((_, index) => {
