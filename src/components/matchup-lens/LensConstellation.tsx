@@ -88,6 +88,21 @@ export function LensConstellation({
           />
         ))}
 
+        {/* Ring scale labels */}
+        {RINGS.map((ratio) => (
+          <text
+            key={`ring-${ratio}`}
+            x={CENTER + 3}
+            y={CENTER - RADIUS * ratio}
+            dominantBaseline="middle"
+            className="fill-muted-foreground/70 text-[8px] tabular-nums"
+          >
+            {ratio * 100}
+          </text>
+        ))}
+
+
+
         {/* Spokes */}
         {axes.map((axis, index) => {
           const p = point(index, count, 1);
