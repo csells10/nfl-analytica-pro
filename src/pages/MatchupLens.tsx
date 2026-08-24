@@ -12,7 +12,15 @@ import {
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
 import { LensDetail } from "@/components/matchup-lens/LensDetail";
 import { EventPulse } from "@/components/matchup-lens/EventPulse";
+import { AdvantageMap, type AdvantageOrder } from "@/components/matchup-lens/AdvantageMap";
+import { TeamFingerprint } from "@/components/matchup-lens/TeamFingerprint";
+import { ComparisonSummary } from "@/components/matchup-lens/ComparisonSummary";
+import {
+  PresentationSwitcher,
+  type PresentationMode,
+} from "@/components/matchup-lens/PresentationSwitcher";
 import { getLensSnapshotSource } from "@/lib/matchup-lens-source";
+import { lensGaps } from "@/lib/matchup-lens-compare";
 import {
   LENSES,
   eventPulseForTeam,
@@ -20,6 +28,7 @@ import {
   scoreAllLenses,
 } from "@/lib/matchup-lens";
 import { getTeam, teamLogoUrl } from "@/lib/nfl-teams";
+
 
 const DEFAULT_AWAY = "LAR";
 const DEFAULT_HOME = "CLE";
@@ -91,6 +100,8 @@ export default function MatchupLens() {
   const [homeAbv, setHomeAbv] = useState(DEFAULT_HOME);
   const [selectedLens, setSelectedLens] = useState(LENSES[0].key);
   const [hoveredLens, setHoveredLens] = useState<string | null>(null);
+  const [mode, setMode] = useState<PresentationMode>("constellation");
+  const [order, setOrder] = useState<AdvantageOrder>("separation");
 
   const teamOptions = useMemo(
     () => (snapshot ? snapshot.teams.map((team) => team.teamAbv).sort() : []),
@@ -116,11 +127,12 @@ export default function MatchupLens() {
     [snapshot, home],
   );
 
-  const activeKey = hoveredLens ?? selectedLens;
+  const activeKey = mode === "constellation" ? hoveredLens ?? selectedLens : selectedLens;
   const activeLens = LENSES.find((lens) => lens.key === activeKey) ?? LENSES[0];
   const activeA = scoresA.find((score) => score.lensKey === activeLens.key);
   const activeB = scoresB.find((score) => score.lensKey === activeLens.key);
 
+  const gaps = useMemo(() => lensGaps(scoresA, scoresB), [scoresA, scoresB]);
   const axes = LENSES.map((lens, index) => ({
     key: lens.key,
     name: lens.name,
@@ -177,33 +189,77 @@ export default function MatchupLens() {
                   {" · "}
                   {home.gamesInWindow} games
                 </p>
+                <div className="mt-4">
+                  <PresentationSwitcher value={mode} onChange={setMode} />
+                </div>
               </CardContent>
             </Card>
 
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-              <Card className="border-border bg-card">
-                <CardContent className="p-4 sm:p-5">
-                  <LensConstellation
-                    axes={axes}
+            <ComparisonSummary
+              gaps={gaps}
+              labelA={awayAbv}
+              labelB={homeAbv}
+              onSelect={setSelectedLens}
+            />
+
+            {mode === "fingerprint" ? (
+              <div className="space-y-5">
+                <TeamFingerprint
+                  axes={axes}
+                  labelA={awayAbv}
+                  labelB={homeAbv}
+                  selectedKey={selectedLens}
+                  onSelect={setSelectedLens}
+                  selectedGap={gaps.find((gap) => gap.key === activeLens.key)}
+                />
+                {activeA && activeB && (
+                  <LensDetail
+                    lens={activeLens}
+                    scoreA={activeA}
+                    scoreB={activeB}
+                    labelA={awayAbv}
+                    labelB={homeAbv}
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+                {mode === "constellation" ? (
+                  <Card className="border-border bg-card">
+                    <CardContent className="p-4 sm:p-5">
+                      <LensConstellation
+                        axes={axes}
+                        labelA={awayAbv}
+                        labelB={homeAbv}
+                        selectedKey={selectedLens}
+                        onSelect={setSelectedLens}
+                        onHover={setHoveredLens}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <AdvantageMap
+                    gaps={gaps}
                     labelA={awayAbv}
                     labelB={homeAbv}
                     selectedKey={selectedLens}
                     onSelect={setSelectedLens}
-                    onHover={setHoveredLens}
+                    order={order}
+                    onOrderChange={setOrder}
                   />
-                </CardContent>
-              </Card>
+                )}
 
-              {activeA && activeB && (
-                <LensDetail
-                  lens={activeLens}
-                  scoreA={activeA}
-                  scoreB={activeB}
-                  labelA={awayAbv}
-                  labelB={homeAbv}
-                />
-              )}
-            </div>
+                {activeA && activeB && (
+                  <LensDetail
+                    lens={activeLens}
+                    scoreA={activeA}
+                    scoreB={activeB}
+                    labelA={awayAbv}
+                    labelB={homeAbv}
+                  />
+                )}
+              </div>
+            )}
 
             <EventPulse
               entriesA={eventPulseForTeam(snapshot, away)}
@@ -217,3 +273,4 @@ export default function MatchupLens() {
     </AppShell>
   );
 }
+
