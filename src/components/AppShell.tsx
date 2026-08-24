@@ -118,8 +118,31 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
             </Button>
           </div>
         </div>
+        {/* Compact mobile tab row — mirrors the primary desktop nav below the header.
+            Admin entries stay desktop-only so the row does not overcrowd. */}
+        <nav className="flex items-stretch border-t border-border md:hidden" aria-label="Primary">
+          {baseNavItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-xs font-medium transition-colors ${
+                  isActive
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground"
+                }`}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+
     </div>
   );
 });
