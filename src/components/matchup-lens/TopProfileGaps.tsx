@@ -5,9 +5,7 @@ import { rankText, scoreText } from "@/lib/matchup-lens-language";
 import { lensStanding } from "@/lib/matchup-lens-rank";
 import type { LensSnapshot } from "@/lib/matchup-lens-types";
 
-export type MatchupMapOrder = "separation" | "canonical";
-
-interface MatchupMapProps {
+interface TopProfileGapsProps {
   gaps: LensGap[];
   snapshot: LensSnapshot;
   teamAbvA: string;
@@ -16,10 +14,12 @@ interface MatchupMapProps {
   labelB: string;
   nameA: string;
   nameB: string;
-  selectedKey: string;
+  selectedKey: string | null;
   onSelect: (key: string) => void;
-  order: MatchupMapOrder;
-  onOrderChange: (order: MatchupMapOrder) => void;
+  /** When set, only the widest N differences are shown (dashboard preview). */
+  limit?: number;
+  /** Rendered as "View all gaps" when the preview is truncated. */
+  onOpenAll?: () => void;
 }
 
 function clamp(value: number): number {
@@ -27,11 +27,11 @@ function clamp(value: number): number {
 }
 
 /**
- * Matchup Map — every lens on one exact shared 0–100 scale so the biggest and
- * smallest differences are readable in a glance. Evolution of the earlier
- * Advantage Map with direct team names, score meaning and gap wording.
+ * Top profile gaps — the lenses on one exact shared 0–100 scale, ordered by
+ * separation. Used as a compact three-row dashboard preview and as the full
+ * deep view.
  */
-export function MatchupMap({
+export function TopProfileGaps({
   gaps,
   snapshot,
   teamAbvA,
@@ -42,28 +42,35 @@ export function MatchupMap({
   nameB,
   selectedKey,
   onSelect,
-  order,
-  onOrderChange,
-}: MatchupMapProps) {
-  const rows = order === "separation" ? sortBySeparation(gaps) : gaps;
+  limit,
+  onOpenAll,
+}: TopProfileGapsProps) {
+  const ordered = sortBySeparation(gaps);
+  const rows = typeof limit === "number" ? ordered.slice(0, limit) : ordered;
+  const truncated = rows.length < ordered.length;
 
   return (
-    <Card className="border-border bg-card" data-testid="matchup-map">
+    <Card className="border-border bg-card" data-testid="top-profile-gaps">
       <CardContent className="p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold tracking-tight text-foreground">Matchup Map</h3>
+            <h3 className="text-sm font-semibold tracking-tight text-foreground">
+              Top profile gaps
+            </h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Scan every lens on an exact shared scale.
+              The widest differences on one shared Lens Score scale.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => onOrderChange(order === "separation" ? "canonical" : "separation")}
-            className="rounded-md border border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
-          >
-            {order === "separation" ? "Sorted by gap" : "Lens order"}
-          </button>
+          {truncated && onOpenAll && (
+            <button
+              type="button"
+              data-testid="open-all-gaps"
+              onClick={onOpenAll}
+              className="min-h-[44px] rounded-md border border-border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              View all gaps
+            </button>
+          )}
         </div>
 
         <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px]">
@@ -72,7 +79,7 @@ export function MatchupMap({
             {labelA} · {nameA}
           </span>
           <span className="flex items-center gap-1.5 text-primary">
-            <span className="h-2 w-2 rounded-full bg-primary" aria-hidden />
+            <span className="h-2 w-2 rotate-45 bg-primary" aria-hidden />
             {labelB} · {nameB}
           </span>
           <span className="text-muted-foreground">
@@ -80,7 +87,8 @@ export function MatchupMap({
           </span>
         </div>
 
-        <ul className="mt-4 space-y-1" data-testid="advantage-rows">
+        <ul className="mt-4 space-y-1" data-testid="gap-rows">
+
           {rows.map((row) => {
             const isSelected = row.key === selectedKey;
             const a = clamp(row.scoreA ?? 0);
