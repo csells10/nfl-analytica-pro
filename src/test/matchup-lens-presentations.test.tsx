@@ -74,8 +74,8 @@ describe("MatchupLens presentations", () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Event Pulse")).toBeTruthy());
 
-    await user.click(screen.getByRole("button", { name: "Turnover Balance" }));
-    await user.click(screen.getByRole("button", { name: "Advantage Map" }));
+    await user.click(screen.getByRole("button", { name: /Turnover Balance/ }));
+    await user.click(screen.getByRole("radio", { name: "Advantage Map" }));
 
     const rows = screen.getByTestId("advantage-rows");
     const selected = within(rows)
@@ -83,7 +83,7 @@ describe("MatchupLens presentations", () => {
       .find((button) => button.getAttribute("aria-pressed") === "true");
     expect(selected?.getAttribute("data-lens-key")).toBe("turnover-balance");
 
-    await user.click(screen.getByRole("button", { name: "Team Fingerprint" }));
+    await user.click(screen.getByRole("radio", { name: "Team Fingerprint" }));
     expect(screen.getByText(/Los Angeles Rams/)).toBeTruthy();
     expect(screen.getByText(/Cleveland Browns/)).toBeTruthy();
     expect(screen.getAllByText("Turnover Balance").length).toBeGreaterThan(0);
@@ -93,7 +93,7 @@ describe("MatchupLens presentations", () => {
     const user = userEvent.setup();
     renderPage();
     await waitFor(() => expect(screen.getByText("Event Pulse")).toBeTruthy());
-    await user.click(screen.getByRole("button", { name: "Advantage Map" }));
+    await user.click(screen.getByRole("radio", { name: "Advantage Map" }));
 
     const keys = () =>
       within(screen.getByTestId("advantage-rows"))
@@ -109,7 +109,7 @@ describe("MatchupLens presentations", () => {
     const user = userEvent.setup();
     renderPage();
     await waitFor(() => expect(screen.getByText("Event Pulse")).toBeTruthy());
-    await user.click(screen.getByRole("button", { name: "Team Fingerprint" }));
+    await user.click(screen.getByRole("radio", { name: "Team Fingerprint" }));
 
     const a = screen.getByTestId("fingerprint-radar-a");
     const b = screen.getByTestId("fingerprint-radar-b");
@@ -130,7 +130,7 @@ describe("MatchupLens presentations", () => {
     ).toBeTruthy();
     const before = within(pulse).getByTestId("event-pulse-summary").textContent;
 
-    await user.click(screen.getByRole("button", { name: "Explosiveness" }));
+    await user.click(screen.getByRole("button", { name: /Explosiveness/ }));
     expect(within(pulse).getByTestId("event-pulse-summary").textContent).toBe(before);
 
     const disclosure = within(pulse).getByRole("button", { name: /show all 7 rare events/i });
