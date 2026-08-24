@@ -49,6 +49,8 @@ export function LensConstellation({
   axes,
   labelA,
   labelB,
+  nameA,
+  nameB,
   selectedKey,
   onSelect,
   onHover,
@@ -61,13 +63,13 @@ export function LensConstellation({
       <div className="mb-2 flex flex-wrap items-center gap-3 text-[11px]">
         <span className="flex items-center gap-1.5 font-semibold text-accent-cool">
           <span className="h-2.5 w-2.5 rounded-full bg-accent-cool" aria-hidden />
-          {labelA}
+          {nameA} ({labelA})
         </span>
         <span className="flex items-center gap-1.5 font-semibold text-primary">
           <span className="h-2.5 w-2.5 rounded-full bg-primary" aria-hidden />
-          {labelB}
+          {nameB} ({labelB})
         </span>
-        <span className="text-muted-foreground">Rings 25 / 50 / 75 / 100 percentile</span>
+        <span className="text-muted-foreground">Lens Score rings 25 / 50 / 75 / 100</span>
       </div>
       <svg
         viewBox={`-58 -6 ${SIZE + 116} ${SIZE + 12}`}
