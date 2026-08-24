@@ -3,7 +3,7 @@
 // These helpers only subtract and order numbers that the scoring engine already
 // produced. No football meaning is derived here.
 
-import type { EventPulseEntry, LensScore } from "./matchup-lens";
+import type { LensScore } from "./matchup-lens";
 import { LENSES } from "./matchup-lens";
 
 export type Side = "a" | "b";
@@ -57,36 +57,4 @@ export function comparisonHighlights(gaps: LensGap[]): ComparisonHighlights {
   if (scored.length === 0) return { largest: null, closest: null };
   const ordered = sortBySeparation(scored);
   return { largest: ordered[0], closest: ordered[ordered.length - 1] };
-}
-
-export interface EventPulsePair {
-  metric: string;
-  label: string;
-  a: EventPulseEntry;
-  b: EventPulseEntry;
-  /** True when the two teams sit at different percentiles on this rare event. */
-  differs: boolean;
-}
-
-/** Pairs rare-event rows and flags the ones where the two teams actually differ. */
-export function eventPulsePairs(
-  entriesA: EventPulseEntry[],
-  entriesB: EventPulseEntry[],
-): EventPulsePair[] {
-  const byMetricB = new Map(entriesB.map((entry) => [entry.metric, entry]));
-  const pairs: EventPulsePair[] = [];
-
-  for (const a of entriesA) {
-    const b = byMetricB.get(a.metric);
-    if (!b) continue;
-    pairs.push({
-      metric: a.metric,
-      label: a.label,
-      a,
-      b,
-      differs: a.percentile !== b.percentile,
-    });
-  }
-
-  return pairs;
 }
