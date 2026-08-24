@@ -44,7 +44,7 @@ describe("language translation", () => {
     expect(ordinal(22)).toBe("22nd");
     expect(rankText(4, 32)).toBe("4th of 32");
     expect(rankText(null, 32)).toBe("Unranked");
-    expect(scoreText(null)).toBe("—");
+    expect(scoreText(null)).toBe("— / 100");
   });
 });
 
