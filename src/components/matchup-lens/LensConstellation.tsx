@@ -11,6 +11,8 @@ interface LensConstellationProps {
   axes: ConstellationAxis[];
   labelA: string;
   labelB: string;
+  nameA: string;
+  nameB: string;
   selectedKey: string;
   onSelect: (key: string) => void;
   onHover: (key: string | null) => void;
