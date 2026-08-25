@@ -349,13 +349,15 @@ export default function MatchupLens() {
 
   const openDestination = useCallback(
     (id: DestinationId) => {
+      setOrigin("overview");
       if (id === "constellation") setView("constellation");
       else if (id === "lenses") setView("lenses");
-      else if (id === "biggest-edge" && largestGapKey) openLens(largestGapKey);
-      else if (id === "collision") openCollision(strongestCollision?.lane.key ?? null);
+      else if (id === "biggest-edge" && largestGapKey) openLens(largestGapKey, "biggest-edge");
+      else if (id === "collision") openCollision(strongestCollision?.lane.key ?? null, "overview");
     },
     [largestGapKey, openCollision, openLens, strongestCollision],
   );
+
 
   const activeDestination: DestinationId | null =
     view === "constellation"
