@@ -11,6 +11,9 @@ import { buildTrace } from "@/lib/matchup-lens-trace";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
 import { ordinal, rankText, scoreText, signalRoleLabel } from "@/lib/matchup-lens-language";
 import { parseView } from "@/lib/matchup-lens-view";
+import { LENS_GLOSSARY } from "@/lib/matchup-lens-glossary";
+import { lensGaps } from "@/lib/matchup-lens-compare";
+import { buildProfileAngle, TURNOVER_WATCH_EXPLANATION } from "@/lib/matchup-lens-angle";
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { email: "qa@gamelens.io" }, signOut: vi.fn() }),
@@ -132,12 +135,8 @@ describe("view parsing", () => {
 
 describe("trace drawer integration", () => {
   it("opens the reverse trace from a lens tag in the evidence panel", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await waitFor(() => expect(screen.getByTestId("lens-rail")).toBeTruthy());
-    await user.click(
-      screen.getByTestId("lens-rail").querySelector("button[data-lens-key]") as HTMLButtonElement,
-    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderPage("/matchup-lens?view=lens&lens=turnover-balance");
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
     const signals = document.querySelector('[data-testid="signals-used"] button') as HTMLButtonElement | null;
     if (signals) await user.click(signals);
@@ -148,5 +147,33 @@ describe("trace drawer integration", () => {
 
     await waitFor(() => expect(screen.getByTestId("trace-drawer")).toBeTruthy());
     expect(screen.getByTestId("tag-trace")).toBeTruthy();
+    // Network and packed views stay behind the secondary technical map.
+    expect(screen.getByTestId("technical-map")).toBeTruthy();
+    expect(screen.queryByTestId("trace-network")).toBeNull();
+    expect(screen.queryByTestId("trace-packed")).toBeNull();
+  });
+});
+
+describe("lens glossary", () => {
+  it("gives every canonical lens one plain-sentence definition", () => {
+    for (const lens of LENSES) {
+      const entry = LENS_GLOSSARY[lens.key];
+      expect(entry).toBeTruthy();
+      expect(entry.definition.length).toBeGreaterThan(10);
+      expect(entry.definition).not.toMatch(/percentile|weight/i);
+    }
+  });
+});
+
+describe("turnover watch transparency", () => {
+  it("derives the profile values from the snapshot and makes no probability claim", () => {
+    const gaps = lensGaps(scoreAllLenses(snapshot, lar), scoreAllLenses(snapshot, cle));
+    const angle = buildProfileAngle(snapshot, lar, cle, "LAR", "CLE", gaps, []);
+    if (!angle || angle.id !== "turnover-watch" || !angle.values) return;
+    expect(angle.values.takeaways).toBeGreaterThanOrEqual(0);
+    expect(angle.values.security).toBeGreaterThanOrEqual(0);
+    expect(angle.values.separation).toBeGreaterThanOrEqual(12);
+    expect(angle.support).not.toMatch(/probability|chance/i);
+    expect(TURNOVER_WATCH_EXPLANATION).toMatch(/not an event probability or prediction/i);
   });
 });

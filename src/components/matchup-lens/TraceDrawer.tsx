@@ -96,13 +96,28 @@ function VisualSwitch({
     { value: "network", label: "Network" },
     { value: "packed", label: "Packed groups" },
   ];
+  const [primary, ...technical] = options;
   return (
-    <div
-      role="group"
-      aria-label="Trace view"
-      className="mt-3 flex gap-1 rounded-md border border-border p-0.5"
-    >
-      {options.map((option) => (
+    <div className="mt-3 space-y-1.5">
+      <div role="group" aria-label="Trace view" className="flex gap-1 rounded-md border border-border p-0.5">
+        <button
+          type="button"
+          data-visual={primary.value}
+          aria-pressed={value === primary.value}
+          onClick={() => onChange(primary.value)}
+          className={`flex-1 rounded px-2 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            value === primary.value ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {primary.label}
+        </button>
+      </div>
+      <details className="rounded-md border border-border bg-muted/10 p-1.5" data-testid="technical-map">
+        <summary className="cursor-pointer px-1 text-[11px] font-semibold text-muted-foreground">
+          Technical map
+        </summary>
+        <div role="group" aria-label="Technical trace view" className="mt-1.5 flex gap-1">
+      {technical.map((option) => (
         <button
           key={option.value}
           type="button"
@@ -118,6 +133,8 @@ function VisualSwitch({
           {option.label}
         </button>
       ))}
+        </div>
+      </details>
     </div>
   );
 }

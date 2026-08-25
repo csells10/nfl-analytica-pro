@@ -22,11 +22,11 @@ const lar = findTeam(snapshot, "LAR")!;
 const cle = findTeam(snapshot, "CLE")!;
 const gaps = lensGaps(scoreAllLenses(snapshot, lar), scoreAllLenses(snapshot, cle));
 
-function renderPage() {
+function renderPage(entry = "/matchup-lens") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/matchup-lens"]}>
+      <MemoryRouter initialEntries={[entry]}>
         <MatchupLens />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -60,15 +60,16 @@ describe("comparison arithmetic", () => {
   });
 });
 
-describe("Matchup Dashboard presentations", () => {
-  it("keeps the selected lens shared between the rail, radar and evidence", async () => {
+describe("Matchup Dashboard focused views", () => {
+  it("keeps the selected lens shared between the explorer, radar and evidence", async () => {
     const user = userEvent.setup();
-    renderPage();
-    await waitFor(() => expect(screen.getByTestId("lens-rail")).toBeTruthy());
+    renderPage("/matchup-lens?view=lenses");
+    await waitFor(() => expect(screen.getByTestId("lens-explorer")).toBeTruthy());
 
-    const rail = screen.getByTestId("lens-rail");
     await user.click(
-      rail.querySelector('button[data-lens-key="turnover-balance"]') as HTMLButtonElement,
+      screen
+        .getByTestId("lens-explorer")
+        .querySelector('button[data-lens-key="turnover-balance"]') as HTMLButtonElement,
     );
 
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
@@ -76,6 +77,9 @@ describe("Matchup Dashboard presentations", () => {
       "turnover-balance",
     );
 
+    await user.click(screen.getByTestId("back-to-dashboard"));
+    await user.click(screen.getByTestId("destination-open-constellation"));
+    await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
     const tiles = Array.from(
       screen.getByTestId("lens-constellation").querySelectorAll("button[data-lens-key]"),
     );
@@ -83,19 +87,19 @@ describe("Matchup Dashboard presentations", () => {
     expect(pressed?.getAttribute("data-lens-key")).toBe("turnover-balance");
   });
 
-  it("previews only the three widest profile gaps, ordered by separation", async () => {
-    renderPage();
+  it("lists the profile gaps ordered by separation in the focused gaps view", async () => {
+    renderPage("/matchup-lens?view=gaps");
     await waitFor(() => expect(screen.getByTestId("top-profile-gaps")).toBeTruthy());
 
     const keys = within(screen.getByTestId("gap-rows"))
       .getAllByRole("button")
       .map((button) => button.getAttribute("data-lens-key"));
-    expect(keys).toEqual(sortBySeparation(gaps).slice(0, 3).map((gap) => gap.key));
+    expect(keys).toEqual(sortBySeparation(gaps).map((gap) => gap.key));
   });
 
   it("offers side-by-side as a Constellation layout with identical axes and scale", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("/matchup-lens?view=constellation");
     await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
     expect(screen.getByTestId("constellation-overlay")).toBeTruthy();
 
@@ -113,9 +117,16 @@ describe("Matchup Dashboard presentations", () => {
 
   it("hides Momentum entirely while there is no comparable history", async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByTestId("lens-rail")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("insight-ticker")).toBeTruthy());
     expect(screen.queryByTestId("momentum-shift")).toBeNull();
     expect(screen.queryByText(/Momentum/)).toBeNull();
   });
-});
 
+  it("renders the collision card at content height", async () => {
+    renderPage("/matchup-lens?view=collision");
+    await waitFor(() => expect(screen.getByTestId("matchup-collision")).toBeTruthy());
+    const card = screen.getByTestId("matchup-collision");
+    expect(card.className).not.toMatch(/\bh-full\b|min-h-\[/);
+    expect(document.body.textContent ?? "").toMatch(/Profile matchup, not a forecast/i);
+  });
+});

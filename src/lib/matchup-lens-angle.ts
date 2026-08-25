@@ -44,6 +44,14 @@ export function turnoverProfile(team: TeamMetricRow): TurnoverProfile {
   };
 }
 
+export interface TurnoverWatchValues {
+  takeawayLabel: string;
+  takeaways: number;
+  securityLabel: string;
+  security: number;
+  separation: number;
+}
+
 export interface ProfileAngle {
   id: "turnover-watch" | "profile-gap";
   title: string;
@@ -53,9 +61,16 @@ export interface ProfileAngle {
   support: string;
   lensKey?: string;
   collisionKey?: string;
+  /** Derived profile standings behind Turnover Watch, for the explanation. */
+  values?: TurnoverWatchValues;
 }
 
 export const PROFILE_ANGLE_DISCLAIMER = "Profile signal, not a prediction.";
+
+/** Shown behind "Why this appears" wherever Turnover Watch is surfaced. */
+export const TURNOVER_WATCH_EXPLANATION =
+  "Takeaway profile combines defensive interceptions and fumbles recovered. Ball security combines fewer interceptions thrown, fewer fumbles lost, and fewer turnovers. These are league-relative profile standings. This is not an event probability or prediction.";
+
 
 function betterThan(value: number): string {
   return `better than ${value.toFixed(1)}% of teams`;
@@ -106,6 +121,13 @@ export function buildProfileAngle(
         } ball security ${betterThan(best.security)}.`,
         lensKey: "turnover-balance",
         collisionKey: "giveaways-vs-takeaways",
+        values: {
+          takeawayLabel: best.takeawayLabel,
+          takeaways: best.takeaways,
+          securityLabel: best.securityLabel,
+          security: best.security,
+          separation: best.takeaways - best.security,
+        },
       };
     }
   }
