@@ -135,22 +135,22 @@ export function buildTagTrace(
   tag: string,
   selectedLensKey: string,
   teams: TeamMetricRow[],
-): TagTrace {
-  return {
-    type: "tag",
-    tag,
-    label: readableTag(tag),
-    lenses: LENSES.filter(
-      (lens) => lens.tags.includes(tag) || lens.excludeTags?.includes(tag),
-    ).map((lens) => ({
-      key: lens.key,
-      name: lens.name,
-      excluded: Boolean(lens.excludeTags?.includes(tag)),
-    })),
-    metrics: snapshot.metrics
-      .filter((definition) => definition.lensTags.includes(tag))
-      .map((definition) => tracedMetric(snapshot, definition, selectedLensKey, teams)),
-  };
+): TagTrace | null {
+  const lenses = LENSES.filter(
+    (lens) => lens.tags.includes(tag) || lens.excludeTags?.includes(tag),
+  ).map((lens) => ({
+    key: lens.key,
+    name: lens.name,
+    excluded: Boolean(lens.excludeTags?.includes(tag)),
+  }));
+  const metrics = snapshot.metrics
+    .filter((definition) => definition.lensTags.includes(tag))
+    .map((definition) => tracedMetric(snapshot, definition, selectedLensKey, teams));
+
+  // An unknown tag has no lenses and no metrics: there is nothing to trace.
+  if (lenses.length === 0 && metrics.length === 0) return null;
+
+  return { type: "tag", tag, label: readableTag(tag), lenses, metrics };
 }
 
 /** Metric → its tags and every lens it can contribute to. */
