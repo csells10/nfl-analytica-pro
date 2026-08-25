@@ -283,11 +283,26 @@ export default function MatchupLens() {
       canonical.collisionKey = null;
     }
 
+    // A trace whose metric or tag has no evidence in this snapshot would open
+    // an empty drawer, so the parameter is dropped rather than rendered.
+    if (canonical.trace && !traceData) {
+      canonical.trace = null;
+    }
+
     const next = writeUrlState(new URLSearchParams(searchParams), canonical);
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [snapshot, urlState, teamOptions, momentum.eligible, laneKeys, searchParams, setSearchParams]);
+  }, [
+    snapshot,
+    urlState,
+    teamOptions,
+    momentum.eligible,
+    laneKeys,
+    traceData,
+    searchParams,
+    setSearchParams,
+  ]);
 
 
 
@@ -359,23 +374,32 @@ export default function MatchupLens() {
    * Any real team change is a new matchup: return to the Overview and clear
    * every focused, hovered or traced state carried over from the old one.
    */
-  const changeTeam = useCallback(
-    (slot: "away" | "home", value: string) => {
-      const current = slot === "away" ? awayAbv : homeAbv;
-      if (current === value) return;
+  const resetToOverview = useCallback(
+    (patch: Partial<UrlState> = {}) => {
       setHoveredLens(null);
       commit({
-        awayAbv: slot === "away" ? value : awayAbv,
-        homeAbv: slot === "home" ? value : homeAbv,
         view: "overview",
         origin: "overview",
         layout: "overlay",
         selectedLens: null,
         collisionKey: null,
         trace: null,
+        ...patch,
       });
     },
-    [awayAbv, commit, homeAbv],
+    [commit],
+  );
+
+  const changeTeam = useCallback(
+    (slot: "away" | "home", value: string) => {
+      const current = slot === "away" ? awayAbv : homeAbv;
+      if (current === value) return;
+      resetToOverview({
+        awayAbv: slot === "away" ? value : awayAbv,
+        homeAbv: slot === "home" ? value : homeAbv,
+      });
+    },
+    [awayAbv, homeAbv, resetToOverview],
   );
 
 
@@ -483,11 +507,12 @@ export default function MatchupLens() {
   );
 
   const changeMatchup = useCallback(() => {
-    openView("overview");
+    // Changing matchup is an immediate clean slate, not just a view switch.
+    resetToOverview();
     window.requestAnimationFrame(() => {
       selectorRef.current?.querySelector("button")?.focus();
     });
-  }, [openView]);
+  }, [resetToOverview]);
 
 
   const evidence =
