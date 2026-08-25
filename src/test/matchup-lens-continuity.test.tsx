@@ -148,8 +148,6 @@ describe("matchup changes", () => {
     expect(screen.queryByTestId("lens-evidence")).toBeNull();
     expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/);
   });
-});
-
   it("clears focused state as soon as Change matchup is used", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const router = renderPage(
