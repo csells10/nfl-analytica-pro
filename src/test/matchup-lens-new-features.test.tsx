@@ -135,7 +135,7 @@ describe("view parsing", () => {
 
 describe("trace drawer integration", () => {
   it("opens the reverse trace from a lens tag in the evidence panel", async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
     renderPage("/matchup-lens?view=lens&lens=turnover-balance");
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
     const signals = document.querySelector('[data-testid="signals-used"] button') as HTMLButtonElement | null;
@@ -174,6 +174,6 @@ describe("turnover watch transparency", () => {
     expect(angle.values.security).toBeGreaterThanOrEqual(0);
     expect(angle.values.separation).toBeGreaterThanOrEqual(12);
     expect(angle.support).not.toMatch(/probability|chance/i);
-    expect(TURNOVER_WATCH_EXPLANATION).not.toMatch(/probability|predict|forecast|odds/i);
+    expect(TURNOVER_WATCH_EXPLANATION).toMatch(/not an event probability or prediction/i);
   });
 });

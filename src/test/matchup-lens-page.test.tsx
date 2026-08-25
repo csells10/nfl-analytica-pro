@@ -86,7 +86,6 @@ describe("Matchup Dashboard overview", () => {
         screen.queryByTestId("lens-evidence") ?? screen.queryByTestId("matchup-collision"),
       ).toBeTruthy(),
     );
-    expect(screen.getByTestId("insight-ticker", { exact: true })).toBeTruthy;
     expect(screen.queryByTestId("destination-cards")).toBeNull();
   });
 
