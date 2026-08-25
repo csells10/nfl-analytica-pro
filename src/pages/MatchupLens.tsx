@@ -121,7 +121,14 @@ function TeamPicker({
 
 export default function MatchupLens() {
   const source = getLensSnapshotSource();
-  const { data: snapshot, isLoading } = useQuery({
+  const {
+    data: snapshot,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: ["lens-snapshot", source.id],
     queryFn: source.load,
     staleTime: Infinity,
@@ -133,6 +140,8 @@ export default function MatchupLens() {
   const [awayAbv, setAwayAbv] = useState(() => snapshotAbbr(searchParams.get("a") ?? DEFAULT_AWAY));
   const [homeAbv, setHomeAbv] = useState(() => snapshotAbbr(searchParams.get("b") ?? DEFAULT_HOME));
   const [view, setView] = useState<LensView>(initial.view);
+  /** Where the focused view was entered from, so one back action is enough. */
+  const [origin, setOrigin] = useState<LensOrigin>(() => parseOrigin(searchParams.get("from")));
   const [layout, setLayout] = useState<ConstellationLayout>(() =>
     parseLayout(searchParams.get("layout"), initial.layout),
   );
@@ -144,6 +153,7 @@ export default function MatchupLens() {
   const [collisionKey, setCollisionKey] = useState<string | null>(
     () => searchParams.get("collision"),
   );
+
   const [trace, setTrace] = useState<TraceTarget | null>(() => {
     const raw = searchParams.get("trace");
     if (!raw) return null;
