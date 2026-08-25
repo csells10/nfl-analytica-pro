@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -91,8 +91,10 @@ describe("Matchup Dashboard journey", () => {
 });
 
 describe("Insight ticker auto-advance", () => {
+  afterEach(() => vi.useRealTimers());
+
   it("advances on a calm cadence and stops for manual control", async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderPage();
     await waitFor(() => expect(screen.getByTestId("insight-ticker")).toBeTruthy());
@@ -116,7 +118,7 @@ describe("Insight ticker auto-advance", () => {
   });
 
   it("stops auto-advance permanently after manual navigation", async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderPage();
     await waitFor(() => expect(screen.getByTestId("insight-ticker")).toBeTruthy());
