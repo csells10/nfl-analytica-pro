@@ -111,7 +111,7 @@ export function InsightTicker({ stories, onOpen }: InsightTickerProps) {
       onFocusCapture={(event) => {
         // Reading focus suspends automatic changes, but an explicit Play must
         // genuinely resume without the user having to click elsewhere first.
-        if (event.target === playRef.current) return;
+        if (event.target === (playRef.current as Element | null)) return;
         setSuspended(true);
       }}
       onBlurCapture={() => setSuspended(false)}
