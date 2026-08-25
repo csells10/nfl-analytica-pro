@@ -393,9 +393,20 @@ export default function MatchupLens() {
     canvasRef.current?.scrollIntoView?.({ block: "start", behavior: "auto" });
   }, [viewingLabel, view, awayAbv, homeAbv]);
 
-  const goOverview = useCallback(() => setView("overview"), []);
+  const goOverview = useCallback(() => {
+    setOrigin("overview");
+    setView("overview");
+  }, []);
+
+  /** One contextual return: back to wherever this view was entered from. */
+  const goBack = useCallback(() => {
+    const target = originReturn(origin);
+    setOrigin("overview");
+    setView(target.view);
+  }, [origin]);
 
   const changeMatchup = useCallback(() => {
+    setOrigin("overview");
     setView("overview");
     window.requestAnimationFrame(() => {
       selectorRef.current?.querySelector("button")?.focus();
@@ -419,17 +430,70 @@ export default function MatchupLens() {
       />
     ) : null;
 
-  const backToOverview = (
-    <button
-      type="button"
-      data-testid="back-to-dashboard"
-      onClick={goOverview}
-      className="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-      Back to {awayAbv} vs {homeAbv} overview
-    </button>
+  const lensIndex = LENSES.findIndex((lens) => lens.key === selectedLens);
+  const stepLens = (direction: -1 | 1) => {
+    const base = lensIndex < 0 ? 0 : lensIndex;
+    const next = (base + direction + LENSES.length) % LENSES.length;
+    setSelectedLens(LENSES[next].key);
+  };
+
+  const backLabel = originReturn(origin).label;
+
+  const journeyBack = (withLensSelector = false) => (
+    <JourneyBack
+      backLabel={backLabel}
+      onBack={goBack}
+      lensSelector={
+        withLensSelector && selectedLens
+          ? {
+              value: selectedLens,
+              options: LENSES.map((lens) => ({
+                key: lens.key,
+                name: LENS_GLOSSARY[lens.key]?.name ?? lens.name,
+              })),
+              onChange: (key) => setSelectedLens(key),
+              onPrev: () => stepLens(-1),
+              onNext: () => stepLens(1),
+            }
+          : undefined
+      }
+    />
   );
+
+  /** One to three meaningful next paths after the evidence on a focused view. */
+  const continueSteps = (current: LensView): JourneyStep[] => [
+    {
+      id: "constellation",
+      label: "Compare the teams",
+      helper: "Both profiles on one shared shape.",
+      icon: DESTINATION_ICONS.constellation,
+      onSelect: () => {
+        setOrigin("overview");
+        setView("constellation");
+      },
+      disabled: current === "constellation",
+    },
+    {
+      id: "collision",
+      label: "See where profiles collide",
+      helper: "Behaviour against the opponent's counter-profile.",
+      icon: DESTINATION_ICONS.collision,
+      onSelect: () => openCollision(strongestCollision?.lane.key ?? null, "overview"),
+      disabled: current === "collision",
+    },
+    {
+      id: "lenses",
+      label: "Browse all six lenses",
+      helper: "Pick another football question.",
+      icon: DESTINATION_ICONS.lenses,
+      onSelect: () => {
+        setOrigin("overview");
+        setView("lenses");
+      },
+      disabled: current === "lenses",
+    },
+  ];
+
 
   return (
     <AppShell showGuide={false}>
