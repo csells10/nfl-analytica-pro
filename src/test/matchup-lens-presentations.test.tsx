@@ -77,7 +77,7 @@ describe("Matchup Dashboard focused views", () => {
       "turnover-balance",
     );
 
-    await user.click(screen.getByTestId("back-to-dashboard"));
+    await user.click(screen.getByTestId("journey-back"));
     await user.click(screen.getByTestId("destination-open-constellation"));
     await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
     const tiles = Array.from(
