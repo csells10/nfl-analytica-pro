@@ -169,10 +169,11 @@ describe("turnover watch transparency", () => {
   it("derives the profile values from the snapshot and makes no probability claim", () => {
     const gaps = lensGaps(scoreAllLenses(snapshot, lar), scoreAllLenses(snapshot, cle));
     const angle = buildProfileAngle(snapshot, lar, cle, "LAR", "CLE", gaps, []);
-    if (!angle || angle.kind !== "turnover-watch") return;
-    expect(angle.takeaway).toBeGreaterThanOrEqual(0);
-    expect(angle.ballSecurity).toBeGreaterThanOrEqual(0);
-    expect(Math.abs(angle.takeaway - angle.ballSecurity)).toBeGreaterThanOrEqual(12);
+    if (!angle || angle.id !== "turnover-watch" || !angle.values) return;
+    expect(angle.values.takeaways).toBeGreaterThanOrEqual(0);
+    expect(angle.values.security).toBeGreaterThanOrEqual(0);
+    expect(angle.values.separation).toBeGreaterThanOrEqual(12);
+    expect(angle.support).not.toMatch(/probability|chance/i);
     expect(TURNOVER_WATCH_EXPLANATION).not.toMatch(/probability|predict|forecast|odds/i);
   });
 });
