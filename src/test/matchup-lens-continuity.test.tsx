@@ -150,6 +150,31 @@ describe("matchup changes", () => {
   });
 });
 
+  it("clears focused state as soon as Change matchup is used", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const router = renderPage(
+      "/matchup-lens?view=lens&lens=turnover-balance&from=all-lenses&layout=side&trace=metric:takeaways_per_game",
+    );
+    await waitFor(() => expect(screen.getByTestId("trace-drawer")).toBeTruthy());
+
+    await user.click(screen.getByTestId("context-change-matchup"));
+
+    await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
+    const search = params(router);
+    expect(search.get("view")).toBe("overview");
+    expect(search.get("lens")).toBeNull();
+    expect(search.get("collision")).toBeNull();
+    expect(search.get("trace")).toBeNull();
+    expect(search.get("layout")).toBeNull();
+    expect(search.get("from")).toBeNull();
+    expect(screen.queryByTestId("trace-drawer")).toBeNull();
+    expect(screen.queryByTestId("lens-evidence")).toBeNull();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("combobox", { name: "Team A team" })),
+    );
+  });
+});
+
 describe("biggest edge", () => {
   it("always opens the current matchup's largest separation", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
@@ -206,6 +231,21 @@ describe("deep-link normalisation", () => {
     expect(params(router).get("view")).toBe("overview");
     expect(params(router).get("from")).toBeNull();
     expect(router.state.historyAction).toBe("REPLACE");
+  });
+
+  it("drops a trace id that has no evidence in the snapshot", async () => {
+    const router = renderPage("/matchup-lens?view=lens&lens=turnover-balance&trace=metric:not_a_metric");
+    await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
+    await waitFor(() => expect(params(router).get("trace")).toBeNull());
+    expect(screen.queryByTestId("trace-drawer")).toBeNull();
+    expect(router.state.historyAction).toBe("REPLACE");
+  });
+
+  it("drops an unknown tag trace id as well", async () => {
+    const router = renderPage("/matchup-lens?view=lens&lens=turnover-balance&trace=tag:not_a_tag");
+    await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
+    await waitFor(() => expect(params(router).get("trace")).toBeNull());
+    expect(screen.queryByTestId("trace-drawer")).toBeNull();
   });
 
   it("falls back to the default matchup for unknown teams, views and origins", async () => {
