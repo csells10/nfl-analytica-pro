@@ -292,22 +292,25 @@ export default function MatchupLens() {
   const openTrace = useCallback((target: TraceTarget) => setTrace(target), []);
 
   /** Every selection replaces the canvas with a focused view. */
-  const openLens = useCallback((key: string) => {
+  const openLens = useCallback((key: string, from: LensOrigin = "overview") => {
     setSelectedLens(key);
+    setOrigin(from);
     setView("lens");
   }, []);
 
-  const openCollision = useCallback((key: string | null) => {
+  const openCollision = useCallback((key: string | null, from: LensOrigin = "overview") => {
     setCollisionKey(key);
+    setOrigin(from);
     setView("collision");
   }, []);
 
   const openStory = useCallback(
     (story: InsightStory) => {
-      if (story.target.kind === "collision") openCollision(story.target.collisionKey);
-      else openLens(story.target.lensKey);
+      if (story.target.kind === "collision") openCollision(story.target.collisionKey, "ticker");
+      else openLens(story.target.lensKey, "ticker");
     },
     [openCollision, openLens],
+
   );
 
   const strongestCollision = useMemo(
