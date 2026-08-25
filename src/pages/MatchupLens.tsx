@@ -255,6 +255,14 @@ export default function MatchupLens() {
     [directions],
   );
 
+  const traceData = useMemo(
+    () =>
+      snapshot && away && home && trace
+        ? buildTrace(snapshot, trace, selectedLens ?? LENSES[0].key, [away, home])
+        : null,
+    [snapshot, away, home, trace, selectedLens],
+  );
+
   /**
    * Deep-link hygiene. Every invalid or unavailable value is normalised in one
    * place and written back with `replace`, so history only holds real steps.
@@ -339,14 +347,6 @@ export default function MatchupLens() {
           })
         : [],
     [snapshot, away, home, awayAbv, homeAbv, gaps, angle, directions],
-  );
-
-  const traceData = useMemo(
-    () =>
-      snapshot && away && home && trace
-        ? buildTrace(snapshot, trace, selectedLens ?? LENSES[0].key, [away, home])
-        : null,
-    [snapshot, away, home, trace, selectedLens],
   );
 
   const openTrace = useCallback((target: TraceTarget) => commit({ trace: target }), [commit]);
