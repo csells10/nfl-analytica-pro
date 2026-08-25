@@ -77,9 +77,12 @@ describe("Matchup Dashboard focused views", () => {
       "turnover-balance",
     );
 
+    // Back returns to where the lens was opened from — all lenses, not Overview.
     await user.click(screen.getByTestId("journey-back"));
-    await user.click(screen.getByTestId("destination-open-constellation"));
+    await waitFor(() => expect(screen.getByTestId("lens-explorer")).toBeTruthy());
+    await user.click(screen.getByTestId("continue-constellation"));
     await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
+
     const tiles = Array.from(
       screen.getByTestId("lens-constellation").querySelectorAll("button[data-lens-key]"),
     );
