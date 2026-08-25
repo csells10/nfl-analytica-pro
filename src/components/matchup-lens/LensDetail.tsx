@@ -10,6 +10,7 @@ import {
   scoreText,
   rankText,
 } from "@/lib/matchup-lens-language";
+import { lensDefinition } from "@/lib/matchup-lens-glossary";
 import { ScoreBlock, TagChip, type TraceHandlers } from "./TraceChips";
 import { EvidenceRail } from "./EvidenceRail";
 
@@ -30,7 +31,7 @@ interface LensDetailProps extends TraceHandlers {
 /** A lens is "close" when the two profiles sit within a few points of each other. */
 const CLOSE_THRESHOLD = 5;
 
-const FIRST_CARDS = 4;
+const FIRST_CARDS = 3;
 
 /**
  * Evidence for one deliberately selected lens: what the score means, where each
@@ -86,6 +87,13 @@ export function LensDetail({
         ? `Why these teams are close in ${lens.name}`
         : `Why ${a > b ? labelA : labelB} leads in ${lens.name}`;
 
+  const plainRead =
+    a === null || b === null
+      ? "One side of this lens has no league-relative value in the current snapshot."
+      : Math.abs(a - b) < CLOSE_THRESHOLD
+        ? `${labelA} and ${labelB} hold near-identical league standings here — ${Math.abs(a - b).toFixed(1)} points apart.`
+        : `${a > b ? nameA : nameB} holds the stronger league-relative standing here — ${Math.abs(a - b).toFixed(1)} points apart.`;
+
   return (
     <Card className="border-border bg-card" data-testid="lens-evidence" data-lens-key={lens.key}>
       <CardContent className="p-4 sm:p-5">
@@ -102,7 +110,13 @@ export function LensDetail({
             </button>
           )}
         </div>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="mt-1 text-xs leading-relaxed text-foreground" data-testid="lens-definition">
+          {lensDefinition(lens.key)}
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground" data-testid="lens-plain-read">
+          {plainRead}
+        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
           {LENS_SCORE_EXPLANATION}
         </p>
 
@@ -151,8 +165,8 @@ export function LensDetail({
           )}
         </div>
 
-        <details className="mt-4 rounded-md border border-border bg-muted/10 p-2.5">
-          <summary className="cursor-pointer text-[11px] font-semibold text-foreground">
+        <details className="mt-4 rounded-md border border-border bg-muted/10 p-2.5" data-testid="signals-used">
+          <summary className="cursor-pointer text-[11px] font-semibold text-muted-foreground">
             Signals used
           </summary>
           <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -169,7 +183,7 @@ export function LensDetail({
         </details>
 
         <details className="mt-2 rounded-md border border-border bg-muted/10 p-2.5">
-          <summary className="cursor-pointer text-[11px] font-semibold text-foreground">
+          <summary className="cursor-pointer text-[11px] font-semibold text-muted-foreground">
             How this score is built
           </summary>
           <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
@@ -180,6 +194,15 @@ export function LensDetail({
             <li>volume-sensitive × 0.5 · volatility × 0.75</li>
           </ul>
         </details>
+
+        <button
+          type="button"
+          data-testid="open-technical-map"
+          onClick={() => onOpenTrace({ type: "tag", id: lens.tags[0] })}
+          className="mt-2 inline-flex min-h-[44px] items-center rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[32px]"
+        >
+          Open technical map
+        </button>
       </CardContent>
     </Card>
   );

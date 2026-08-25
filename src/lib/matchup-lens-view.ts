@@ -1,16 +1,26 @@
 // Matchup Dashboard view state.
 //
-// The page has one default view ("overview") plus a small number of deep views
-// reached from a dashboard card. Legacy `mode=` links from earlier builds are
-// mapped forward so shared URLs keep working.
+// The page is a hub and spoke: the Overview is a small orientation surface, and
+// every other view is a focused destination that replaces the canvas. Legacy
+// `mode=` links from earlier builds are mapped forward so shared URLs keep
+// working.
 
-export type LensView = "overview" | "constellation" | "collision" | "gaps" | "momentum";
+export type LensView =
+  | "overview"
+  | "constellation"
+  | "lens"
+  | "lenses"
+  | "collision"
+  | "gaps"
+  | "momentum";
 
 export type ConstellationLayout = "overlay" | "side";
 
 export const LENS_VIEWS: LensView[] = [
   "overview",
   "constellation",
+  "lens",
+  "lenses",
   "collision",
   "gaps",
   "momentum",
@@ -47,8 +57,10 @@ export function parseLayout(raw: string | null, fallback: ConstellationLayout): 
 }
 
 export const VIEW_TITLES: Record<LensView, string> = {
-  overview: "Matchup dashboard",
+  overview: "Overview",
   constellation: "Constellation",
+  lens: "Lens detail",
+  lenses: "All six lenses",
   collision: "Where profiles collide",
   gaps: "Top profile gaps",
   momentum: "Momentum",

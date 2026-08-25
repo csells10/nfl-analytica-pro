@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -13,19 +13,26 @@ import {
 } from "@/components/ui/select";
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
 import { LensDetail } from "@/components/matchup-lens/LensDetail";
-import { LensRail } from "@/components/matchup-lens/LensRail";
-import { InsightCards } from "@/components/matchup-lens/InsightCards";
+import { LensExplorer } from "@/components/matchup-lens/LensExplorer";
+import { InsightTicker } from "@/components/matchup-lens/InsightTicker";
+import {
+  DestinationCards,
+  DESTINATION_ICONS,
+  type Destination,
+  type DestinationId,
+} from "@/components/matchup-lens/DestinationCards";
+import { MatchupContextBar } from "@/components/matchup-lens/MatchupContextBar";
 import { TopProfileGaps } from "@/components/matchup-lens/TopProfileGaps";
 import { GameBrief } from "@/components/matchup-lens/GameBrief";
-import { CollisionPreview } from "@/components/matchup-lens/CollisionPreview";
 import { MatchupCollision } from "@/components/matchup-lens/MatchupCollision";
 import { MomentumShift } from "@/components/matchup-lens/MomentumShift";
 import { TraceDrawer } from "@/components/matchup-lens/TraceDrawer";
 import { getLensSnapshotSource } from "@/lib/matchup-lens-source";
 import { lensGaps } from "@/lib/matchup-lens-compare";
-import { collisionDirections } from "@/lib/matchup-lens-collision";
+import { collisionDirections, collisionHighlights } from "@/lib/matchup-lens-collision";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
 import { buildProfileAngle } from "@/lib/matchup-lens-angle";
+import { buildInsightStories, type InsightStory } from "@/lib/matchup-lens-stories";
 import { momentumReadiness } from "@/lib/matchup-lens-momentum";
 import { buildTrace, type TraceTarget } from "@/lib/matchup-lens-trace";
 import {
@@ -35,6 +42,7 @@ import {
   type LensView,
 } from "@/lib/matchup-lens-view";
 import { DASHBOARD_PURPOSE } from "@/lib/matchup-lens-language";
+import { LENS_GLOSSARY } from "@/lib/matchup-lens-glossary";
 import { LENSES, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
 import { getTeam, teamLogoUrl } from "@/lib/nfl-teams";
 
@@ -118,7 +126,7 @@ export default function MatchupLens() {
   const [layout, setLayout] = useState<ConstellationLayout>(() =>
     parseLayout(searchParams.get("layout"), initial.layout),
   );
-  /** No lens evidence is shown until the user deliberately selects one. */
+  /** Remembered in the URL, but never rendered as evidence on the Overview. */
   const [selectedLens, setSelectedLens] = useState<string | null>(
     () => LENSES.find((lens) => lens.key === searchParams.get("lens"))?.key ?? null,
   );
@@ -135,6 +143,9 @@ export default function MatchupLens() {
     }
     return null;
   });
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const selectorRef = useRef<HTMLDivElement>(null);
 
   const teamOptions = useMemo(
     () => (snapshot ? snapshot.teams.map((team) => team.teamAbv).sort() : []),
@@ -213,7 +224,10 @@ export default function MatchupLens() {
   );
 
   const brief = useMemo(
-    () => (snapshot && away && home ? buildGameBrief(snapshot, away, home, awayAbv, homeAbv) : null),
+    () =>
+      snapshot && away && home
+        ? buildGameBrief(snapshot, away, home, awayAbv, homeAbv, teamName(awayAbv), teamName(homeAbv))
+        : null,
     [snapshot, away, home, awayAbv, homeAbv],
   );
 
@@ -225,6 +239,25 @@ export default function MatchupLens() {
     return buildProfileAngle(snapshot, away, home, awayAbv, homeAbv, gaps, exclude);
   }, [snapshot, away, home, brief, gaps, awayAbv, homeAbv]);
 
+  const stories = useMemo(
+    () =>
+      snapshot && away && home
+        ? buildInsightStories({
+            snapshot,
+            teamA: away,
+            teamB: home,
+            labelA: awayAbv,
+            labelB: homeAbv,
+            nameA: teamName(awayAbv),
+            nameB: teamName(homeAbv),
+            gaps,
+            angle,
+            directions,
+          })
+        : [],
+    [snapshot, away, home, awayAbv, homeAbv, gaps, angle, directions],
+  );
+
   const traceData = useMemo(
     () =>
       snapshot && away && home && trace
@@ -234,10 +267,111 @@ export default function MatchupLens() {
   );
 
   const openTrace = useCallback((target: TraceTarget) => setTrace(target), []);
-  const selectLens = useCallback((key: string) => setSelectedLens(key), []);
+
+  /** Every selection replaces the canvas with a focused view. */
+  const openLens = useCallback((key: string) => {
+    setSelectedLens(key);
+    setView("lens");
+  }, []);
+
   const openCollision = useCallback((key: string | null) => {
     setCollisionKey(key);
     setView("collision");
+  }, []);
+
+  const openStory = useCallback(
+    (story: InsightStory) => {
+      if (story.target.kind === "collision") openCollision(story.target.collisionKey);
+      else openLens(story.target.lensKey);
+    },
+    [openCollision, openLens],
+  );
+
+  const strongestCollision = useMemo(
+    () => collisionHighlights(directions).strongest,
+    [directions],
+  );
+  const largestGapKey = brief?.largest?.key ?? null;
+
+  const destinations: Destination[] = [
+    {
+      id: "constellation",
+      title: "Compare the teams",
+      helper: "See the six profiles on one shared shape.",
+      icon: DESTINATION_ICONS.constellation,
+    },
+    {
+      id: "biggest-edge",
+      title: "Explore the biggest edge",
+      helper: "See the metrics behind the widest profile difference.",
+      icon: DESTINATION_ICONS["biggest-edge"],
+      disabled: largestGapKey === null,
+    },
+    {
+      id: "collision",
+      title: "See where profiles collide",
+      helper: "Compare one team's behaviour with the opponent's counter-profile.",
+      icon: DESTINATION_ICONS.collision,
+    },
+    {
+      id: "lenses",
+      title: "Browse all six lenses",
+      helper: "Choose a football question, then inspect its evidence.",
+      icon: DESTINATION_ICONS.lenses,
+    },
+  ];
+
+  const openDestination = useCallback(
+    (id: DestinationId) => {
+      if (id === "constellation") setView("constellation");
+      else if (id === "lenses") setView("lenses");
+      else if (id === "biggest-edge" && largestGapKey) openLens(largestGapKey);
+      else if (id === "collision") openCollision(strongestCollision?.lane.key ?? null);
+    },
+    [largestGapKey, openCollision, openLens, strongestCollision],
+  );
+
+  const activeDestination: DestinationId | null =
+    view === "constellation"
+      ? "constellation"
+      : view === "lenses"
+        ? "lenses"
+        : view === "collision"
+          ? "collision"
+          : view === "lens" && selectedLens === largestGapKey
+            ? "biggest-edge"
+            : null;
+
+  const viewingLabel = useMemo(() => {
+    if (view === "overview") return "Overview";
+    if (view === "constellation") return "Constellation";
+    if (view === "lenses") return "All six lenses";
+    if (view === "gaps") return "Top profile gaps";
+    if (view === "momentum") return "Momentum";
+    if (view === "collision") {
+      const lane = directions
+        .flatMap((direction) => direction.lanes)
+        .find((entry) => entry.key === collisionKey);
+      return lane ? `${lane.definition.name} collision` : "Where profiles collide";
+    }
+    return activeLens?.name ?? "Lens detail";
+  }, [view, directions, collisionKey, activeLens]);
+
+  // Focused views take over the top of the canvas and are announced politely.
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    setAnnouncement(`Viewing ${viewingLabel} for ${awayAbv} versus ${homeAbv}.`);
+    if (view === "overview") return;
+    canvasRef.current?.scrollIntoView?.({ block: "start", behavior: "auto" });
+  }, [viewingLabel, view, awayAbv, homeAbv]);
+
+  const goOverview = useCallback(() => setView("overview"), []);
+
+  const changeMatchup = useCallback(() => {
+    setView("overview");
+    window.requestAnimationFrame(() => {
+      selectorRef.current?.querySelector("button")?.focus();
+    });
   }, []);
 
   const evidence =
@@ -254,25 +388,24 @@ export default function MatchupLens() {
         nameA={teamName(awayAbv)}
         nameB={teamName(homeAbv)}
         onOpenTrace={openTrace}
-        onClose={() => setSelectedLens(null)}
       />
     ) : null;
 
-  const backToDashboard = (
+  const backToOverview = (
     <button
       type="button"
       data-testid="back-to-dashboard"
-      onClick={() => setView("overview")}
-      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      onClick={goOverview}
+      className="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <ArrowLeft className="h-3.5 w-3.5" />
-      Back to {awayAbv} vs {homeAbv} dashboard
+      <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+      Back to {awayAbv} vs {homeAbv} overview
     </button>
   );
 
   return (
     <AppShell showGuide={false}>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <header>
           <h1 className="text-lg font-bold tracking-tight text-foreground">Matchup Dashboard</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">{DASHBOARD_PURPOSE}</p>
@@ -286,93 +419,138 @@ export default function MatchupLens() {
           </Card>
         ) : (
           <>
-            <Card className="border-border bg-card">
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
-                  <TeamPicker
-                    value={awayAbv}
-                    options={teamOptions}
-                    onChange={setAwayAbv}
-                    role="Team A"
-                    tone="a"
-                  />
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:pb-3">
-                    vs
-                  </span>
-                  <TeamPicker
-                    value={homeAbv}
-                    options={teamOptions}
-                    onChange={setHomeAbv}
-                    role="Team B"
-                    tone="b"
-                  />
-                </div>
-                <p
-                  className="mt-2 font-mono text-[11px] text-muted-foreground"
-                  data-testid="lens-context-label"
-                >
-                  {snapshot.windowLabel} · as of {snapshot.asOfDate} · {awayAbv}{" "}
-                  {away.gamesInWindow} games / {homeAbv} {home.gamesInWindow} games
-                </p>
-              </CardContent>
-            </Card>
-
-            <LensRail
-              gaps={gaps}
+            <MatchupContextBar
               labelA={awayAbv}
               labelB={homeAbv}
-              selectedKey={selectedLens}
-              onSelect={selectLens}
+              nameA={teamName(awayAbv)}
+              nameB={teamName(homeAbv)}
+              contextLine={`${snapshot.windowLabel} · as of ${snapshot.asOfDate}`}
+              viewingLabel={viewingLabel}
+              isOverview={view === "overview"}
+              onBack={goOverview}
+              onChangeMatchup={changeMatchup}
             />
 
-            {view === "overview" && brief && (
-              <>
-                <InsightCards
-                  largest={brief.largest}
-                  closest={brief.closest}
-                  angle={angle}
-                  labelA={awayAbv}
-                  labelB={homeAbv}
-                  onSelectLens={selectLens}
-                  onOpenCollision={openCollision}
-                />
+            <p className="sr-only" role="status" aria-live="polite" data-testid="view-announcement">
+              {announcement}
+            </p>
 
-                <div className="grid gap-4 lg:grid-cols-12">
-                  <div className="lg:col-span-5">
-                    <GameBrief
-                      brief={brief}
-                      labelA={awayAbv}
-                      labelB={homeAbv}
-                      nameA={teamName(awayAbv)}
-                      nameB={teamName(homeAbv)}
-                      onSelectLens={selectLens}
-                      onOpenCollision={openCollision}
-                    />
-                  </div>
-                  <div className="lg:col-span-7">
-                    <Card className="border-border bg-card">
-                      <CardContent className="p-4 sm:p-5">
-                        <LensConstellation
-                          axes={axes}
-                          labelA={awayAbv}
-                          labelB={homeAbv}
-                          nameA={teamName(awayAbv)}
-                          nameB={teamName(homeAbv)}
-                          selectedKey={selectedLens}
-                          onSelect={selectLens}
-                          onHover={setHoveredLens}
-                          layout={layout}
-                          onLayoutChange={setLayout}
+            <div ref={canvasRef} className="space-y-3 scroll-mt-32">
+              {view === "overview" && brief && (
+                <>
+                  <Card className="border-border bg-card" ref={selectorRef}>
+                    <CardContent className="p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+                        <TeamPicker
+                          value={awayAbv}
+                          options={teamOptions}
+                          onChange={setAwayAbv}
+                          role="Team A"
+                          tone="a"
                         />
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:pb-3">
+                          vs
+                        </span>
+                        <TeamPicker
+                          value={homeAbv}
+                          options={teamOptions}
+                          onChange={setHomeAbv}
+                          role="Team B"
+                          tone="b"
+                        />
+                      </div>
+                      <p
+                        className="mt-2 font-mono text-[11px] text-muted-foreground"
+                        data-testid="lens-context-label"
+                      >
+                        {snapshot.windowLabel} · as of {snapshot.asOfDate} · {awayAbv}{" "}
+                        {away.gamesInWindow} games / {homeAbv} {home.gamesInWindow} games
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <InsightTicker stories={stories} onOpen={openStory} />
+
+                  <GameBrief
+                    brief={brief}
+                    onSelectLens={openLens}
+                    onOpenCollision={openCollision}
+                  />
+
+                  <DestinationCards
+                    destinations={destinations}
+                    activeId={activeDestination}
+                    onOpen={openDestination}
+                  />
+                </>
+              )}
+
+              {view === "constellation" && (
+                <div className="space-y-3">
+                  {backToOverview}
+                  <Card className="border-border bg-card">
+                    <CardContent className="p-4 sm:p-5">
+                      <LensConstellation
+                        axes={axes}
+                        labelA={awayAbv}
+                        labelB={homeAbv}
+                        nameA={teamName(awayAbv)}
+                        nameB={teamName(homeAbv)}
+                        selectedKey={selectedLens}
+                        onSelect={openLens}
+                        onHover={setHoveredLens}
+                        layout={layout}
+                        onLayoutChange={setLayout}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {view === "lens" && (
+                <div className="space-y-3">
+                  {backToOverview}
+                  {evidence ?? (
+                    <Card className="border-border bg-card">
+                      <CardContent className="p-4 text-sm text-muted-foreground">
+                        Select a lens to see its evidence.
                       </CardContent>
                     </Card>
-                  </div>
+                  )}
                 </div>
+              )}
 
-                {evidence}
+              {view === "lenses" && (
+                <div className="space-y-3">
+                  {backToOverview}
+                  <LensExplorer
+                    gaps={gaps}
+                    snapshot={snapshot}
+                    teamAbvA={awayAbv}
+                    teamAbvB={homeAbv}
+                    labelA={awayAbv}
+                    labelB={homeAbv}
+                    selectedKey={selectedLens}
+                    onSelect={openLens}
+                  />
+                </div>
+              )}
 
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <CollisionPreview directions={directions} onOpen={openCollision} />
+              {view === "collision" && (
+                <div className="space-y-3">
+                  {backToOverview}
+                  <MatchupCollision
+                    directions={directions}
+                    selectedKey={collisionKey}
+                    onSelect={setCollisionKey}
+                    onOpenTrace={openTrace}
+                  />
+                </div>
+              )}
+
+              {view === "gaps" && (
+                <div className="space-y-3">
+                  {backToOverview}
                   <TopProfileGaps
                     gaps={gaps}
                     snapshot={snapshot}
@@ -383,75 +561,18 @@ export default function MatchupLens() {
                     nameA={teamName(awayAbv)}
                     nameB={teamName(homeAbv)}
                     selectedKey={selectedLens}
-                    onSelect={selectLens}
-                    limit={3}
-                    onOpenAll={() => setView("gaps")}
+                    onSelect={openLens}
                   />
                 </div>
-              </>
-            )}
+              )}
 
-            {view === "constellation" && (
-              <div className="space-y-4">
-                {backToDashboard}
-                <Card className="border-border bg-card">
-                  <CardContent className="p-4 sm:p-5">
-                    <LensConstellation
-                      axes={axes}
-                      labelA={awayAbv}
-                      labelB={homeAbv}
-                      nameA={teamName(awayAbv)}
-                      nameB={teamName(homeAbv)}
-                      selectedKey={selectedLens}
-                      onSelect={selectLens}
-                      onHover={setHoveredLens}
-                      layout={layout}
-                      onLayoutChange={setLayout}
-                    />
-                  </CardContent>
-                </Card>
-                {evidence}
-              </div>
-            )}
-
-            {view === "collision" && (
-              <div className="space-y-4">
-                {backToDashboard}
-                <MatchupCollision
-                  directions={directions}
-                  selectedKey={collisionKey}
-                  onSelect={setCollisionKey}
-                  onOpenTrace={openTrace}
-                />
-                {evidence}
-              </div>
-            )}
-
-            {view === "gaps" && (
-              <div className="space-y-4">
-                {backToDashboard}
-                <TopProfileGaps
-                  gaps={gaps}
-                  snapshot={snapshot}
-                  teamAbvA={awayAbv}
-                  teamAbvB={homeAbv}
-                  labelA={awayAbv}
-                  labelB={homeAbv}
-                  nameA={teamName(awayAbv)}
-                  nameB={teamName(homeAbv)}
-                  selectedKey={selectedLens}
-                  onSelect={selectLens}
-                />
-                {evidence}
-              </div>
-            )}
-
-            {view === "momentum" && momentum.eligible && (
-              <div className="space-y-4">
-                {backToDashboard}
-                <MomentumShift snapshots={[snapshot]} />
-              </div>
-            )}
+              {view === "momentum" && momentum.eligible && (
+                <div className="space-y-3">
+                  {backToOverview}
+                  <MomentumShift snapshots={[snapshot]} />
+                </div>
+              )}
+            </div>
 
             <TraceDrawer
               trace={traceData}
@@ -461,10 +582,12 @@ export default function MatchupLens() {
               onOpenChange={(open) => !open && setTrace(null)}
               onOpenTrace={openTrace}
               onSelectLens={(key) => {
-                setSelectedLens(key);
+                openLens(key);
                 setTrace(null);
               }}
-              selectedLensName={activeLens?.name ?? "no selected lens"}
+              selectedLensName={
+                activeLens ? LENS_GLOSSARY[activeLens.key]?.name ?? activeLens.name : "no selected lens"
+              }
               matchupLabel={`${awayAbv} vs ${homeAbv}`}
             />
           </>

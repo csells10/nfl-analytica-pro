@@ -159,9 +159,9 @@ export function MatchupCollision({
         )}
 
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
           {directions.map((direction) => (
-            <div key={`${direction.offenseAbv}-${direction.defenseAbv}`} className="min-w-0">
+            <div key={`${direction.offenseAbv}-${direction.defenseAbv}`} className="min-w-0 self-start">
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground">
                 When {direction.offenseAbv} has the ball
                 <span className="ml-1.5 font-normal normal-case tracking-normal text-muted-foreground">

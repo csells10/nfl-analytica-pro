@@ -290,6 +290,11 @@ export function LensConstellation({
                   {axis.scoreB === null ? "—" : axis.scoreB.toFixed(1)}
                 </span>
               </span>
+              <span className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-primary">
+                Explore
+                <span aria-hidden="true">→</span>
+              </span>
+
             </button>
           );
         })}

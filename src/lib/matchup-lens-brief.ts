@@ -11,11 +11,16 @@ import { collisionDirections, collisionHighlights } from "./matchup-lens-collisi
 import { lensStanding } from "./matchup-lens-rank";
 import { momentumReadiness } from "./matchup-lens-momentum";
 import { ordinal } from "./matchup-lens-language";
+import { lensDefinition, lensStrengthPhrase } from "./matchup-lens-glossary";
 
 export interface BriefObservation {
   id: string;
-  /** Plain language first. */
+  /** Plain language first — meaning before the internal lens label. */
   text: string;
+  /** Lens label plus league standing, e.g. "Turnover Balance · 3rd of 32". */
+  badge: string;
+  /** One-sentence glossary definition for the tooltip / info popover. */
+  definition: string;
   /** Exact Lens Score / rank context, shown beneath the sentence. */
   detail: string;
   /** Lens this observation opens. */
@@ -65,6 +70,8 @@ export function buildGameBrief(
   teamB: TeamMetricRow,
   labelA: string,
   labelB: string,
+  nameA: string = labelA,
+  nameB: string = labelB,
 ): GameBrief {
   const gaps = lensGaps(scoreAllLenses(snapshot, teamA), scoreAllLenses(snapshot, teamB));
   const { largest, closest } = comparisonHighlights(gaps);
@@ -73,17 +80,20 @@ export function buildGameBrief(
 
   const observations: BriefObservation[] = [];
 
-  for (const [team, label] of [
-    [teamA, labelA],
-    [teamB, labelB],
+  for (const [team, label, name] of [
+    [teamA, labelA, nameA],
+    [teamB, labelB, nameB],
   ] as const) {
     const best = bestLens(snapshot, team);
     if (!best) continue;
+    const standing = `${ordinal(best.standing.rank as number)} of ${best.standing.total}`;
     observations.push({
       id: `best-${team.teamAbv}`,
       lensKey: best.key,
-      text: `${label} is at its strongest in ${best.name}.`,
-      detail: `${ordinal(best.standing.rank as number)} of ${best.standing.total} in the league · ${best.standing.tier}.`,
+      text: `${name}'s clearest strength is ${lensStrengthPhrase(best.key)}.`,
+      badge: `${best.name} · ${standing}`,
+      definition: lensDefinition(best.key),
+      detail: `${label} ranks ${standing} in the league · ${best.standing.tier}.`,
     });
   }
 
@@ -95,6 +105,8 @@ export function buildGameBrief(
       id: "collision",
       collisionKey: lane.key,
       text: `With ${strongest.direction.offenseAbv} holding the ball, ${lane.definition.name.toLowerCase()} is the widest supported profile collision.`,
+      badge: `${lane.definition.name} · leans ${winner}`,
+      definition: lane.definition.question,
       detail: `Leans ${winner} by ${Math.abs(lane.edge ?? 0).toFixed(1)} Lens Score points · profile matchup, not a forecast.`,
     });
   }
