@@ -1,4 +1,4 @@
-import { ArrowLeft, Repeat } from "lucide-react";
+import { ArrowLeft, Loader2, Repeat } from "lucide-react";
 
 interface MatchupContextBarProps {
   labelA: string;
@@ -10,6 +10,8 @@ interface MatchupContextBarProps {
   /** "Overview", "Turnover Balance", "Constellation", … */
   viewingLabel: string;
   isOverview: boolean;
+  /** True while a background refresh is in flight; current data stays visible. */
+  isRefreshing?: boolean;
   onBack: () => void;
   onChangeMatchup: () => void;
 }
@@ -17,6 +19,7 @@ interface MatchupContextBarProps {
 /**
  * Compact sticky context. It sits under the app navigation, never overlays the
  * canvas, and always answers: which matchup, which window, what am I viewing.
+ * On small screens it compresses to abbreviations plus icon-only controls.
  */
 export function MatchupContextBar({
   labelA,
@@ -26,6 +29,7 @@ export function MatchupContextBar({
   contextLine,
   viewingLabel,
   isOverview,
+  isRefreshing = false,
   onBack,
   onChangeMatchup,
 }: MatchupContextBarProps) {
@@ -43,32 +47,48 @@ export function MatchupContextBar({
             {nameA} vs {nameB}
           </span>
         </p>
-        <p className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">{contextLine}</p>
+        <p className="hidden min-w-0 truncate font-mono text-[11px] text-muted-foreground sm:block">
+          {contextLine}
+        </p>
         <p
           className="rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] font-medium text-foreground"
           data-testid="context-viewing"
         >
           Viewing: {viewingLabel}
         </p>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            data-testid="context-back"
-            onClick={onBack}
-            disabled={isOverview}
-            className="inline-flex min-h-[44px] items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 sm:min-h-[32px]"
+        {isRefreshing && (
+          <p
+            role="status"
+            aria-live="polite"
+            data-testid="context-refreshing"
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
           >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            Back to Overview
-          </button>
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+            Updating matchup…
+          </p>
+        )}
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {!isOverview && (
+            <button
+              type="button"
+              data-testid="context-back"
+              onClick={onBack}
+              aria-label="Back to Overview"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[32px] sm:min-w-0"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Overview</span>
+            </button>
+          )}
           <button
             type="button"
             data-testid="context-change-matchup"
             onClick={onChangeMatchup}
-            className="inline-flex min-h-[44px] items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[32px]"
+            aria-label="Change matchup"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[32px] sm:min-w-0"
           >
             <Repeat className="h-3.5 w-3.5" aria-hidden="true" />
-            Change matchup
+            <span className="hidden sm:inline">Change matchup</span>
           </button>
         </div>
       </div>
