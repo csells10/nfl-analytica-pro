@@ -31,10 +31,14 @@ export const DESTINATION_ICONS: Record<DestinationId, LucideIcon> = {
 export function DestinationCards({ destinations, activeId, onOpen }: DestinationCardsProps) {
   return (
     <section aria-label="Choose what to explore" data-testid="destination-cards">
-      <h2 className="text-sm font-semibold tracking-tight text-foreground">
-        Choose what to explore
-      </h2>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">
+          Choose what to explore
+        </h2>
+        <p className="text-[11px] text-muted-foreground sm:hidden">Swipe for more</p>
+      </div>
+      {/* Mobile: one-handed horizontal snap carousel. Desktop: static grid. */}
+      <div className="mt-2 -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
         {destinations.map((destination) => {
           const Icon = destination.icon;
           const isActive = destination.id === activeId;
@@ -43,12 +47,13 @@ export function DestinationCards({ destinations, activeId, onOpen }: Destination
               key={destination.id}
               data-destination={destination.id}
               data-active={isActive ? "true" : "false"}
-              className={`flex min-w-0 flex-col rounded-lg border bg-card p-3 transition-colors ${
+              className={`flex min-w-[78%] shrink-0 snap-start flex-col rounded-lg border bg-card p-3 transition-colors sm:min-w-0 sm:shrink ${
                 isActive
                   ? "border-primary/60 bg-secondary"
                   : "border-border hover:border-primary/40"
               }`}
             >
+
               <div className="flex items-start gap-2">
                 <Icon
                   className={`mt-0.5 h-4 w-4 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`}
