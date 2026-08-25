@@ -22,6 +22,12 @@ import {
   type DestinationId,
 } from "@/components/matchup-lens/DestinationCards";
 import { MatchupContextBar } from "@/components/matchup-lens/MatchupContextBar";
+import { ContinueExploring, JourneyBack, type JourneyStep } from "@/components/matchup-lens/JourneyNav";
+import {
+  DashboardEmpty,
+  DashboardError,
+  DashboardSkeleton,
+} from "@/components/matchup-lens/DashboardStates";
 import { TopProfileGaps } from "@/components/matchup-lens/TopProfileGaps";
 import { GameBrief } from "@/components/matchup-lens/GameBrief";
 import { MatchupCollision } from "@/components/matchup-lens/MatchupCollision";
@@ -36,14 +42,18 @@ import { buildInsightStories, type InsightStory } from "@/lib/matchup-lens-stori
 import { momentumReadiness } from "@/lib/matchup-lens-momentum";
 import { buildTrace, type TraceTarget } from "@/lib/matchup-lens-trace";
 import {
+  originReturn,
   parseLayout,
+  parseOrigin,
   parseView,
   type ConstellationLayout,
+  type LensOrigin,
   type LensView,
 } from "@/lib/matchup-lens-view";
 import { DASHBOARD_PURPOSE } from "@/lib/matchup-lens-language";
 import { LENS_GLOSSARY } from "@/lib/matchup-lens-glossary";
 import { LENSES, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
+
 import { getTeam, teamLogoUrl } from "@/lib/nfl-teams";
 
 const DEFAULT_AWAY = "LAR";
