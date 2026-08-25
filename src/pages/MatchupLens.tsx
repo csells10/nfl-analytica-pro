@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -22,6 +21,12 @@ import {
   type DestinationId,
 } from "@/components/matchup-lens/DestinationCards";
 import { MatchupContextBar } from "@/components/matchup-lens/MatchupContextBar";
+import { ContinueExploring, JourneyBack, type JourneyStep } from "@/components/matchup-lens/JourneyNav";
+import {
+  DashboardEmpty,
+  DashboardError,
+  DashboardSkeleton,
+} from "@/components/matchup-lens/DashboardStates";
 import { TopProfileGaps } from "@/components/matchup-lens/TopProfileGaps";
 import { GameBrief } from "@/components/matchup-lens/GameBrief";
 import { MatchupCollision } from "@/components/matchup-lens/MatchupCollision";
@@ -36,14 +41,18 @@ import { buildInsightStories, type InsightStory } from "@/lib/matchup-lens-stori
 import { momentumReadiness } from "@/lib/matchup-lens-momentum";
 import { buildTrace, type TraceTarget } from "@/lib/matchup-lens-trace";
 import {
+  originReturn,
   parseLayout,
+  parseOrigin,
   parseView,
   type ConstellationLayout,
+  type LensOrigin,
   type LensView,
 } from "@/lib/matchup-lens-view";
 import { DASHBOARD_PURPOSE } from "@/lib/matchup-lens-language";
 import { LENS_GLOSSARY } from "@/lib/matchup-lens-glossary";
 import { LENSES, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
+
 import { getTeam, teamLogoUrl } from "@/lib/nfl-teams";
 
 const DEFAULT_AWAY = "LAR";
@@ -111,7 +120,14 @@ function TeamPicker({
 
 export default function MatchupLens() {
   const source = getLensSnapshotSource();
-  const { data: snapshot, isLoading } = useQuery({
+  const {
+    data: snapshot,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: ["lens-snapshot", source.id],
     queryFn: source.load,
     staleTime: Infinity,
@@ -123,6 +139,8 @@ export default function MatchupLens() {
   const [awayAbv, setAwayAbv] = useState(() => snapshotAbbr(searchParams.get("a") ?? DEFAULT_AWAY));
   const [homeAbv, setHomeAbv] = useState(() => snapshotAbbr(searchParams.get("b") ?? DEFAULT_HOME));
   const [view, setView] = useState<LensView>(initial.view);
+  /** Where the focused view was entered from, so one back action is enough. */
+  const [origin, setOrigin] = useState<LensOrigin>(() => parseOrigin(searchParams.get("from")));
   const [layout, setLayout] = useState<ConstellationLayout>(() =>
     parseLayout(searchParams.get("layout"), initial.layout),
   );
@@ -134,6 +152,7 @@ export default function MatchupLens() {
   const [collisionKey, setCollisionKey] = useState<string | null>(
     () => searchParams.get("collision"),
   );
+
   const [trace, setTrace] = useState<TraceTarget | null>(() => {
     const raw = searchParams.get("trace");
     if (!raw) return null;
@@ -180,6 +199,8 @@ export default function MatchupLens() {
     next.set("a", awayAbv);
     next.set("b", homeAbv);
     next.set("view", view);
+    if (view === "overview") next.delete("from");
+    else next.set("from", origin);
     if (view === "constellation" && layout === "side") next.set("layout", "side");
     else next.delete("layout");
     if (selectedLens) next.set("lens", selectedLens);
@@ -191,7 +212,8 @@ export default function MatchupLens() {
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [awayAbv, homeAbv, view, layout, selectedLens, collisionKey, trace, searchParams, setSearchParams]);
+  }, [awayAbv, homeAbv, view, origin, layout, selectedLens, collisionKey, trace, searchParams, setSearchParams]);
+
 
   const away = snapshot ? findTeam(snapshot, awayAbv) : undefined;
   const home = snapshot ? findTeam(snapshot, homeAbv) : undefined;
@@ -269,22 +291,25 @@ export default function MatchupLens() {
   const openTrace = useCallback((target: TraceTarget) => setTrace(target), []);
 
   /** Every selection replaces the canvas with a focused view. */
-  const openLens = useCallback((key: string) => {
+  const openLens = useCallback((key: string, from: LensOrigin = "overview") => {
     setSelectedLens(key);
+    setOrigin(from);
     setView("lens");
   }, []);
 
-  const openCollision = useCallback((key: string | null) => {
+  const openCollision = useCallback((key: string | null, from: LensOrigin = "overview") => {
     setCollisionKey(key);
+    setOrigin(from);
     setView("collision");
   }, []);
 
   const openStory = useCallback(
     (story: InsightStory) => {
-      if (story.target.kind === "collision") openCollision(story.target.collisionKey);
-      else openLens(story.target.lensKey);
+      if (story.target.kind === "collision") openCollision(story.target.collisionKey, "ticker");
+      else openLens(story.target.lensKey, "ticker");
     },
     [openCollision, openLens],
+
   );
 
   const strongestCollision = useMemo(
@@ -323,13 +348,15 @@ export default function MatchupLens() {
 
   const openDestination = useCallback(
     (id: DestinationId) => {
+      setOrigin("overview");
       if (id === "constellation") setView("constellation");
       else if (id === "lenses") setView("lenses");
-      else if (id === "biggest-edge" && largestGapKey) openLens(largestGapKey);
-      else if (id === "collision") openCollision(strongestCollision?.lane.key ?? null);
+      else if (id === "biggest-edge" && largestGapKey) openLens(largestGapKey, "biggest-edge");
+      else if (id === "collision") openCollision(strongestCollision?.lane.key ?? null, "overview");
     },
     [largestGapKey, openCollision, openLens, strongestCollision],
   );
+
 
   const activeDestination: DestinationId | null =
     view === "constellation"
@@ -365,9 +392,20 @@ export default function MatchupLens() {
     canvasRef.current?.scrollIntoView?.({ block: "start", behavior: "auto" });
   }, [viewingLabel, view, awayAbv, homeAbv]);
 
-  const goOverview = useCallback(() => setView("overview"), []);
+  const goOverview = useCallback(() => {
+    setOrigin("overview");
+    setView("overview");
+  }, []);
+
+  /** One contextual return: back to wherever this view was entered from. */
+  const goBack = useCallback(() => {
+    const target = originReturn(origin);
+    setOrigin("overview");
+    setView(target.view);
+  }, [origin]);
 
   const changeMatchup = useCallback(() => {
+    setOrigin("overview");
     setView("overview");
     window.requestAnimationFrame(() => {
       selectorRef.current?.querySelector("button")?.focus();
@@ -391,17 +429,70 @@ export default function MatchupLens() {
       />
     ) : null;
 
-  const backToOverview = (
-    <button
-      type="button"
-      data-testid="back-to-dashboard"
-      onClick={goOverview}
-      className="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-      Back to {awayAbv} vs {homeAbv} overview
-    </button>
+  const lensIndex = LENSES.findIndex((lens) => lens.key === selectedLens);
+  const stepLens = (direction: -1 | 1) => {
+    const base = lensIndex < 0 ? 0 : lensIndex;
+    const next = (base + direction + LENSES.length) % LENSES.length;
+    setSelectedLens(LENSES[next].key);
+  };
+
+  const backLabel = originReturn(origin).label;
+
+  const journeyBack = (withLensSelector = false) => (
+    <JourneyBack
+      backLabel={backLabel}
+      onBack={goBack}
+      lensSelector={
+        withLensSelector && selectedLens
+          ? {
+              value: selectedLens,
+              options: LENSES.map((lens) => ({
+                key: lens.key,
+                name: LENS_GLOSSARY[lens.key]?.name ?? lens.name,
+              })),
+              onChange: (key) => setSelectedLens(key),
+              onPrev: () => stepLens(-1),
+              onNext: () => stepLens(1),
+            }
+          : undefined
+      }
+    />
   );
+
+  /** One to three meaningful next paths after the evidence on a focused view. */
+  const continueSteps = (current: LensView): JourneyStep[] => [
+    {
+      id: "constellation",
+      label: "Compare the teams",
+      helper: "Both profiles on one shared shape.",
+      icon: DESTINATION_ICONS.constellation,
+      onSelect: () => {
+        setOrigin("overview");
+        setView("constellation");
+      },
+      disabled: current === "constellation",
+    },
+    {
+      id: "collision",
+      label: "See where profiles collide",
+      helper: "Behaviour against the opponent's counter-profile.",
+      icon: DESTINATION_ICONS.collision,
+      onSelect: () => openCollision(strongestCollision?.lane.key ?? null, "overview"),
+      disabled: current === "collision",
+    },
+    {
+      id: "lenses",
+      label: "Browse all six lenses",
+      helper: "Pick another football question.",
+      icon: DESTINATION_ICONS.lenses,
+      onSelect: () => {
+        setOrigin("overview");
+        setView("lenses");
+      },
+      disabled: current === "lenses",
+    },
+  ];
+
 
   return (
     <AppShell showGuide={false}>
@@ -411,12 +502,28 @@ export default function MatchupLens() {
           <p className="mt-0.5 text-xs text-muted-foreground">{DASHBOARD_PURPOSE}</p>
         </header>
 
-        {isLoading || !snapshot || !away || !home ? (
-          <Card className="border-border bg-card">
-            <CardContent className="py-16 text-center text-sm text-muted-foreground">
-              Loading lens snapshot…
-            </CardContent>
-          </Card>
+        {isLoading ? (
+          <DashboardSkeleton />
+        ) : isError ? (
+          <DashboardError
+            message={
+              error instanceof Error
+                ? `${error.message} Nothing was lost — retry to load this matchup again.`
+                : "The lens snapshot could not be read. Retry to load this matchup again."
+            }
+            onRetry={() => void refetch()}
+          />
+        ) : !snapshot || !away || !home ? (
+          <DashboardEmpty
+            title="No profile data for this matchup"
+            message="This snapshot has no rows for one of the selected teams, so there is nothing to compare yet. Pick another matchup to continue."
+            actionLabel="Choose another matchup"
+            onAction={() => {
+              setAwayAbv(DEFAULT_AWAY);
+              setHomeAbv(DEFAULT_HOME);
+              goOverview();
+            }}
+          />
         ) : (
           <>
             <MatchupContextBar
@@ -427,9 +534,11 @@ export default function MatchupLens() {
               contextLine={`${snapshot.windowLabel} · as of ${snapshot.asOfDate}`}
               viewingLabel={viewingLabel}
               isOverview={view === "overview"}
+              isRefreshing={isFetching && !isLoading}
               onBack={goOverview}
               onChangeMatchup={changeMatchup}
             />
+
 
             <p className="sr-only" role="status" aria-live="polite" data-testid="view-announcement">
               {announcement}
@@ -469,12 +578,19 @@ export default function MatchupLens() {
                     </CardContent>
                   </Card>
 
-                  <InsightTicker stories={stories} onOpen={openStory} />
+                  {stories.length > 0 ? (
+                    <InsightTicker stories={stories} onOpen={openStory} />
+                  ) : (
+                    <DashboardEmpty
+                      title="No stories stand out yet"
+                      message="These two profiles are close enough that nothing separates them in this window. The lens evidence below still works."
+                    />
+                  )}
 
                   <GameBrief
                     brief={brief}
-                    onSelectLens={openLens}
-                    onOpenCollision={openCollision}
+                    onSelectLens={(key) => openLens(key, "brief")}
+                    onOpenCollision={(key) => openCollision(key, "brief")}
                   />
 
                   <DestinationCards
@@ -487,7 +603,7 @@ export default function MatchupLens() {
 
               {view === "constellation" && (
                 <div className="space-y-3">
-                  {backToOverview}
+                  {journeyBack()}
                   <Card className="border-border bg-card">
                     <CardContent className="p-4 sm:p-5">
                       <LensConstellation
@@ -497,32 +613,38 @@ export default function MatchupLens() {
                         nameA={teamName(awayAbv)}
                         nameB={teamName(homeAbv)}
                         selectedKey={selectedLens}
-                        onSelect={openLens}
+                        onSelect={(key) => openLens(key, "constellation")}
                         onHover={setHoveredLens}
                         layout={layout}
                         onLayoutChange={setLayout}
                       />
                     </CardContent>
                   </Card>
+                  <ContinueExploring steps={continueSteps("constellation")} />
                 </div>
               )}
 
               {view === "lens" && (
                 <div className="space-y-3">
-                  {backToOverview}
+                  {journeyBack(true)}
                   {evidence ?? (
-                    <Card className="border-border bg-card">
-                      <CardContent className="p-4 text-sm text-muted-foreground">
-                        Select a lens to see its evidence.
-                      </CardContent>
-                    </Card>
+                    <DashboardEmpty
+                      title="No lens selected"
+                      message="Choose a lens to see the metrics behind it."
+                      actionLabel="Browse all six lenses"
+                      onAction={() => {
+                        setOrigin("overview");
+                        setView("lenses");
+                      }}
+                    />
                   )}
+                  <ContinueExploring steps={continueSteps("lens")} />
                 </div>
               )}
 
               {view === "lenses" && (
                 <div className="space-y-3">
-                  {backToOverview}
+                  {journeyBack()}
                   <LensExplorer
                     gaps={gaps}
                     snapshot={snapshot}
@@ -531,26 +653,28 @@ export default function MatchupLens() {
                     labelA={awayAbv}
                     labelB={homeAbv}
                     selectedKey={selectedLens}
-                    onSelect={openLens}
+                    onSelect={(key) => openLens(key, "all-lenses")}
                   />
+                  <ContinueExploring steps={continueSteps("lenses")} />
                 </div>
               )}
 
               {view === "collision" && (
                 <div className="space-y-3">
-                  {backToOverview}
+                  {journeyBack()}
                   <MatchupCollision
                     directions={directions}
                     selectedKey={collisionKey}
                     onSelect={setCollisionKey}
                     onOpenTrace={openTrace}
                   />
+                  <ContinueExploring steps={continueSteps("collision")} />
                 </div>
               )}
 
               {view === "gaps" && (
                 <div className="space-y-3">
-                  {backToOverview}
+                  {journeyBack()}
                   <TopProfileGaps
                     gaps={gaps}
                     snapshot={snapshot}
@@ -561,17 +685,19 @@ export default function MatchupLens() {
                     nameA={teamName(awayAbv)}
                     nameB={teamName(homeAbv)}
                     selectedKey={selectedLens}
-                    onSelect={openLens}
+                    onSelect={(key) => openLens(key, "overview")}
                   />
+                  <ContinueExploring steps={continueSteps("gaps")} />
                 </div>
               )}
 
               {view === "momentum" && momentum.eligible && (
                 <div className="space-y-3">
-                  {backToOverview}
+                  {journeyBack()}
                   <MomentumShift snapshots={[snapshot]} />
                 </div>
               )}
+
             </div>
 
             <TraceDrawer

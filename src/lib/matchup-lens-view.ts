@@ -65,3 +65,53 @@ export const VIEW_TITLES: Record<LensView, string> = {
   gaps: "Top profile gaps",
   momentum: "Momentum",
 };
+
+// ---------------------------------------------------------------------------
+// Origin ("where did I come from") state.
+//
+// Focused views keep one contextual return action. The origin travels in the
+// URL so a shared link and the browser Back button behave the same way.
+
+export type LensOrigin =
+  | "overview"
+  | "constellation"
+  | "all-lenses"
+  | "ticker"
+  | "brief"
+  | "biggest-edge"
+  | "collision";
+
+export const LENS_ORIGINS: LensOrigin[] = [
+  "overview",
+  "constellation",
+  "all-lenses",
+  "ticker",
+  "brief",
+  "biggest-edge",
+  "collision",
+];
+
+/** Unknown / stale origins fail safely to the Overview. */
+export function parseOrigin(raw: string | null): LensOrigin {
+  return LENS_ORIGINS.find((entry) => entry === raw) ?? "overview";
+}
+
+export interface OriginReturn {
+  view: LensView;
+  label: string;
+  shortLabel: string;
+}
+
+export function originReturn(origin: LensOrigin): OriginReturn {
+  switch (origin) {
+    case "constellation":
+      return { view: "constellation", label: "Back to Constellation", shortLabel: "Constellation" };
+    case "all-lenses":
+      return { view: "lenses", label: "Back to all lenses", shortLabel: "All lenses" };
+    case "collision":
+      return { view: "collision", label: "Back to collisions", shortLabel: "Collisions" };
+    default:
+      return { view: "overview", label: "Back to Overview", shortLabel: "Overview" };
+  }
+}
+
