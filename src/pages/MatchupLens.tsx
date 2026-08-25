@@ -200,6 +200,8 @@ export default function MatchupLens() {
     next.set("a", awayAbv);
     next.set("b", homeAbv);
     next.set("view", view);
+    if (view === "overview") next.delete("from");
+    else next.set("from", origin);
     if (view === "constellation" && layout === "side") next.set("layout", "side");
     else next.delete("layout");
     if (selectedLens) next.set("lens", selectedLens);
@@ -211,7 +213,8 @@ export default function MatchupLens() {
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [awayAbv, homeAbv, view, layout, selectedLens, collisionKey, trace, searchParams, setSearchParams]);
+  }, [awayAbv, homeAbv, view, origin, layout, selectedLens, collisionKey, trace, searchParams, setSearchParams]);
+
 
   const away = snapshot ? findTeam(snapshot, awayAbv) : undefined;
   const home = snapshot ? findTeam(snapshot, homeAbv) : undefined;
