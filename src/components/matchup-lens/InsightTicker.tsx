@@ -33,6 +33,7 @@ export function InsightTicker({ stories, onOpen }: InsightTickerProps) {
   const [manualLabel, setManualLabel] = useState("");
   const [entering, setEntering] = useState(false);
   const dragStart = useRef<number | null>(null);
+  const playRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (index > stories.length - 1) setIndex(0);
@@ -107,7 +108,12 @@ export function InsightTicker({ stories, onOpen }: InsightTickerProps) {
       data-reduced-motion={reduced ? "true" : "false"}
       onMouseEnter={() => setSuspended(true)}
       onMouseLeave={() => setSuspended(false)}
-      onFocusCapture={() => setSuspended(true)}
+      onFocusCapture={(event) => {
+        // Reading focus suspends automatic changes, but an explicit Play must
+        // genuinely resume without the user having to click elsewhere first.
+        if (event.target === playRef.current) return;
+        setSuspended(true);
+      }}
       onBlurCapture={() => setSuspended(false)}
     >
       <CardContent
@@ -201,12 +207,17 @@ export function InsightTicker({ stories, onOpen }: InsightTickerProps) {
             </div>
             <button
               type="button"
+              ref={playRef}
               data-testid="ticker-playpause"
               aria-label={playing ? "Pause automatic stories" : "Play automatic stories"}
               aria-pressed={playing}
               disabled={reduced || stories.length < 2}
               onClick={() => {
-                setPlaying((value) => !value);
+                setPlaying((value) => {
+                  const next = !value;
+                  if (next) setSuspended(document.hidden);
+                  return next;
+                });
                 setElapsed(0);
               }}
               className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 sm:h-8 sm:w-8"
@@ -237,6 +248,7 @@ export function InsightTicker({ stories, onOpen }: InsightTickerProps) {
           className="mt-2 h-0.5 w-full overflow-hidden rounded-full bg-border/60"
           data-testid="ticker-progress"
           data-progress={Math.round(progress)}
+          data-active={active ? "true" : "false"}
           aria-hidden="true"
         >
           <div
