@@ -503,12 +503,28 @@ export default function MatchupLens() {
           <p className="mt-0.5 text-xs text-muted-foreground">{DASHBOARD_PURPOSE}</p>
         </header>
 
-        {isLoading || !snapshot || !away || !home ? (
-          <Card className="border-border bg-card">
-            <CardContent className="py-16 text-center text-sm text-muted-foreground">
-              Loading lens snapshot…
-            </CardContent>
-          </Card>
+        {isLoading ? (
+          <DashboardSkeleton />
+        ) : isError ? (
+          <DashboardError
+            message={
+              error instanceof Error
+                ? `${error.message} Nothing was lost — retry to load this matchup again.`
+                : "The lens snapshot could not be read. Retry to load this matchup again."
+            }
+            onRetry={() => void refetch()}
+          />
+        ) : !snapshot || !away || !home ? (
+          <DashboardEmpty
+            title="No profile data for this matchup"
+            message="This snapshot has no rows for one of the selected teams, so there is nothing to compare yet. Pick another matchup to continue."
+            actionLabel="Choose another matchup"
+            onAction={() => {
+              setAwayAbv(DEFAULT_AWAY);
+              setHomeAbv(DEFAULT_HOME);
+              goOverview();
+            }}
+          />
         ) : (
           <>
             <MatchupContextBar
@@ -519,9 +535,11 @@ export default function MatchupLens() {
               contextLine={`${snapshot.windowLabel} · as of ${snapshot.asOfDate}`}
               viewingLabel={viewingLabel}
               isOverview={view === "overview"}
+              isRefreshing={isFetching && !isLoading}
               onBack={goOverview}
               onChangeMatchup={changeMatchup}
             />
+
 
             <p className="sr-only" role="status" aria-live="polite" data-testid="view-announcement">
               {announcement}
