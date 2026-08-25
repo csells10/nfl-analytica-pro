@@ -118,13 +118,66 @@ function TeamPicker({
   );
 }
 
+interface UrlState {
+  awayAbv: string;
+  homeAbv: string;
+  view: LensView;
+  origin: LensOrigin;
+  layout: ConstellationLayout;
+  selectedLens: string | null;
+  collisionKey: string | null;
+  trace: TraceTarget | null;
+}
+
+function parseTrace(raw: string | null): TraceTarget | null {
+  if (!raw) return null;
+  const [type, ...rest] = raw.split(":");
+  if ((type === "tag" || type === "metric") && rest.length > 0) {
+    return { type, id: rest.join(":") };
+  }
+  return null;
+}
+
+/** Read every piece of dashboard state out of the URL. */
+function readUrlState(params: URLSearchParams): UrlState {
+  const parsed = parseView(params.get("view"), params.get("mode"));
+  return {
+    awayAbv: snapshotAbbr(params.get("a") ?? DEFAULT_AWAY),
+    homeAbv: snapshotAbbr(params.get("b") ?? DEFAULT_HOME),
+    view: parsed.view,
+    origin: parseOrigin(params.get("from")),
+    layout: parseLayout(params.get("layout"), parsed.layout),
+    selectedLens: LENSES.find((lens) => lens.key === params.get("lens"))?.key ?? null,
+    collisionKey: params.get("collision"),
+    trace: parseTrace(params.get("trace")),
+  };
+}
+
+/** Write dashboard state back into a params object, leaving other keys alone. */
+function writeUrlState(params: URLSearchParams, state: UrlState): URLSearchParams {
+  params.delete("mode");
+  params.set("a", state.awayAbv);
+  params.set("b", state.homeAbv);
+  params.set("view", state.view);
+  if (state.view === "overview") params.delete("from");
+  else params.set("from", state.origin);
+  if (state.view === "constellation" && state.layout === "side") params.set("layout", "side");
+  else params.delete("layout");
+  if (state.selectedLens) params.set("lens", state.selectedLens);
+  else params.delete("lens");
+  if (state.collisionKey) params.set("collision", state.collisionKey);
+  else params.delete("collision");
+  if (state.trace) params.set("trace", `${state.trace.type}:${state.trace.id}`);
+  else params.delete("trace");
+  return params;
+}
+
 export default function MatchupLens() {
   const source = getLensSnapshotSource();
   const {
     data: snapshot,
     isLoading,
     isError,
-    error,
     isFetching,
     refetch,
   } = useQuery({
@@ -134,34 +187,26 @@ export default function MatchupLens() {
   });
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const initial = parseView(searchParams.get("view"), searchParams.get("mode"));
 
-  const [awayAbv, setAwayAbv] = useState(() => snapshotAbbr(searchParams.get("a") ?? DEFAULT_AWAY));
-  const [homeAbv, setHomeAbv] = useState(() => snapshotAbbr(searchParams.get("b") ?? DEFAULT_HOME));
-  const [view, setView] = useState<LensView>(initial.view);
-  /** Where the focused view was entered from, so one back action is enough. */
-  const [origin, setOrigin] = useState<LensOrigin>(() => parseOrigin(searchParams.get("from")));
-  const [layout, setLayout] = useState<ConstellationLayout>(() =>
-    parseLayout(searchParams.get("layout"), initial.layout),
+  // The URL is the single source of truth, so browser Back/Forward rehydrates
+  // the whole canvas and no local mirror can drift out of sync.
+  const urlState = useMemo(() => readUrlState(searchParams), [searchParams]);
+  const { awayAbv, homeAbv, view, origin, layout, selectedLens, collisionKey, trace } = urlState;
+
+  /**
+   * User-initiated transitions push a history entry; internal normalization
+   * replaces so invalid deep links never create history spam.
+   */
+  const commit = useCallback(
+    (patch: Partial<UrlState>, options: { replace?: boolean } = {}) => {
+      const next = writeUrlState(new URLSearchParams(searchParams), { ...urlState, ...patch });
+      if (next.toString() === searchParams.toString()) return;
+      setSearchParams(next, { replace: options.replace ?? false });
+    },
+    [searchParams, setSearchParams, urlState],
   );
-  /** Remembered in the URL, but never rendered as evidence on the Overview. */
-  const [selectedLens, setSelectedLens] = useState<string | null>(
-    () => LENSES.find((lens) => lens.key === searchParams.get("lens"))?.key ?? null,
-  );
+
   const [hoveredLens, setHoveredLens] = useState<string | null>(null);
-  const [collisionKey, setCollisionKey] = useState<string | null>(
-    () => searchParams.get("collision"),
-  );
-
-  const [trace, setTrace] = useState<TraceTarget | null>(() => {
-    const raw = searchParams.get("trace");
-    if (!raw) return null;
-    const [type, ...rest] = raw.split(":");
-    if ((type === "tag" || type === "metric") && rest.length > 0) {
-      return { type, id: rest.join(":") };
-    }
-    return null;
-  });
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
@@ -171,48 +216,6 @@ export default function MatchupLens() {
     [snapshot],
   );
 
-  // Fall back to the defaults when a deep link names a team the snapshot lacks.
-  useEffect(() => {
-    if (teamOptions.length === 0) return;
-    if (!teamOptions.includes(awayAbv)) setAwayAbv(DEFAULT_AWAY);
-    if (!teamOptions.includes(homeAbv)) setHomeAbv(DEFAULT_HOME);
-  }, [teamOptions, awayAbv, homeAbv]);
-
-  useEffect(() => {
-    if (awayAbv === homeAbv && teamOptions.length > 1) {
-      const next = teamOptions.find((abv) => abv !== awayAbv);
-      if (next) setHomeAbv(next);
-    }
-  }, [awayAbv, homeAbv, teamOptions]);
-
-  const momentum = useMemo(() => momentumReadiness(snapshot ? [snapshot] : []), [snapshot]);
-
-  // Momentum is never reachable without real comparable history.
-  useEffect(() => {
-    if (view === "momentum" && !momentum.eligible && snapshot) setView("overview");
-  }, [view, momentum.eligible, snapshot]);
-
-  // Shared state lives in the URL so the matchup survives reload, back and share.
-  useEffect(() => {
-    const next = new URLSearchParams(searchParams);
-    next.delete("mode");
-    next.set("a", awayAbv);
-    next.set("b", homeAbv);
-    next.set("view", view);
-    if (view === "overview") next.delete("from");
-    else next.set("from", origin);
-    if (view === "constellation" && layout === "side") next.set("layout", "side");
-    else next.delete("layout");
-    if (selectedLens) next.set("lens", selectedLens);
-    else next.delete("lens");
-    if (collisionKey) next.set("collision", collisionKey);
-    else next.delete("collision");
-    if (trace) next.set("trace", `${trace.type}:${trace.id}`);
-    else next.delete("trace");
-    if (next.toString() !== searchParams.toString()) {
-      setSearchParams(next, { replace: true });
-    }
-  }, [awayAbv, homeAbv, view, origin, layout, selectedLens, collisionKey, trace, searchParams, setSearchParams]);
 
 
   const away = snapshot ? findTeam(snapshot, awayAbv) : undefined;
@@ -244,6 +247,49 @@ export default function MatchupLens() {
     () => (snapshot && away && home ? collisionDirections(snapshot, away, home) : []),
     [snapshot, away, home],
   );
+
+  const momentum = useMemo(() => momentumReadiness(snapshot ? [snapshot] : []), [snapshot]);
+
+  const laneKeys = useMemo(
+    () => new Set(directions.flatMap((direction) => direction.lanes.map((lane) => lane.key))),
+    [directions],
+  );
+
+  /**
+   * Deep-link hygiene. Every invalid or unavailable value is normalised in one
+   * place and written back with `replace`, so history only holds real steps.
+   */
+  useEffect(() => {
+    if (!snapshot) return;
+    const canonical: UrlState = { ...urlState };
+
+    if (teamOptions.length > 0) {
+      if (!teamOptions.includes(canonical.awayAbv)) canonical.awayAbv = DEFAULT_AWAY;
+      if (!teamOptions.includes(canonical.homeAbv)) canonical.homeAbv = DEFAULT_HOME;
+      if (canonical.awayAbv === canonical.homeAbv && teamOptions.length > 1) {
+        canonical.homeAbv =
+          teamOptions.find((abv) => abv !== canonical.awayAbv) ?? canonical.homeAbv;
+      }
+    }
+
+    // Momentum needs comparable history; without it the view is unreachable.
+    if (canonical.view === "momentum" && !momentum.eligible) {
+      canonical.view = "overview";
+      canonical.origin = "overview";
+    }
+
+    // A collision lane that does not exist for this matchup is dropped.
+    if (canonical.collisionKey && laneKeys.size > 0 && !laneKeys.has(canonical.collisionKey)) {
+      canonical.collisionKey = null;
+    }
+
+    const next = writeUrlState(new URLSearchParams(searchParams), canonical);
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [snapshot, urlState, teamOptions, momentum.eligible, laneKeys, searchParams, setSearchParams]);
+
+
 
   const brief = useMemo(
     () =>
@@ -288,20 +334,50 @@ export default function MatchupLens() {
     [snapshot, away, home, trace, selectedLens],
   );
 
-  const openTrace = useCallback((target: TraceTarget) => setTrace(target), []);
+  const openTrace = useCallback((target: TraceTarget) => commit({ trace: target }), [commit]);
+  const closeTrace = useCallback(() => commit({ trace: null }), [commit]);
 
   /** Every selection replaces the canvas with a focused view. */
-  const openLens = useCallback((key: string, from: LensOrigin = "overview") => {
-    setSelectedLens(key);
-    setOrigin(from);
-    setView("lens");
-  }, []);
+  const openLens = useCallback(
+    (key: string, from: LensOrigin = "overview") =>
+      commit({ selectedLens: key, origin: from, view: "lens" }),
+    [commit],
+  );
 
-  const openCollision = useCallback((key: string | null, from: LensOrigin = "overview") => {
-    setCollisionKey(key);
-    setOrigin(from);
-    setView("collision");
-  }, []);
+  const openCollision = useCallback(
+    (key: string | null, from: LensOrigin = "overview") =>
+      commit({ collisionKey: key, origin: from, view: "collision" }),
+    [commit],
+  );
+
+  const openView = useCallback(
+    (next: LensView, from: LensOrigin = "overview") => commit({ view: next, origin: from }),
+    [commit],
+  );
+
+  /**
+   * Any real team change is a new matchup: return to the Overview and clear
+   * every focused, hovered or traced state carried over from the old one.
+   */
+  const changeTeam = useCallback(
+    (slot: "away" | "home", value: string) => {
+      const current = slot === "away" ? awayAbv : homeAbv;
+      if (current === value) return;
+      setHoveredLens(null);
+      commit({
+        awayAbv: slot === "away" ? value : awayAbv,
+        homeAbv: slot === "home" ? value : homeAbv,
+        view: "overview",
+        origin: "overview",
+        layout: "overlay",
+        selectedLens: null,
+        collisionKey: null,
+        trace: null,
+      });
+    },
+    [awayAbv, commit, homeAbv],
+  );
+
 
   const openStory = useCallback(
     (story: InsightStory) => {
@@ -348,14 +424,14 @@ export default function MatchupLens() {
 
   const openDestination = useCallback(
     (id: DestinationId) => {
-      setOrigin("overview");
-      if (id === "constellation") setView("constellation");
-      else if (id === "lenses") setView("lenses");
+      if (id === "constellation") openView("constellation");
+      else if (id === "lenses") openView("lenses");
       else if (id === "biggest-edge" && largestGapKey) openLens(largestGapKey, "biggest-edge");
       else if (id === "collision") openCollision(strongestCollision?.lane.key ?? null, "overview");
     },
-    [largestGapKey, openCollision, openLens, strongestCollision],
+    [largestGapKey, openCollision, openLens, openView, strongestCollision],
   );
+
 
 
   const activeDestination: DestinationId | null =
@@ -384,6 +460,12 @@ export default function MatchupLens() {
     return activeLens?.name ?? "Lens detail";
   }, [view, directions, collisionKey, activeLens]);
 
+  // Hover is view-only state: never carry it across a view or matchup change.
+  useEffect(() => {
+    setHoveredLens(null);
+  }, [view, awayAbv, homeAbv]);
+
+
   // Focused views take over the top of the canvas and are announced politely.
   const [announcement, setAnnouncement] = useState("");
   useEffect(() => {
@@ -392,25 +474,21 @@ export default function MatchupLens() {
     canvasRef.current?.scrollIntoView?.({ block: "start", behavior: "auto" });
   }, [viewingLabel, view, awayAbv, homeAbv]);
 
-  const goOverview = useCallback(() => {
-    setOrigin("overview");
-    setView("overview");
-  }, []);
+  const goOverview = useCallback(() => openView("overview"), [openView]);
 
   /** One contextual return: back to wherever this view was entered from. */
-  const goBack = useCallback(() => {
-    const target = originReturn(origin);
-    setOrigin("overview");
-    setView(target.view);
-  }, [origin]);
+  const goBack = useCallback(
+    () => openView(originReturn(origin).view),
+    [openView, origin],
+  );
 
   const changeMatchup = useCallback(() => {
-    setOrigin("overview");
-    setView("overview");
+    openView("overview");
     window.requestAnimationFrame(() => {
       selectorRef.current?.querySelector("button")?.focus();
     });
-  }, []);
+  }, [openView]);
+
 
   const evidence =
     snapshot && away && home && activeLens && activeA && activeB ? (
@@ -433,7 +511,7 @@ export default function MatchupLens() {
   const stepLens = (direction: -1 | 1) => {
     const base = lensIndex < 0 ? 0 : lensIndex;
     const next = (base + direction + LENSES.length) % LENSES.length;
-    setSelectedLens(LENSES[next].key);
+    commit({ selectedLens: LENSES[next].key });
   };
 
   const backLabel = originReturn(origin).label;
@@ -450,7 +528,7 @@ export default function MatchupLens() {
                 key: lens.key,
                 name: LENS_GLOSSARY[lens.key]?.name ?? lens.name,
               })),
-              onChange: (key) => setSelectedLens(key),
+              onChange: (key) => commit({ selectedLens: key }),
               onPrev: () => stepLens(-1),
               onNext: () => stepLens(1),
             }
@@ -466,10 +544,7 @@ export default function MatchupLens() {
       label: "Compare the teams",
       helper: "Both profiles on one shared shape.",
       icon: DESTINATION_ICONS.constellation,
-      onSelect: () => {
-        setOrigin("overview");
-        setView("constellation");
-      },
+      onSelect: () => openView("constellation"),
       disabled: current === "constellation",
     },
     {
@@ -485,13 +560,11 @@ export default function MatchupLens() {
       label: "Browse all six lenses",
       helper: "Pick another football question.",
       icon: DESTINATION_ICONS.lenses,
-      onSelect: () => {
-        setOrigin("overview");
-        setView("lenses");
-      },
+      onSelect: () => openView("lenses"),
       disabled: current === "lenses",
     },
   ];
+
 
 
   return (
@@ -505,25 +578,25 @@ export default function MatchupLens() {
         {isLoading ? (
           <DashboardSkeleton />
         ) : isError ? (
-          <DashboardError
-            message={
-              error instanceof Error
-                ? `${error.message} Nothing was lost — retry to load this matchup again.`
-                : "The lens snapshot could not be read. Retry to load this matchup again."
-            }
-            onRetry={() => void refetch()}
-          />
+          <DashboardError onRetry={() => void refetch()} />
         ) : !snapshot || !away || !home ? (
           <DashboardEmpty
             title="No profile data for this matchup"
             message="This snapshot has no rows for one of the selected teams, so there is nothing to compare yet. Pick another matchup to continue."
             actionLabel="Choose another matchup"
-            onAction={() => {
-              setAwayAbv(DEFAULT_AWAY);
-              setHomeAbv(DEFAULT_HOME);
-              goOverview();
-            }}
+            onAction={() =>
+              commit({
+                awayAbv: DEFAULT_AWAY,
+                homeAbv: DEFAULT_HOME,
+                view: "overview",
+                origin: "overview",
+                selectedLens: null,
+                collisionKey: null,
+                trace: null,
+              })
+            }
           />
+
         ) : (
           <>
             <MatchupContextBar
@@ -553,7 +626,7 @@ export default function MatchupLens() {
                         <TeamPicker
                           value={awayAbv}
                           options={teamOptions}
-                          onChange={setAwayAbv}
+                          onChange={(value) => changeTeam("away", value)}
                           role="Team A"
                           tone="a"
                         />
@@ -563,7 +636,8 @@ export default function MatchupLens() {
                         <TeamPicker
                           value={homeAbv}
                           options={teamOptions}
-                          onChange={setHomeAbv}
+                          onChange={(value) => changeTeam("home", value)}
+
                           role="Team B"
                           tone="b"
                         />
@@ -616,7 +690,7 @@ export default function MatchupLens() {
                         onSelect={(key) => openLens(key, "constellation")}
                         onHover={setHoveredLens}
                         layout={layout}
-                        onLayoutChange={setLayout}
+                        onLayoutChange={(next) => commit({ layout: next })}
                       />
                     </CardContent>
                   </Card>
@@ -632,10 +706,7 @@ export default function MatchupLens() {
                       title="No lens selected"
                       message="Choose a lens to see the metrics behind it."
                       actionLabel="Browse all six lenses"
-                      onAction={() => {
-                        setOrigin("overview");
-                        setView("lenses");
-                      }}
+                      onAction={() => openView("lenses")}
                     />
                   )}
                   <ContinueExploring steps={continueSteps("lens")} />
@@ -665,7 +736,7 @@ export default function MatchupLens() {
                   <MatchupCollision
                     directions={directions}
                     selectedKey={collisionKey}
-                    onSelect={setCollisionKey}
+                    onSelect={(key) => commit({ collisionKey: key })}
                     onOpenTrace={openTrace}
                   />
                   <ContinueExploring steps={continueSteps("collision")} />
@@ -705,11 +776,10 @@ export default function MatchupLens() {
               target={trace}
               snapshot={snapshot}
               open={trace !== null}
-              onOpenChange={(open) => !open && setTrace(null)}
+              onOpenChange={(open) => !open && closeTrace()}
               onOpenTrace={openTrace}
               onSelectLens={(key) => {
-                openLens(key);
-                setTrace(null);
+                commit({ selectedLens: key, origin: "overview", view: "lens", trace: null });
               }}
               selectedLensName={
                 activeLens ? LENS_GLOSSARY[activeLens.key]?.name ?? activeLens.name : "no selected lens"

@@ -44,16 +44,20 @@ export function JourneyBack({ backLabel, onBack, lensSelector }: JourneyNavProps
       </button>
 
       {lensSelector && (
-        <div className="flex min-w-0 items-center gap-1.5">
+        <div
+          className="flex w-full min-w-0 flex-wrap items-center gap-1.5 sm:w-auto"
+          data-testid="journey-lens-row"
+        >
           <span className="text-[11px] font-medium text-muted-foreground">Viewing</span>
           <Select value={lensSelector.value} onValueChange={lensSelector.onChange}>
             <SelectTrigger
-              className="h-11 w-[13.5rem] sm:h-9"
+              className="h-11 min-w-0 flex-1 sm:h-9 sm:w-[13.5rem] sm:flex-none"
               aria-label="Viewing lens"
               data-testid="journey-lens-select"
             >
               <SelectValue />
             </SelectTrigger>
+
             <SelectContent>
               {lensSelector.options.map((option) => (
                 <SelectItem key={option.key} value={option.key}>

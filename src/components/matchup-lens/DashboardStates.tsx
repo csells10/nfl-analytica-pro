@@ -44,12 +44,17 @@ export function DashboardSkeleton() {
 }
 
 interface DashboardErrorProps {
-  message: string;
   onRetry: () => void;
 }
 
-/** Failure states say what happened, what still works, and offer one action. */
-export function DashboardError({ message, onRetry }: DashboardErrorProps) {
+/**
+ * Failure states stay plain-language and stable. Raw error text is never shown,
+ * so backend or transport detail cannot leak into the page.
+ */
+export const DASHBOARD_ERROR_MESSAGE =
+  "The matchup data couldn’t be loaded right now. Nothing was lost — try again to load this matchup.";
+
+export function DashboardError({ onRetry }: DashboardErrorProps) {
   return (
     <Card className="border-destructive/40 bg-card" data-testid="dashboard-error">
       <CardContent className="p-4">
@@ -57,7 +62,10 @@ export function DashboardError({ message, onRetry }: DashboardErrorProps) {
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">Matchup data didn’t load</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{message}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {DASHBOARD_ERROR_MESSAGE}
+            </p>
+
             <button
               type="button"
               data-testid="dashboard-retry"
