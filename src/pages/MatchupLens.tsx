@@ -64,6 +64,23 @@ export function snapshotAbbr(teamAbv: string): string {
   return teamAbv.toUpperCase() === "WAS" ? "WSH" : teamAbv.toUpperCase();
 }
 
+/**
+ * Where a backend warning is already visible in the page. Partial and
+ * asymmetric evidence is disclosed by the readiness notice and the
+ * side-specific readiness notes; league-rank suppression is disclosed by the
+ * suppression notice. Anything else has no existing home and is shown as its
+ * own safe notice. The rule reads the warning code only — never free text.
+ */
+export type WarningDisclosure = "readiness" | "suppression" | "none";
+
+export function warningDisclosure(code: string): WarningDisclosure {
+  const normalized = code.toUpperCase();
+  if (normalized.includes("PARTIAL") || normalized.includes("ASYMMETRIC")) return "readiness";
+  if (normalized.includes("SUPPRESS") || normalized.includes("LEAGUE_RANK")) return "suppression";
+  return "none";
+}
+
+
 function teamName(teamAbv: string): string {
   return getTeam(registryAbbr(teamAbv)).fullName;
 }
