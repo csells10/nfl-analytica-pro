@@ -122,8 +122,8 @@ export function EvidenceRail({
                   <span className="flex items-baseline justify-between gap-2 text-[11px]">
                     <span className="text-primary">{labelB}</span>
                     <span className="font-mono text-muted-foreground">
-                      {betterThanText(typeof other === "number" ? other : null)} ·{" "}
-                      {rankText(rankB.rank, rankB.total)}
+                      {betterThanText(typeof other === "number" ? other : null)}
+                      {rank(rankB) ? ` · ${rank(rankB)}` : ""}
                     </span>
                   </span>
                   <Bar value={typeof other === "number" ? other : null} tone="b" />
