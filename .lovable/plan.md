@@ -1,46 +1,37 @@
-# Phase G3 — Connect Matchup Lens to the live production endpoint
+# Phase G3 — finish verification and evidence packet
 
-Source re-verified against the G1 report before planning: no material drift. `LENSES` order, tags and exclusions are unchanged; `MatchupLens.tsx` still queries `["lens-snapshot", source.id]` from `getLensSnapshotSource()`; `staticLensSnapshotSource` is still the module default; the `game` URL parameter is still read by nobody.
+Continue the live Matchup Lens integration. No publishing, no deployment, no changes to lens formulas.
 
-## What this does
+## 1. Resolve the five test/UI mismatches against the contract (not against green results)
 
-The Matchup Lens page stops using the frozen August preseason data entirely. It loads real evidence for the exact game opened from the Slate, from the authenticated production service, and shows honest states when that evidence is missing, incomplete or blocked.
+For each, judge the rendered behaviour first, then change whichever side is wrong.
 
-## Work
+| Case | Rendered today | Judgement | Action |
+| --- | --- | --- | --- |
+| No game | "Choose a matchup first" + "Go to the Slate" action | Satisfies the contract (clearly directs to the Slate) | Align test expectation to the real copy, including the typographic apostrophes |
+| 403 | Title "Access denied", no retry control | Safe, but the title is system-speak rather than user language | Reword UI to "You don't have access to this matchup" and keep the no-retry behaviour; test asserts that copy |
+| Unreadable / contract-invalid response | "The matchup evidence didn't arrive in a usable form", nothing scored | Behaviour is correct; wording is long and does not name the cause | Reword UI to "This matchup's evidence couldn't be read" plus the existing explanatory line; test asserts the new title and asserts that no lens score renders |
+| Retry control | Calls `refetch()` on the current query key only | Correct — retries only the current game | Align test to the real button label and add an assertion that the refetched URL carries the same game id |
+| Uneven evidence | Page notice "Evidence is uneven for …"; per-lens note "Uneven evidence — the score uses only the values present. TEAM: missing metric" | Correct: names team and lens, never implies zero | Align tests to the real wording, and keep the existing assertion that "counted as zero" never appears |
 
-### 1. Verify the API base first
-Call the released endpoint for `20260917_DET@BUF` through the existing Firebase bearer mechanism, first against the current hardcoded base, then against the released base. Keep the single shared `API_BASE` if it already reaches the released service; otherwise update that one constant. No second base, no env-var system, no token printed or stored.
+## 2. Migrate the older page tests
 
-### 2. Transport types — `src/lib/matchup-lens-api-types.ts` (new)
-Exact TypeScript for the `matchup_lens_v1` envelope: schema version, availability + safe reason, canonical game header, display strings, basis/freshness, dynamic metric catalog, away/home evidence, coverage totals, six ordered readiness rows, named-metric coverage, warnings, league context, method. Every envelope key required; nullability mirrors the contract. Transport signal strength is `"strong" | "supporting" | "context"`. No `numerator`/`denominator`. The frontend `SignalStrength` is not widened. Field names are transcribed from the real authenticated response captured in step 1.
+Files: `matchup-lens-page.test.tsx`, `matchup-lens-continuity.test.tsx`, `matchup-lens.test.tsx`, `matchup-lens-journey.test.tsx`, `matchup-lens-presentations.test.tsx`, `matchup-lens-new-features.test.tsx`.
 
-### 3. Pure adapter — `src/lib/matchup-lens-adapter.ts` (new)
-`adaptMatchupLensV1(payload) => { snapshot, game, basis, coverage, leagueContext, method }`, synchronous and side-effect free. Validates schema version, availability, canonical header, team-ID conversion to safe integers, metric record key vs nested `.metric`, signal-strength values, and percentile finiteness/range. `context` metrics are dropped from definitions and from every percentile record, never coerced. Null percentiles omit the key; numeric zero is kept. Tags and labels pass through byte-for-byte. Any contract violation throws a typed adapter error — never a partial snapshot. `LensSnapshot` is unchanged; readiness/warnings/league context ride alongside it.
+- Keep every scoring, navigation, accessibility, Collision, Turnover Watch, continuity and interaction assertion as-is; only their data source changes from the preseason snapshot to the live fixture harness (`installLensFetchMock`, `withGame`).
+- Replace only two classes of expectation: those that require the removed preseason runtime source, and those that require visible league-rank output in the page. Each replacement becomes an explicit live-only / no-static-fallback / rank-suppression assertion.
+- Pure unit tests of the ranking helpers (`matchup-lens-rank`, `rankText`) stay unchanged — the helpers are untouched; only their display is suppressed.
+- Record every replaced assertion (file, test name, old expectation, new expectation, reason) for the evidence packet.
 
-### 4. Live request + query
-`fetchMatchupLensContext(gameId)` added to `src/lib/nfl-api.ts`, reusing `authHeaders()` and the existing safe error mapping, extended with typed 400/404/409/504 kinds. Game IDs are validated against `^[0-9]{8}_[A-Z0-9]{2,4}@[A-Z0-9]{2,4}$`, max 32 chars.
+## 3. Verify
 
-Query: key `["matchup-lens-context", gameId]`, `meta: { persist: false }`, enabled only for a valid ID, no `keepPreviousData`, no placeholder or initial data, `refetchOnWindowFocus: false`, one retry only for network/500/504.
+- Full frontend suite, typecheck, build; read the build log before reporting.
+- Authenticated DET/BUF acceptance against `GET /game/20260917_DET@BUF/lens-context`: status 200, schema and availability, canonical teams and ids, dates and counts (63/62/63/62), six readiness rows in frozen order, 16 context metrics excluded by the adapter, DET Drive Control partial and BUF complete, warnings present, league context suppressed, no numerator/denominator fields. No token is printed, logged or stored.
 
-### 5. Remove the static runtime path
-`MatchupLens.tsx` no longer imports or calls `getLensSnapshotSource()`. The `game` parameter becomes the evidence identity; `a`/`b` become display-only and are normalized (`replace`) to the canonical response abbreviations after success. The LAR/CLE defaults are removed from the live page. The static snapshot and source files stay on disk untouched for tests; a test asserts the page module has no import path back to them.
+## 4. Deliver
 
-### 6. States — `DashboardStates.tsx`
-Add controlled states for: no game, malformed game, unknown game (404), unavailable (`available:false`, showing the safe backend reason), access denied (403), invalid/unsafe evidence (409), invalid response, timeout (504), and generic failure with manual retry. All plain language; no raw bodies, stack traces or internal detail.
+Return the 21-item evidence packet, stating explicitly what is local implementation versus preview versus production-published (nothing published).
 
-### 7. Readiness disclosure
-One concise partial/asymmetric notice in the Matchup Context bar; side-specific readiness and missing-evidence detail in Lens Explorer and Lens Detail for the affected lens only. `unavailable` lenses show no head-to-head comparison. Scores, denominators, Collision and Turnover Watch rules are untouched — DET Drive Control stays calculable from its surviving metrics and the missing `fourth_down_pct` never becomes zero.
+## Known blocker risk
 
-### 8. League-context suppression
-Driven by `league_context.mode === "suppressed"`, passed down as a presentation flag. Hides League Standing, lens and metric ordinals, every "out of N" phrase, rank-dependent brief observations, rank identity ticker stories and rank-dependent trace text; keeps scores, gaps, Biggest Edge, non-rank trace evidence and all navigation. `matchup-lens-rank.ts` is not modified.
-
-### 9. Tests
-New adapter and live-page suites covering all 28 required points, plus a full run of the existing suites.
-
-## Known conflict to resolve during implementation
-
-Four existing page-level suites (`matchup-lens-page`, `-presentations`, `-continuity`, `-journey`) render the page with no `game` parameter and expect the static snapshot. Once the page is live-only they would land on the no-game state. They will be migrated to mount with a valid `game` and a mocked live response of equivalent evidence — same assertions, same expected values, nothing weakened. If any assertion cannot be preserved that way, I will stop and report it rather than relax it.
-
-## Stop condition
-
-Implement, verify against the real DET/BUF response, run the full suite, and return the 21-item evidence packet. Nothing published or deployed.
+The signed-in acceptance check needs a browser session for the app's Google sign-in. If no session can be established in this environment, everything else completes and the acceptance check is reported as an open blocker with the exact reason rather than being faked or skipped silently.
