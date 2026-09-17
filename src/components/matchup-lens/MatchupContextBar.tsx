@@ -98,6 +98,15 @@ export function MatchupContextBar({
           </button>
         </div>
       </div>
+      {notices.length > 0 && (
+        <ul className="mt-1 space-y-0.5" data-testid="context-notices">
+          {notices.map((notice) => (
+            <li key={notice} className="text-[11px] leading-relaxed text-muted-foreground">
+              {notice}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
