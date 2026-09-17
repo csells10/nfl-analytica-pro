@@ -90,10 +90,12 @@ export function buildGameBrief(
 
   const observations: BriefObservation[] = [];
 
-  for (const [team, label, name] of [
-    [teamA, labelA, nameA],
-    [teamB, labelB, nameB],
-  ] as const) {
+  for (const [team, label, name] of options.suppressLeagueContext
+    ? []
+    : ([
+        [teamA, labelA, nameA],
+        [teamB, labelB, nameB],
+      ] as const)) {
     const best = bestLens(snapshot, team);
     if (!best) continue;
     const standing = `${ordinal(best.standing.rank as number)} of ${best.standing.total}`;
