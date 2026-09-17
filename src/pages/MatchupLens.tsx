@@ -674,24 +674,11 @@ export default function MatchupLens() {
                   <Card className="border-border bg-card" ref={selectorRef}>
                     <CardContent className="p-3">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
-                        <TeamPicker
-                          value={awayAbv}
-                          options={teamOptions}
-                          onChange={(value) => changeTeam("away", value)}
-                          role="Team A"
-                          tone="a"
-                        />
+                        <TeamIdentity value={awayAbv} role="Away" tone="a" />
                         <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:pb-3">
-                          vs
+                          at
                         </span>
-                        <TeamPicker
-                          value={homeAbv}
-                          options={teamOptions}
-                          onChange={(value) => changeTeam("home", value)}
-
-                          role="Team B"
-                          tone="b"
-                        />
+                        <TeamIdentity value={homeAbv} role="Home" tone="b" />
                       </div>
                       <p
                         className="mt-2 font-mono text-[11px] text-muted-foreground"
