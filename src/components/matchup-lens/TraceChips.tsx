@@ -84,9 +84,11 @@ export function ScoreBlock({
       >
         {scoreText(score)}
       </p>
-      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-        {rankText(standing.rank, standing.total)} · {standing.tier}
-      </p>
+      {rank(standing) && (
+        <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+          {rank(standing)} · {standing.tier}
+        </p>
+      )}
     </div>
   );
 }
