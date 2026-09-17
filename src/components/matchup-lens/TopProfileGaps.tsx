@@ -46,6 +46,7 @@ export function TopProfileGaps({
   limit,
   onOpenAll,
 }: TopProfileGapsProps) {
+  const rank = useRankText();
   const ordered = sortBySeparation(gaps);
   const rows = typeof limit === "number" ? ordered.slice(0, limit) : ordered;
   const truncated = rows.length < ordered.length;
