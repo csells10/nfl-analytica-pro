@@ -6,7 +6,7 @@
 // ever logged, persisted or returned from this module.
 
 import { useQuery } from "@tanstack/react-query";
-import { API_BASE, ApiError, authHeaders, handleApiResponse } from "./nfl-api";
+import { API_BASE, ApiError, authHeaders, handleLensApiResponse } from "./nfl-api";
 import {
   adaptMatchupLensV1,
   MatchupLensContractError,
