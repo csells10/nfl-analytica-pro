@@ -54,10 +54,7 @@ import { LENSES, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
 
 import { getTeam, teamLogoUrl } from "@/lib/nfl-teams";
 
-const DEFAULT_AWAY = "LAR";
-const DEFAULT_HOME = "CLE";
-
-/** The snapshot uses WSH; the shared team registry uses WAS. */
+/** Live evidence uses WSH; the shared team registry uses WAS. */
 function registryAbbr(teamAbv: string): string {
   return teamAbv === "WSH" ? "WAS" : teamAbv;
 }
