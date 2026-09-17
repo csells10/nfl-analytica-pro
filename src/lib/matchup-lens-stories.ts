@@ -125,10 +125,12 @@ export function buildInsightStories(input: StoryInput): InsightStory[] {
     });
   }
 
-  for (const [team, label, name, id] of [
-    [teamA, labelA, nameA, "identity-a"],
-    [teamB, labelB, nameB, "identity-b"],
-  ] as const) {
+  for (const [team, label, name, id] of input.suppressLeagueContext
+    ? []
+    : ([
+        [teamA, labelA, nameA, "identity-a"],
+        [teamB, labelB, nameB, "identity-b"],
+      ] as const)) {
     const best = bestLensKey(snapshot, team);
     if (!best) continue;
     const rank = ordinal(best.standing.rank as number);
