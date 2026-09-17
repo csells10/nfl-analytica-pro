@@ -244,10 +244,12 @@ function adaptTeamEvidence(
 function adaptCatalog(raw: unknown): {
   definitions: MetricDefinition[];
   scoringMetrics: Set<string>;
+  catalogSignals: Map<string, MatchupLensV1SignalStrength>;
 } {
   if (!Array.isArray(raw)) fail("metric_catalog must be an array");
   const definitions: MetricDefinition[] = [];
   const scoringMetrics = new Set<string>();
+  const catalogSignals = new Map<string, MatchupLensV1SignalStrength>();
   const seen = new Set<string>();
 
   raw.forEach((entry, index) => {
