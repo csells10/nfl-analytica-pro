@@ -54,8 +54,10 @@ export function LensDetail({
   nameB,
   onOpenTrace,
   onClose,
+  readiness,
 }: LensDetailProps) {
   const [showAll, setShowAll] = useState(false);
+  const rank = useRankText();
 
   const percentileB = useMemo(
     () => new Map(scoreB.contributions.map((c) => [c.metric, c.percentile])),
