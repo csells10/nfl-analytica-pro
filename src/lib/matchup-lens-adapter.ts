@@ -161,12 +161,8 @@ function optionalStringList(value: unknown, path: string): string[] {
 
 /** Canonical decimal-string team ID -> safe integer. */
 function safeTeamId(raw: unknown, path: string): number {
-  if (typeof raw === "number") {
-    if (!Number.isSafeInteger(raw)) fail(`${path} is not a safe integer`);
-    return raw;
-  }
-  if (typeof raw !== "string" || !/^-?\d+$/.test(raw.trim())) {
-    fail(`${path} must be a decimal integer string`);
+  if (typeof raw !== "string" || !/^\d+$/.test(raw.trim())) {
+    fail(`${path} must be a canonical decimal integer string`);
   }
   const parsed = Number(raw.trim());
   if (!Number.isSafeInteger(parsed)) fail(`${path} is not a safe integer`);
