@@ -2,9 +2,11 @@ import { ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { LensGap } from "@/lib/matchup-lens-compare";
 import { LENS_GLOSSARY } from "@/lib/matchup-lens-glossary";
-import { rankText } from "@/lib/matchup-lens-language";
 import { lensStanding } from "@/lib/matchup-lens-rank";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 import type { LensSnapshot } from "@/lib/matchup-lens-types";
+import type { MatchupLensLensReadiness } from "@/lib/matchup-lens-adapter";
+import { LensReadinessNote } from "./LensReadinessNote";
 
 interface LensExplorerProps {
   gaps: LensGap[];
@@ -15,6 +17,8 @@ interface LensExplorerProps {
   labelB: string;
   selectedKey: string | null;
   onSelect: (lensKey: string) => void;
+  /** Backend readiness rows, keyed by lens. Disclosure only — never a score. */
+  readiness?: Record<string, MatchupLensLensReadiness>;
 }
 
 /**
