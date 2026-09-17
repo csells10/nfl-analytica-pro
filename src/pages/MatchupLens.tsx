@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
 import { LensDetail } from "@/components/matchup-lens/LensDetail";
 import { LensExplorer } from "@/components/matchup-lens/LensExplorer";
@@ -26,13 +18,20 @@ import {
   DashboardEmpty,
   DashboardError,
   DashboardSkeleton,
+  LENS_STATE_COPY,
 } from "@/components/matchup-lens/DashboardStates";
 import { TopProfileGaps } from "@/components/matchup-lens/TopProfileGaps";
 import { GameBrief } from "@/components/matchup-lens/GameBrief";
 import { MatchupCollision } from "@/components/matchup-lens/MatchupCollision";
 import { MomentumShift } from "@/components/matchup-lens/MomentumShift";
 import { TraceDrawer } from "@/components/matchup-lens/TraceDrawer";
-import { getLensSnapshotSource } from "@/lib/matchup-lens-source";
+import { classifyGameId, useMatchupLensContext } from "@/lib/matchup-lens-live";
+import type { MatchupLensLensReadiness } from "@/lib/matchup-lens-adapter";
+import {
+  LensPresentationProvider,
+  LEAGUE_CONTEXT_SUPPRESSED_NOTE,
+} from "@/lib/matchup-lens-presentation";
+import { ApiError } from "@/lib/nfl-api";
 import { lensGaps } from "@/lib/matchup-lens-compare";
 import { collisionDirections, collisionHighlights } from "@/lib/matchup-lens-collision";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
@@ -55,10 +54,7 @@ import { LENSES, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
 
 import { getTeam, teamLogoUrl } from "@/lib/nfl-teams";
 
-const DEFAULT_AWAY = "LAR";
-const DEFAULT_HOME = "CLE";
-
-/** The snapshot uses WSH; the shared team registry uses WAS. */
+/** Live evidence uses WSH; the shared team registry uses WAS. */
 function registryAbbr(teamAbv: string): string {
   return teamAbv === "WSH" ? "WAS" : teamAbv;
 }
@@ -72,21 +68,13 @@ function teamName(teamAbv: string): string {
   return getTeam(registryAbbr(teamAbv)).fullName;
 }
 
-function TeamPicker({
-  value,
-  options,
-  onChange,
-  role,
-  tone,
-}: {
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-  role: string;
-  tone: "a" | "b";
-}) {
+/**
+ * Canonical matchup identity. Teams come from the backend game header, so this
+ * is read-only: the URL cannot select or change which teams are compared.
+ */
+function TeamIdentity({ value, role, tone }: { value: string; role: string; tone: "a" | "b" }) {
   return (
-    <div className="min-w-0 flex-1">
+    <div className="min-w-0 flex-1" data-testid={`canonical-team-${tone}`}>
       <p
         className={`mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
           tone === "a" ? "text-accent-cool" : "text-primary"
@@ -94,26 +82,17 @@ function TeamPicker({
       >
         {role}
       </p>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-11 w-full" aria-label={`${role} team`}>
-          <div className="flex min-w-0 items-center gap-2">
-            <img
-              src={teamLogoUrl(registryAbbr(value), 500)}
-              alt=""
-              className="h-5 w-5 shrink-0"
-              loading="lazy"
-            />
-            <SelectValue />
-          </div>
-        </SelectTrigger>
-        <SelectContent className="max-h-72">
-          {options.map((abv) => (
-            <SelectItem key={abv} value={abv}>
-              {abv} · {getTeam(registryAbbr(abv)).shortName}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex min-h-[44px] min-w-0 items-center gap-2 rounded-md border border-border bg-muted/10 px-3">
+        <img
+          src={teamLogoUrl(registryAbbr(value), 500)}
+          alt=""
+          className="h-5 w-5 shrink-0"
+          loading="lazy"
+        />
+        <span className="truncate text-sm font-semibold text-foreground">
+          {value} · {getTeam(registryAbbr(value)).shortName}
+        </span>
+      </div>
     </div>
   );
 }
@@ -142,8 +121,9 @@ function parseTrace(raw: string | null): TraceTarget | null {
 function readUrlState(params: URLSearchParams): UrlState {
   const parsed = parseView(params.get("view"), params.get("mode"));
   return {
-    awayAbv: snapshotAbbr(params.get("a") ?? DEFAULT_AWAY),
-    homeAbv: snapshotAbbr(params.get("b") ?? DEFAULT_HOME),
+    // Display continuity only. Canonical teams come from the live response.
+    awayAbv: snapshotAbbr(params.get("a") ?? ""),
+    homeAbv: snapshotAbbr(params.get("b") ?? ""),
     view: parsed.view,
     origin: parseOrigin(params.get("from")),
     layout: parseLayout(params.get("layout"), parsed.layout),
@@ -156,8 +136,10 @@ function readUrlState(params: URLSearchParams): UrlState {
 /** Write dashboard state back into a params object, leaving other keys alone. */
 function writeUrlState(params: URLSearchParams, state: UrlState): URLSearchParams {
   params.delete("mode");
-  params.set("a", state.awayAbv);
-  params.set("b", state.homeAbv);
+  if (state.awayAbv) params.set("a", state.awayAbv);
+  else params.delete("a");
+  if (state.homeAbv) params.set("b", state.homeAbv);
+  else params.delete("b");
   params.set("view", state.view);
   if (state.view === "overview") params.delete("from");
   else params.set("from", state.origin);
@@ -173,25 +155,41 @@ function writeUrlState(params: URLSearchParams, state: UrlState): URLSearchParam
 }
 
 export default function MatchupLens() {
-  const source = getLensSnapshotSource();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // The game identifier is the evidence identity. There is no fallback
+  // snapshot: without a valid game nothing is requested and nothing is scored.
+  const gameIdState = useMemo(() => classifyGameId(searchParams.get("game")), [searchParams]);
+  const gameId = gameIdState.kind === "valid" ? gameIdState.gameId : null;
+
   const {
-    data: snapshot,
+    data: result,
     isLoading,
     isError,
+    error,
     isFetching,
     refetch,
-  } = useQuery({
-    queryKey: ["lens-snapshot", source.id],
-    queryFn: source.load,
-    staleTime: Infinity,
-  });
+  } = useMatchupLensContext(gameId);
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const context = result?.kind === "available" ? result.context : null;
+  const snapshot = context?.snapshot;
+  const suppressLeagueContext = context?.leagueContext.suppressed ?? false;
+
+  const readinessByLens = useMemo(() => {
+    const map: Record<string, MatchupLensLensReadiness> = {};
+    for (const row of context?.coverage.lensReadiness ?? []) map[row.lensKey] = row;
+    return map;
+  }, [context]);
 
   // The URL is the single source of truth, so browser Back/Forward rehydrates
   // the whole canvas and no local mirror can drift out of sync.
   const urlState = useMemo(() => readUrlState(searchParams), [searchParams]);
-  const { awayAbv, homeAbv, view, origin, layout, selectedLens, collisionKey, trace } = urlState;
+  const { view, origin, layout, selectedLens, collisionKey, trace } = urlState;
+
+  // Canonical identity wins over anything carried in the URL.
+  const awayAbv = context ? snapshotAbbr(context.game.away.teamAbv) : urlState.awayAbv;
+  const homeAbv = context ? snapshotAbbr(context.game.home.teamAbv) : urlState.homeAbv;
 
   /**
    * User-initiated transitions push a history entry; internal normalization
@@ -211,15 +209,9 @@ export default function MatchupLens() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
 
-  const teamOptions = useMemo(
-    () => (snapshot ? snapshot.teams.map((team) => team.teamAbv).sort() : []),
-    [snapshot],
-  );
-
-
-
-  const away = snapshot ? findTeam(snapshot, awayAbv) : undefined;
-  const home = snapshot ? findTeam(snapshot, homeAbv) : undefined;
+  // Canonical rows, not URL-selected rows.
+  const away = snapshot && context ? findTeam(snapshot, context.game.away.teamAbv) : undefined;
+  const home = snapshot && context ? findTeam(snapshot, context.game.home.teamAbv) : undefined;
 
   const scoresA = useMemo(
     () => (snapshot && away ? scoreAllLenses(snapshot, away) : []),
@@ -271,14 +263,10 @@ export default function MatchupLens() {
     if (!snapshot) return;
     const canonical: UrlState = { ...urlState };
 
-    if (teamOptions.length > 0) {
-      if (!teamOptions.includes(canonical.awayAbv)) canonical.awayAbv = DEFAULT_AWAY;
-      if (!teamOptions.includes(canonical.homeAbv)) canonical.homeAbv = DEFAULT_HOME;
-      if (canonical.awayAbv === canonical.homeAbv && teamOptions.length > 1) {
-        canonical.homeAbv =
-          teamOptions.find((abv) => abv !== canonical.awayAbv) ?? canonical.homeAbv;
-      }
-    }
+    // `a` and `b` are display/share continuity only; they are rewritten to the
+    // canonical response teams and can never select different rows.
+    canonical.awayAbv = awayAbv;
+    canonical.homeAbv = homeAbv;
 
     // Momentum needs comparable history; without it the view is unreachable.
     if (canonical.view === "momentum" && !momentum.eligible) {
@@ -304,7 +292,8 @@ export default function MatchupLens() {
   }, [
     snapshot,
     urlState,
-    teamOptions,
+    awayAbv,
+    homeAbv,
     momentum.eligible,
     laneKeys,
     traceData,
@@ -312,14 +301,21 @@ export default function MatchupLens() {
     setSearchParams,
   ]);
 
-
-
   const brief = useMemo(
     () =>
       snapshot && away && home
-        ? buildGameBrief(snapshot, away, home, awayAbv, homeAbv, teamName(awayAbv), teamName(homeAbv))
+        ? buildGameBrief(
+            snapshot,
+            away,
+            home,
+            awayAbv,
+            homeAbv,
+            teamName(awayAbv),
+            teamName(homeAbv),
+            { suppressLeagueContext },
+          )
         : null,
-    [snapshot, away, home, awayAbv, homeAbv],
+    [snapshot, away, home, awayAbv, homeAbv, suppressLeagueContext],
   );
 
   const angle = useMemo(() => {
@@ -344,9 +340,10 @@ export default function MatchupLens() {
             gaps,
             angle,
             directions,
+            suppressLeagueContext,
           })
         : [],
-    [snapshot, away, home, awayAbv, homeAbv, gaps, angle, directions],
+    [snapshot, away, home, awayAbv, homeAbv, gaps, angle, directions, suppressLeagueContext],
   );
 
   const openTrace = useCallback((target: TraceTarget) => commit({ trace: target }), [commit]);
@@ -390,17 +387,29 @@ export default function MatchupLens() {
     [commit],
   );
 
-  const changeTeam = useCallback(
-    (slot: "away" | "home", value: string) => {
-      const current = slot === "away" ? awayAbv : homeAbv;
-      if (current === value) return;
-      resetToOverview({
-        awayAbv: slot === "away" ? value : awayAbv,
-        homeAbv: slot === "home" ? value : homeAbv,
-      });
-    },
-    [awayAbv, homeAbv, resetToOverview],
-  );
+  /**
+   * A new game is a new matchup: clear every focused, hovered or traced state
+   * carried over from the previous one before its evidence can render.
+   */
+  const previousGameId = useRef<string | null>(gameId);
+  useEffect(() => {
+    if (previousGameId.current === gameId) return;
+    previousGameId.current = gameId;
+    setHoveredLens(null);
+    const next = writeUrlState(new URLSearchParams(searchParams), {
+      ...urlState,
+      awayAbv: "",
+      homeAbv: "",
+      view: "overview",
+      origin: "overview",
+      layout: "overlay",
+      selectedLens: null,
+      collisionKey: null,
+      trace: null,
+    });
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+  }, [gameId, searchParams, setSearchParams, urlState]);
+
 
 
   const openStory = useCallback(
@@ -506,13 +515,52 @@ export default function MatchupLens() {
     [openView, origin],
   );
 
-  const changeMatchup = useCallback(() => {
-    // Changing matchup is an immediate clean slate, not just a view switch.
-    resetToOverview();
-    window.requestAnimationFrame(() => {
-      selectorRef.current?.querySelector("button")?.focus();
-    });
-  }, [resetToOverview]);
+  // Evidence is per game, so changing matchup means choosing another game.
+  const goToSlate = useCallback(() => navigate("/"), [navigate]);
+  const changeMatchup = goToSlate;
+
+  /** Plain-language failure copy per typed error kind. Never raw error text. */
+  const failure = useMemo(() => {
+    const kind = error instanceof ApiError ? error.kind : "unknown";
+    switch (kind) {
+      case "invalid-request":
+        return { ...LENS_STATE_COPY.malformedGame, retryable: false as const };
+      case "forbidden":
+        return { ...LENS_STATE_COPY.accessDenied, action: undefined, retryable: false as const };
+      case "not-found":
+        return { ...LENS_STATE_COPY.unknownGame, retryable: false as const };
+      case "conflict":
+        return { ...LENS_STATE_COPY.conflict, retryable: false as const };
+      case "invalid-response":
+        return { ...LENS_STATE_COPY.invalidResponse, action: undefined, retryable: false as const };
+      case "timeout":
+        return { ...LENS_STATE_COPY.timeout, action: undefined, retryable: true as const };
+      default:
+        return {
+          title: undefined,
+          message: undefined,
+          action: undefined,
+          retryable: true as const,
+        };
+    }
+  }, [error]);
+
+  /** One concise disclosure line each, shown once in the context area. */
+  const contextNotices = useMemo(() => {
+    const notes: string[] = [];
+    const uneven = (context?.coverage.lensReadiness ?? []).filter(
+      (row) => row.status !== "complete",
+    );
+    if (uneven.length > 0) {
+      notes.push(
+        `Evidence is uneven for ${uneven
+          .map((row) => row.lensName ?? row.lensKey)
+          .join(", ")}. Each score uses only the values present — nothing is counted as zero.`,
+      );
+    }
+    if (suppressLeagueContext) notes.push(LEAGUE_CONTEXT_SUPPRESSED_NOTE);
+    return notes;
+  }, [context, suppressLeagueContext]);
 
 
   const evidence =
@@ -529,6 +577,7 @@ export default function MatchupLens() {
         nameA={teamName(awayAbv)}
         nameB={teamName(homeAbv)}
         onOpenTrace={openTrace}
+        readiness={readinessByLens[activeLens.key]}
       />
     ) : null;
 
@@ -600,30 +649,51 @@ export default function MatchupLens() {
           <p className="mt-0.5 text-xs text-muted-foreground">{DASHBOARD_PURPOSE}</p>
         </header>
 
-        {isLoading ? (
+        {gameIdState.kind === "missing" ? (
+          <DashboardEmpty
+            title={LENS_STATE_COPY.noGame.title}
+            message={LENS_STATE_COPY.noGame.message}
+            actionLabel={LENS_STATE_COPY.noGame.action}
+            onAction={goToSlate}
+          />
+        ) : gameIdState.kind === "malformed" ? (
+          <DashboardEmpty
+            title={LENS_STATE_COPY.malformedGame.title}
+            message={LENS_STATE_COPY.malformedGame.message}
+            actionLabel={LENS_STATE_COPY.malformedGame.action}
+            onAction={goToSlate}
+          />
+        ) : isLoading ? (
           <DashboardSkeleton />
         ) : isError ? (
-          <DashboardError onRetry={() => void refetch()} />
+          failure.retryable ? (
+            <DashboardError
+              onRetry={() => void refetch()}
+              title={failure.title}
+              message={failure.message}
+            />
+          ) : (
+            <DashboardEmpty
+              title={failure.title}
+              message={failure.message}
+              actionLabel={failure.action}
+              onAction={failure.action ? goToSlate : undefined}
+            />
+          )
+        ) : result?.kind === "unavailable" ? (
+          <DashboardEmpty
+            title={LENS_STATE_COPY.unavailable.title}
+            message={result.reason ?? LENS_STATE_COPY.unavailable.message}
+            actionLabel={LENS_STATE_COPY.unavailable.action}
+            onAction={goToSlate}
+          />
         ) : !snapshot || !away || !home ? (
           <DashboardEmpty
-            title="No profile data for this matchup"
-            message="This snapshot has no rows for one of the selected teams, so there is nothing to compare yet. Pick another matchup to continue."
-            actionLabel="Choose another matchup"
-            onAction={() =>
-              commit({
-                awayAbv: DEFAULT_AWAY,
-                homeAbv: DEFAULT_HOME,
-                view: "overview",
-                origin: "overview",
-                selectedLens: null,
-                collisionKey: null,
-                trace: null,
-              })
-            }
+            title={LENS_STATE_COPY.invalidResponse.title}
+            message={LENS_STATE_COPY.invalidResponse.message}
           />
-
         ) : (
-          <>
+          <LensPresentationProvider value={{ suppressLeagueContext }}>
             <MatchupContextBar
               labelA={awayAbv}
               labelB={homeAbv}
@@ -633,6 +703,7 @@ export default function MatchupLens() {
               viewingLabel={viewingLabel}
               isOverview={view === "overview"}
               isRefreshing={isFetching && !isLoading}
+              notices={contextNotices}
               onBack={goOverview}
               onChangeMatchup={changeMatchup}
             />
@@ -648,24 +719,11 @@ export default function MatchupLens() {
                   <Card className="border-border bg-card" ref={selectorRef}>
                     <CardContent className="p-3">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
-                        <TeamPicker
-                          value={awayAbv}
-                          options={teamOptions}
-                          onChange={(value) => changeTeam("away", value)}
-                          role="Team A"
-                          tone="a"
-                        />
+                        <TeamIdentity value={awayAbv} role="Away" tone="a" />
                         <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:pb-3">
-                          vs
+                          at
                         </span>
-                        <TeamPicker
-                          value={homeAbv}
-                          options={teamOptions}
-                          onChange={(value) => changeTeam("home", value)}
-
-                          role="Team B"
-                          tone="b"
-                        />
+                        <TeamIdentity value={homeAbv} role="Home" tone="b" />
                       </div>
                       <p
                         className="mt-2 font-mono text-[11px] text-muted-foreground"
@@ -750,6 +808,7 @@ export default function MatchupLens() {
                     labelB={homeAbv}
                     selectedKey={selectedLens}
                     onSelect={(key) => openLens(key, "all-lenses")}
+                    readiness={readinessByLens}
                   />
                   <ContinueExploring steps={continueSteps("lenses")} />
                 </div>
@@ -811,7 +870,7 @@ export default function MatchupLens() {
               }
               matchupLabel={`${awayAbv} vs ${homeAbv}`}
             />
-          </>
+          </LensPresentationProvider>
         )}
       </div>
     </AppShell>

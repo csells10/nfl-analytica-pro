@@ -10,7 +10,17 @@ export const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run
  * Typed API error so the UI can render a safe, user-facing message based on
  * `kind` without ever surfacing raw backend response bodies.
  */
-export type ApiErrorKind = "unauthenticated" | "forbidden" | "network" | "server" | "unknown";
+export type ApiErrorKind =
+  | "unauthenticated"
+  | "forbidden"
+  | "network"
+  | "server"
+  | "unknown"
+  | "invalid-request"
+  | "not-found"
+  | "conflict"
+  | "timeout"
+  | "invalid-response";
 
 export class ApiError extends Error {
   kind: ApiErrorKind;
@@ -46,7 +56,7 @@ export function userMessageForError(err: unknown): string {
  * Bearer token. The backend enforces this — unauthenticated requests are
  * rejected with 401.
  */
-async function authHeaders(): Promise<HeadersInit> {
+export async function authHeaders(): Promise<HeadersInit> {
   const token = await getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -75,6 +85,31 @@ async function handleApiResponse(res: Response, context: string): Promise<string
   }
   throw new ApiError("unknown", "Request failed", res.status);
 }
+
+/**
+ * Matchup Lens variant of the shared handler. Same 401 sign-out behaviour and
+ * the same rule that raw bodies never reach the UI; it additionally
+ * distinguishes the status codes the lens-context contract defines. Only the
+ * status code is logged — never a request header or token.
+ */
+export async function handleLensApiResponse(res: Response, context: string): Promise<string> {
+  if (res.ok) return res.text();
+
+  console.error(`[matchup-lens] ${context} failed`, res.status);
+
+  if (res.status === 400) throw new ApiError("invalid-request", "Invalid game identifier", 400);
+  if (res.status === 401) {
+    firebaseSignOut(firebaseAuth).catch((e) => console.error("[matchup-lens] signOut failed:", e));
+    throw new ApiError("unauthenticated", "Session expired", 401);
+  }
+  if (res.status === 403) throw new ApiError("forbidden", "Account not authorized", 403);
+  if (res.status === 404) throw new ApiError("not-found", "Game not found", 404);
+  if (res.status === 409) throw new ApiError("conflict", "Evidence not usable", 409);
+  if (res.status === 504) throw new ApiError("timeout", "Upstream timeout", 504);
+  if (res.status >= 500) throw new ApiError("server", "Server error", res.status);
+  throw new ApiError("unknown", "Request failed", res.status);
+}
+
 
 export interface NflGame {
   id: string;

@@ -12,6 +12,11 @@ interface MatchupContextBarProps {
   isOverview: boolean;
   /** True while a background refresh is in flight; current data stays visible. */
   isRefreshing?: boolean;
+  /**
+   * One concise line per disclosure (uneven evidence, hidden league ranks).
+   * Deliberately shown once here rather than repeated on every card.
+   */
+  notices?: string[];
   onBack: () => void;
   onChangeMatchup: () => void;
 }
@@ -30,6 +35,7 @@ export function MatchupContextBar({
   viewingLabel,
   isOverview,
   isRefreshing = false,
+  notices = [],
   onBack,
   onChangeMatchup,
 }: MatchupContextBarProps) {
@@ -92,6 +98,15 @@ export function MatchupContextBar({
           </button>
         </div>
       </div>
+      {notices.length > 0 && (
+        <ul className="mt-1 space-y-0.5" data-testid="context-notices">
+          {notices.map((notice) => (
+            <li key={notice} className="text-[11px] leading-relaxed text-muted-foreground">
+              {notice}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

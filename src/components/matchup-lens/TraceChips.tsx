@@ -1,6 +1,7 @@
 import type { TraceTarget } from "@/lib/matchup-lens-trace";
-import { readableTag, scoreText, rankText } from "@/lib/matchup-lens-language";
+import { readableTag, scoreText } from "@/lib/matchup-lens-language";
 import type { LeagueStanding } from "@/lib/matchup-lens-rank";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 
 export interface TraceHandlers {
   onOpenTrace: (target: TraceTarget) => void;
@@ -61,6 +62,7 @@ export function ScoreBlock({
   standing: LeagueStanding;
   tone: "a" | "b";
 }) {
+  const rank = useRankText();
   return (
     <div className="rounded-md border border-border bg-muted/20 p-3">
       <p
@@ -84,9 +86,11 @@ export function ScoreBlock({
       >
         {scoreText(score)}
       </p>
-      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-        {rankText(standing.rank, standing.total)} · {standing.tier}
-      </p>
+      {rank(standing) && (
+        <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+          {rank(standing)} · {standing.tier}
+        </p>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { Suspense, lazy, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { Trace, TraceTarget, TracedMetric, TeamMetricReading } from "@/lib/matchup-lens-trace";
 import type { LensSnapshot } from "@/lib/matchup-lens-types";
-import { rankText } from "@/lib/matchup-lens-language";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 import { RoleBadge, TagChip } from "./TraceChips";
 
 const TraceGraphs = lazy(() => import("./TraceGraphs"));
@@ -22,6 +22,7 @@ interface TraceDrawerProps {
 }
 
 function Readings({ readings }: { readings: TeamMetricReading[] }) {
+  const rank = useRankText();
   return (
     <ul className="mt-1.5 space-y-1">
       {readings.map((reading, index) => (
@@ -33,7 +34,8 @@ function Readings({ readings }: { readings: TeamMetricReading[] }) {
         >
           <span className="font-semibold">{reading.teamAbv}</span>
           <span className="font-mono text-muted-foreground">
-            {reading.readable} · {rankText(reading.standing.rank, reading.standing.total)}
+            {reading.readable}
+            {rank(reading.standing) ? ` · ${rank(reading.standing)}` : ""}
           </span>
         </li>
       ))}

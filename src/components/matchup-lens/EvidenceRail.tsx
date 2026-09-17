@@ -6,9 +6,9 @@ import { metricStanding } from "@/lib/matchup-lens-rank";
 import {
   betterThanText,
   influenceNotes,
-  rankText,
   signalRoleLabel,
 } from "@/lib/matchup-lens-language";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 import { RoleBadge, type TraceHandlers } from "./TraceChips";
 
 interface EvidenceRailProps extends TraceHandlers {
@@ -47,6 +47,7 @@ export function EvidenceRail({
   onOpenTrace,
 }: EvidenceRailProps) {
   const scroller = useRef<HTMLDivElement>(null);
+  const rank = useRankText();
 
   const nudge = useCallback((direction: -1 | 1) => {
     const node = scroller.current;
@@ -111,7 +112,8 @@ export function EvidenceRail({
                   <span className="flex items-baseline justify-between gap-2 text-[11px]">
                     <span className="text-accent-cool">{labelA}</span>
                     <span className="font-mono text-muted-foreground">
-                      {betterThanText(row.percentile)} · {rankText(rankA.rank, rankA.total)}
+                      {betterThanText(row.percentile)}
+                      {rank(rankA) ? ` · ${rank(rankA)}` : ""}
                     </span>
                   </span>
                   <Bar value={row.percentile} tone="a" />
@@ -120,8 +122,8 @@ export function EvidenceRail({
                   <span className="flex items-baseline justify-between gap-2 text-[11px]">
                     <span className="text-primary">{labelB}</span>
                     <span className="font-mono text-muted-foreground">
-                      {betterThanText(typeof other === "number" ? other : null)} ·{" "}
-                      {rankText(rankB.rank, rankB.total)}
+                      {betterThanText(typeof other === "number" ? other : null)}
+                      {rank(rankB) ? ` · ${rank(rankB)}` : ""}
                     </span>
                   </span>
                   <Bar value={typeof other === "number" ? other : null} tone="b" />

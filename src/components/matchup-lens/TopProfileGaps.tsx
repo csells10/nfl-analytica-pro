@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import type { LensGap } from "@/lib/matchup-lens-compare";
 import { sortBySeparation } from "@/lib/matchup-lens-compare";
-import { rankText, scoreText } from "@/lib/matchup-lens-language";
+import { scoreText } from "@/lib/matchup-lens-language";
 import { lensStanding } from "@/lib/matchup-lens-rank";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 import type { LensSnapshot } from "@/lib/matchup-lens-types";
 
 interface TopProfileGapsProps {
@@ -45,6 +46,7 @@ export function TopProfileGaps({
   limit,
   onOpenAll,
 }: TopProfileGapsProps) {
+  const rank = useRankText();
   const ordered = sortBySeparation(gaps);
   const rows = typeof limit === "number" ? ordered.slice(0, limit) : ordered;
   const truncated = rows.length < ordered.length;
@@ -164,10 +166,12 @@ export function TopProfileGaps({
 
                   <div className="mt-1.5 grid gap-0.5 text-[11px] tabular-nums">
                     <span className="text-accent-cool">
-                      {labelA} {scoreText(row.scoreA)} · {rankText(standingA.rank, standingA.total)}
+                      {labelA} {scoreText(row.scoreA)}
+                      {rank(standingA) ? ` · ${rank(standingA)}` : ""}
                     </span>
                     <span className="text-primary">
-                      {labelB} {scoreText(row.scoreB)} · {rankText(standingB.rank, standingB.total)}
+                      {labelB} {scoreText(row.scoreB)}
+                      {rank(standingB) ? ` · ${rank(standingB)}` : ""}
                     </span>
                   </div>
                 </button>

@@ -45,7 +45,59 @@ export function DashboardSkeleton() {
 
 interface DashboardErrorProps {
   onRetry: () => void;
+  /** Optional plain-language override. Never raw error text. */
+  title?: string;
+  message?: string;
 }
+
+/**
+ * Safe, plain-language copy for every live lens-context state. No raw server
+ * body, status text, stack trace or internal detail ever reaches the UI.
+ */
+export const LENS_STATE_COPY = {
+  noGame: {
+    title: "Choose a matchup first",
+    message:
+      "Matchup Lens opens from a specific game. Pick a matchup on the Slate to load its evidence.",
+    action: "Go to the Slate",
+  },
+  malformedGame: {
+    title: "That matchup link isn’t valid",
+    message:
+      "The game in this link isn’t in a form we recognise, so no evidence was requested. Pick a matchup on the Slate to continue.",
+    action: "Go to the Slate",
+  },
+  unknownGame: {
+    title: "We don’t have this game",
+    message:
+      "No lens evidence exists for this game. Pick another matchup on the Slate to continue.",
+    action: "Go to the Slate",
+  },
+  unavailable: {
+    title: "Lens evidence isn’t ready for this game",
+    message: "Nothing is calculated until the evidence is complete enough to compare.",
+    action: "Go to the Slate",
+  },
+  accessDenied: {
+    title: "Access denied",
+    message: "This account is not authorized for GameLens matchup evidence.",
+  },
+  conflict: {
+    title: "This game’s evidence can’t be used",
+    message:
+      "The evidence behind this matchup didn’t pass its safety checks, so nothing is scored. Try another matchup on the Slate.",
+    action: "Go to the Slate",
+  },
+  invalidResponse: {
+    title: "The matchup evidence didn’t arrive in a usable form",
+    message:
+      "Nothing is shown rather than a partial comparison. Try again in a moment, or pick another matchup.",
+  },
+  timeout: {
+    title: "This matchup took too long to load",
+    message: "The evidence service didn’t answer in time. Try again to load this matchup.",
+  },
+} as const;
 
 /**
  * Failure states stay plain-language and stable. Raw error text is never shown,
@@ -54,16 +106,18 @@ interface DashboardErrorProps {
 export const DASHBOARD_ERROR_MESSAGE =
   "The matchup data couldn’t be loaded right now. Nothing was lost — try again to load this matchup.";
 
-export function DashboardError({ onRetry }: DashboardErrorProps) {
+export function DashboardError({ onRetry, title, message }: DashboardErrorProps) {
   return (
     <Card className="border-destructive/40 bg-card" data-testid="dashboard-error">
       <CardContent className="p-4">
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">Matchup data didn’t load</p>
+            <p className="text-sm font-semibold text-foreground">
+              {title ?? "Matchup data didn’t load"}
+            </p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              {DASHBOARD_ERROR_MESSAGE}
+              {message ?? DASHBOARD_ERROR_MESSAGE}
             </p>
 
             <button

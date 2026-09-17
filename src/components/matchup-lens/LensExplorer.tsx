@@ -2,9 +2,11 @@ import { ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { LensGap } from "@/lib/matchup-lens-compare";
 import { LENS_GLOSSARY } from "@/lib/matchup-lens-glossary";
-import { rankText } from "@/lib/matchup-lens-language";
 import { lensStanding } from "@/lib/matchup-lens-rank";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 import type { LensSnapshot } from "@/lib/matchup-lens-types";
+import type { MatchupLensLensReadiness } from "@/lib/matchup-lens-adapter";
+import { LensReadinessNote } from "./LensReadinessNote";
 
 interface LensExplorerProps {
   gaps: LensGap[];
@@ -15,6 +17,8 @@ interface LensExplorerProps {
   labelB: string;
   selectedKey: string | null;
   onSelect: (lensKey: string) => void;
+  /** Backend readiness rows, keyed by lens. Disclosure only — never a score. */
+  readiness?: Record<string, MatchupLensLensReadiness>;
 }
 
 /**
@@ -30,7 +34,9 @@ export function LensExplorer({
   labelB,
   selectedKey,
   onSelect,
+  readiness,
 }: LensExplorerProps) {
+  const rank = useRankText();
   return (
     <Card className="border-border bg-card" data-testid="lens-explorer">
       <CardContent className="p-4 sm:p-5">
@@ -70,14 +76,19 @@ export function LensExplorer({
                   </span>
                   <span className="mt-1.5 grid gap-0.5 font-mono text-[11px] tabular-nums">
                     <span className="text-accent-cool">
-                      {labelA} {gap.scoreA === null ? "—" : gap.scoreA.toFixed(1)} ·{" "}
-                      {rankText(standingA.rank, standingA.total)}
+                      {labelA} {gap.scoreA === null ? "—" : gap.scoreA.toFixed(1)}
+                      {rank(standingA) ? ` · ${rank(standingA)}` : ""}
                     </span>
                     <span className="text-primary">
-                      {labelB} {gap.scoreB === null ? "—" : gap.scoreB.toFixed(1)} ·{" "}
-                      {rankText(standingB.rank, standingB.total)}
+                      {labelB} {gap.scoreB === null ? "—" : gap.scoreB.toFixed(1)}
+                      {rank(standingB) ? ` · ${rank(standingB)}` : ""}
                     </span>
                   </span>
+                  <LensReadinessNote
+                    readiness={readiness?.[gap.key]}
+                    labelA={labelA}
+                    labelB={labelB}
+                  />
                 </button>
               </li>
             );
