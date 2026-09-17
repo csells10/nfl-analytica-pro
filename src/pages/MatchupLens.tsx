@@ -25,7 +25,13 @@ import { GameBrief } from "@/components/matchup-lens/GameBrief";
 import { MatchupCollision } from "@/components/matchup-lens/MatchupCollision";
 import { MomentumShift } from "@/components/matchup-lens/MomentumShift";
 import { TraceDrawer } from "@/components/matchup-lens/TraceDrawer";
-import { getLensSnapshotSource } from "@/lib/matchup-lens-source";
+import { classifyGameId, useMatchupLensContext } from "@/lib/matchup-lens-live";
+import type { MatchupLensLensReadiness } from "@/lib/matchup-lens-adapter";
+import {
+  LensPresentationProvider,
+  LEAGUE_CONTEXT_SUPPRESSED_NOTE,
+} from "@/lib/matchup-lens-presentation";
+import { ApiError } from "@/lib/nfl-api";
 import { lensGaps } from "@/lib/matchup-lens-compare";
 import { collisionDirections, collisionHighlights } from "@/lib/matchup-lens-collision";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
