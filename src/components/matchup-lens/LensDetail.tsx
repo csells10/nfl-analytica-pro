@@ -8,11 +8,13 @@ import {
   LENS_SCORE_EXPLANATION,
   LENS_SCORE_MATH,
   scoreText,
-  rankText,
 } from "@/lib/matchup-lens-language";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 import { lensDefinition } from "@/lib/matchup-lens-glossary";
+import type { MatchupLensLensReadiness } from "@/lib/matchup-lens-adapter";
 import { ScoreBlock, TagChip, type TraceHandlers } from "./TraceChips";
 import { EvidenceRail } from "./EvidenceRail";
+import { LensReadinessNote } from "./LensReadinessNote";
 
 interface LensDetailProps extends TraceHandlers {
   lens: LensDefinition;
@@ -26,6 +28,8 @@ interface LensDetailProps extends TraceHandlers {
   nameA: string;
   nameB: string;
   onClose?: () => void;
+  /** Backend readiness for this lens. Disclosure only. */
+  readiness?: MatchupLensLensReadiness;
 }
 
 /** A lens is "close" when the two profiles sit within a few points of each other. */
