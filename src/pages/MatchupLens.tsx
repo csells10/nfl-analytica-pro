@@ -577,6 +577,7 @@ export default function MatchupLens() {
         nameA={teamName(awayAbv)}
         nameB={teamName(homeAbv)}
         onOpenTrace={openTrace}
+        readiness={readinessByLens[activeLens.key]}
       />
     ) : null;
 
@@ -807,6 +808,7 @@ export default function MatchupLens() {
                     labelB={homeAbv}
                     selectedKey={selectedLens}
                     onSelect={(key) => openLens(key, "all-lenses")}
+                    readiness={readinessByLens}
                   />
                   <ContinueExploring steps={continueSteps("lenses")} />
                 </div>
@@ -868,7 +870,7 @@ export default function MatchupLens() {
               }
               matchupLabel={`${awayAbv} vs ${homeAbv}`}
             />
-          </>
+          </LensPresentationProvider>
         )}
       </div>
     </AppShell>
