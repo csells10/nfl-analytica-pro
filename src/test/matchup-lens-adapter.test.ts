@@ -125,6 +125,24 @@ describe("matchup_lens_v1 adapter", () => {
     expect(context.coverage.warnings).toEqual(["One team is missing evidence."]);
   });
 
+  it("accepts the production method block, which has no percentile_basis", () => {
+    const payload = clone(makeLensV1Payload());
+    payload.method = {
+      selection:
+        "Latest phase-appropriate ranking snapshot strictly before the scheduled game date.",
+      frontend_role:
+        "Existing Matchup Lens formulas transform this evidence into lens scores and comparison language.",
+      forecast: false,
+    };
+    expect("percentile_basis" in (payload.method as object)).toBe(false);
+
+    const context = adaptMatchupLensV1(payload);
+    expect(context.method.forecast).toBe(false);
+    expect(context.snapshot.teams).toHaveLength(2);
+    expect(scoreAllLenses(context.snapshot, context.snapshot.teams[0]).some((r) => r.score !== null))
+      .toBe(true);
+  });
+
   const rejections: Array<[string, (payload: MatchupLensV1Response) => void]> = [
     ["a wrong schema version", (p) => ((p as { schema_version: string }).schema_version = "v2")],
     ["an unavailable envelope", (p) => (p.available = false)],
