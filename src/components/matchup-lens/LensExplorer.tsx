@@ -76,14 +76,19 @@ export function LensExplorer({
                   </span>
                   <span className="mt-1.5 grid gap-0.5 font-mono text-[11px] tabular-nums">
                     <span className="text-accent-cool">
-                      {labelA} {gap.scoreA === null ? "—" : gap.scoreA.toFixed(1)} ·{" "}
-                      {rankText(standingA.rank, standingA.total)}
+                      {labelA} {gap.scoreA === null ? "—" : gap.scoreA.toFixed(1)}
+                      {rank(standingA) ? ` · ${rank(standingA)}` : ""}
                     </span>
                     <span className="text-primary">
-                      {labelB} {gap.scoreB === null ? "—" : gap.scoreB.toFixed(1)} ·{" "}
-                      {rankText(standingB.rank, standingB.total)}
+                      {labelB} {gap.scoreB === null ? "—" : gap.scoreB.toFixed(1)}
+                      {rank(standingB) ? ` · ${rank(standingB)}` : ""}
                     </span>
                   </span>
+                  <LensReadinessNote
+                    readiness={readiness?.[gap.key]}
+                    labelA={labelA}
+                    labelB={labelB}
+                  />
                 </button>
               </li>
             );
