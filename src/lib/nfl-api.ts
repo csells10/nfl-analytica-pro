@@ -10,7 +10,17 @@ export const API_BASE = "https://nfl-games-app-main-362530996210.us-central1.run
  * Typed API error so the UI can render a safe, user-facing message based on
  * `kind` without ever surfacing raw backend response bodies.
  */
-export type ApiErrorKind = "unauthenticated" | "forbidden" | "network" | "server" | "unknown";
+export type ApiErrorKind =
+  | "unauthenticated"
+  | "forbidden"
+  | "network"
+  | "server"
+  | "unknown"
+  | "invalid-request"
+  | "not-found"
+  | "conflict"
+  | "timeout"
+  | "invalid-response";
 
 export class ApiError extends Error {
   kind: ApiErrorKind;
