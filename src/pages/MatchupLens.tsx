@@ -65,19 +65,26 @@ export function snapshotAbbr(teamAbv: string): string {
 }
 
 /**
- * Where a backend warning is already visible in the page. Partial and
- * asymmetric evidence is disclosed by the readiness notice and the
- * side-specific readiness notes; league-rank suppression is disclosed by the
- * suppression notice. Anything else has no existing home and is shown as its
- * own safe notice. The rule reads the warning code only — never free text.
+ * Disposition of a backend warning, keyed on the exact frozen
+ * `matchup_lens_v1` warning vocabulary. Partial, asymmetric and unavailable
+ * evidence is already disclosed by the readiness UI; league-rank suppression
+ * by the suppression notice. Two codes have no existing home and are shown
+ * once using the backend's own message. An unrecognised code is ignored: it
+ * never produces user-visible unvalidated text, and it never affects a score.
  */
-export type WarningDisclosure = "readiness" | "suppression" | "none";
+export type WarningDisclosure = "readiness" | "suppression" | "display" | "ignore";
+
+const WARNING_DISCLOSURE: Readonly<Record<string, WarningDisclosure>> = {
+  PARTIAL_LENS_EVIDENCE: "readiness",
+  ASYMMETRIC_LENS_EVIDENCE: "readiness",
+  UNAVAILABLE_LENS_EVIDENCE: "readiness",
+  LEAGUE_RANK_OUTPUT_SUPPRESSED: "suppression",
+  MULTIPLE_SOURCE_DATES: "display",
+  NAMED_METRIC_GAPS: "display",
+};
 
 export function warningDisclosure(code: string): WarningDisclosure {
-  const normalized = code.toUpperCase();
-  if (normalized.includes("PARTIAL") || normalized.includes("ASYMMETRIC")) return "readiness";
-  if (normalized.includes("SUPPRESS") || normalized.includes("LEAGUE_RANK")) return "suppression";
-  return "none";
+  return WARNING_DISCLOSURE[code] ?? "ignore";
 }
 
 
@@ -579,13 +586,12 @@ export default function MatchupLens() {
     if (suppressLeagueContext) notes.push(LEAGUE_CONTEXT_SUPPRESSED_NOTE);
 
     // Backend warnings are disclosure only — they never change a score. A
-    // warning whose condition is already visible through readiness or the
-    // suppression notice is dropped instead of repeated; anything else is
-    // surfaced once, using the backend's own safe message.
+    // code already represented by the readiness or suppression UI is dropped
+    // rather than repeated; only the two codes with no existing home are
+    // displayed, once each, using the backend's own message. Unrecognised
+    // codes are ignored entirely.
     for (const warning of context?.coverage.warnings ?? []) {
-      const represented = warningDisclosure(warning.code);
-      if (represented === "readiness" && hasReadinessNotice) continue;
-      if (represented === "suppression" && suppressLeagueContext) continue;
+      if (warningDisclosure(warning.code) !== "display") continue;
       if (!notes.includes(warning.message)) notes.push(warning.message);
     }
     return notes;
