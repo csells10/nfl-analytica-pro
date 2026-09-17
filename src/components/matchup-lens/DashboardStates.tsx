@@ -113,9 +113,11 @@ export function DashboardError({ onRetry, title, message }: DashboardErrorProps)
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">Matchup data didn’t load</p>
+            <p className="text-sm font-semibold text-foreground">
+              {title ?? "Matchup data didn’t load"}
+            </p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              {DASHBOARD_ERROR_MESSAGE}
+              {message ?? DASHBOARD_ERROR_MESSAGE}
             </p>
 
             <button
