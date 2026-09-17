@@ -64,7 +64,7 @@ export async function fetchMatchupLensContext(gameId: string): Promise<MatchupLe
     throw new ApiError("network", "Network error");
   }
 
-  const rawBody = await handleApiResponse(res, "GET /game/:id/lens-context");
+  const rawBody = await handleLensApiResponse(res, "GET /game/:id/lens-context");
 
   let payload: MatchupLensV1Response;
   try {
