@@ -261,6 +261,7 @@ function adaptCatalog(raw: unknown): {
     const label = requireString(entry.label, `${path}.label`);
     const signal = requireSignalStrength(entry.signal_strength, `${path}.signal_strength`);
     const lensTags = requireTagList(entry.lens_tags, `${path}.lens_tags`);
+    catalogSignals.set(metric, signal);
     // Only strong and supporting become scoring definitions. `context` is
     // dropped outright — never coerced to another signal strength.
     if (signal === "context") return;
@@ -268,7 +269,7 @@ function adaptCatalog(raw: unknown): {
     scoringMetrics.add(metric);
   });
 
-  return { definitions, scoringMetrics };
+  return { definitions, scoringMetrics, catalogSignals };
 }
 
 function adaptReadinessRow(raw: unknown, index: number): MatchupLensLensReadiness {
