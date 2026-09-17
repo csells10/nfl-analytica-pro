@@ -144,9 +144,13 @@ export function LensDetail({
         </div>
 
         <p className="mt-2 font-mono text-[11px] text-muted-foreground">
-          {labelA} {scoreText(scoreA.score)} · {rankText(standingA.rank, standingA.total)} ·{" "}
-          {labelB} {scoreText(scoreB.score)} · {rankText(standingB.rank, standingB.total)}
+          {labelA} {scoreText(scoreA.score)}
+          {rank(standingA) ? ` · ${rank(standingA)}` : ""} · {labelB} {scoreText(scoreB.score)}
+          {rank(standingB) ? ` · ${rank(standingB)}` : ""}
         </p>
+
+        <LensReadinessNote readiness={readiness} labelA={labelA} labelB={labelB} />
+
 
         <div className="mt-4">
           <EvidenceRail
