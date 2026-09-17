@@ -212,7 +212,16 @@ function adaptTeamEvidence(
     if (!isRecord(entry)) fail(`${path}.metrics.${key} must be an object`);
     const metricName = requireString(entry.metric, `${path}.metrics.${key}.metric`);
     if (metricName !== key) fail(`${path}.metrics.${key} key does not match its metric name`);
-    requireSignalStrength(entry.signal_strength, `${path}.metrics.${key}.signal_strength`);
+    const signal = requireSignalStrength(
+      entry.signal_strength,
+      `${path}.metrics.${key}.signal_strength`,
+    );
+    const catalogSignal = catalogSignals.get(metricName);
+    if (catalogSignal === undefined) fail(`${path}.metrics.${key} is absent from metric_catalog`);
+    if (catalogSignal !== signal) {
+      fail(`${path}.metrics.${key}.signal_strength disagrees with metric_catalog`);
+    }
+    requireTagList(entry.lens_tags, `${path}.metrics.${key}.lens_tags`);
     // `context` evidence is valid transport but never enters scoring.
     if (!scoringMetrics.has(metricName)) continue;
     const percentile = adaptPercentile(
