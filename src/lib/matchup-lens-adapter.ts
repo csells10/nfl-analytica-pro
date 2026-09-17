@@ -194,6 +194,7 @@ function adaptTeamEvidence(
   path: string,
   identity: MatchupLensTeamIdentity,
   scoringMetrics: Set<string>,
+  catalogSignals: Map<string, MatchupLensV1SignalStrength>,
 ): TeamMetricRow {
   if (!isRecord(raw)) fail(`${path} must be an object`);
 
