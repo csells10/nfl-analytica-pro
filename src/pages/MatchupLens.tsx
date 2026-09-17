@@ -516,7 +516,51 @@ export default function MatchupLens() {
   );
 
   // Evidence is per game, so changing matchup means choosing another game.
-  const changeMatchup = useCallback(() => navigate("/"), [navigate]);
+  const goToSlate = useCallback(() => navigate("/"), [navigate]);
+  const changeMatchup = goToSlate;
+
+  /** Plain-language failure copy per typed error kind. Never raw error text. */
+  const failure = useMemo(() => {
+    const kind = error instanceof ApiError ? error.kind : "unknown";
+    switch (kind) {
+      case "invalid-request":
+        return { ...LENS_STATE_COPY.malformedGame, retryable: false as const };
+      case "forbidden":
+        return { ...LENS_STATE_COPY.accessDenied, action: undefined, retryable: false as const };
+      case "not-found":
+        return { ...LENS_STATE_COPY.unknownGame, retryable: false as const };
+      case "conflict":
+        return { ...LENS_STATE_COPY.conflict, retryable: false as const };
+      case "invalid-response":
+        return { ...LENS_STATE_COPY.invalidResponse, action: undefined, retryable: false as const };
+      case "timeout":
+        return { ...LENS_STATE_COPY.timeout, action: undefined, retryable: true as const };
+      default:
+        return {
+          title: undefined,
+          message: undefined,
+          action: undefined,
+          retryable: true as const,
+        };
+    }
+  }, [error]);
+
+  /** One concise disclosure line each, shown once in the context area. */
+  const contextNotices = useMemo(() => {
+    const notes: string[] = [];
+    const uneven = (context?.coverage.lensReadiness ?? []).filter(
+      (row) => row.status !== "complete",
+    );
+    if (uneven.length > 0) {
+      notes.push(
+        `Evidence is uneven for ${uneven
+          .map((row) => row.lensName ?? row.lensKey)
+          .join(", ")}. Each score uses only the values present — nothing is counted as zero.`,
+      );
+    }
+    if (suppressLeagueContext) notes.push(LEAGUE_CONTEXT_SUPPRESSED_NOTE);
+    return notes;
+  }, [context, suppressLeagueContext]);
 
 
   const evidence =
