@@ -34,7 +34,9 @@ export function LensExplorer({
   labelB,
   selectedKey,
   onSelect,
+  readiness,
 }: LensExplorerProps) {
+  const rank = useRankText();
   return (
     <Card className="border-border bg-card" data-testid="lens-explorer">
       <CardContent className="p-4 sm:p-5">
