@@ -515,13 +515,8 @@ export default function MatchupLens() {
     [openView, origin],
   );
 
-  const changeMatchup = useCallback(() => {
-    // Changing matchup is an immediate clean slate, not just a view switch.
-    resetToOverview();
-    window.requestAnimationFrame(() => {
-      selectorRef.current?.querySelector("button")?.focus();
-    });
-  }, [resetToOverview]);
+  // Evidence is per game, so changing matchup means choosing another game.
+  const changeMatchup = useCallback(() => navigate("/"), [navigate]);
 
 
   const evidence =
