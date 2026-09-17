@@ -35,6 +35,7 @@ export function MatchupContextBar({
   viewingLabel,
   isOverview,
   isRefreshing = false,
+  notices = [],
   onBack,
   onChangeMatchup,
 }: MatchupContextBarProps) {
