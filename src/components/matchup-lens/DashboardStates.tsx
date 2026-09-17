@@ -106,7 +106,7 @@ export const LENS_STATE_COPY = {
 export const DASHBOARD_ERROR_MESSAGE =
   "The matchup data couldn’t be loaded right now. Nothing was lost — try again to load this matchup.";
 
-export function DashboardError({ onRetry }: DashboardErrorProps) {
+export function DashboardError({ onRetry, title, message }: DashboardErrorProps) {
   return (
     <Card className="border-destructive/40 bg-card" data-testid="dashboard-error">
       <CardContent className="p-4">
