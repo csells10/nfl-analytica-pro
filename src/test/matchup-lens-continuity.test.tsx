@@ -277,29 +277,34 @@ describe("deep-link normalisation", () => {
 });
 
 describe("lifecycle states", () => {
-  it("shows the loading skeleton before data arrives", async () => {
+  it("shows the loading skeleton before live evidence arrives", async () => {
     renderPage();
     expect(screen.getByTestId("dashboard-skeleton")).toBeTruthy();
+    // Nothing from the retired baseline can appear while the request is open.
+    expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
   });
 
   it("shows a background refresh status without replacing the canvas", async () => {
-    let resolveSecond: ((snapshot: LensSnapshot) => void) | undefined;
+    fetchMock?.restore();
+    let releaseSecond: (() => void) | undefined;
     let calls = 0;
-    setLensSnapshotSource({
-      id: "refresh-test",
-      load: () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
         calls += 1;
-        if (calls === 1) return Promise.resolve(PRESEASON_2026_SNAPSHOT);
-        return new Promise<LensSnapshot>((resolve) => {
-          resolveSecond = resolve;
-        });
-      },
-    });
+        if (calls > 1) {
+          await new Promise<void>((resolve) => {
+            releaseSecond = resolve;
+          });
+        }
+        return new Response(JSON.stringify(makeLensV1Payload()), { status: 200 });
+      }),
+    );
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const router = createMemoryRouter([{ path: "/matchup-lens", element: <MatchupLens /> }], {
-      initialEntries: ["/matchup-lens"],
+      initialEntries: [withGame("/matchup-lens")],
     });
     render(
       <QueryClientProvider client={client}>
@@ -309,53 +314,77 @@ describe("lifecycle states", () => {
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
 
     await act(async () => {
-      void client.refetchQueries({ queryKey: ["lens-snapshot", "refresh-test"] });
+      void client.refetchQueries({ queryKey: ["matchup-lens-context", LIVE_GAME_ID] });
       await Promise.resolve();
     });
     await waitFor(() => expect(screen.getByTestId("context-refreshing")).toBeTruthy());
     expect(screen.getByTestId("destination-cards")).toBeTruthy();
 
     await act(async () => {
-      resolveSecond?.(PRESEASON_2026_SNAPSHOT);
+      releaseSecond?.();
+      await Promise.resolve();
     });
     await waitFor(() => expect(screen.queryByTestId("context-refreshing")).toBeNull());
   });
 
   it("shows plain-language error copy and retries without echoing the error", async () => {
+    fetchMock?.restore();
     let attempts = 0;
-    setLensSnapshotSource({
-      id: "error-test",
-      load: () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
         attempts += 1;
-        if (attempts === 1) {
-          return Promise.reject(new Error("ECONNREFUSED 10.0.0.4:5432 internal-db"));
+        // The hook already retries a server failure once on its own.
+        if (attempts <= 2) {
+          return new Response(JSON.stringify({ detail: "ECONNREFUSED 10.0.0.4:5432 internal-db" }), {
+            status: 500,
+          });
         }
-        return Promise.resolve(PRESEASON_2026_SNAPSHOT);
-      },
-    });
+        return new Response(JSON.stringify(makeLensV1Payload()), { status: 200 });
+      }),
+    );
 
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     renderPage();
-    await waitFor(() => expect(screen.getByTestId("dashboard-error")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("dashboard-error")).toBeTruthy(), {
+      timeout: 5000,
+    });
     const errorCard = screen.getByTestId("dashboard-error");
     expect(errorCard.textContent).toContain(DASHBOARD_ERROR_MESSAGE);
     expect(errorCard.textContent).not.toMatch(/ECONNREFUSED|10\.0\.0\.4|internal-db/);
+    // A failure never falls back to the retired baseline evidence.
+    expect(screen.queryByTestId("destination-cards")).toBeNull();
 
     await user.click(screen.getByTestId("dashboard-retry"));
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
-    expect(attempts).toBe(2);
   });
 
-  it("shows the empty state when the snapshot has no rows for the matchup", async () => {
-    const emptySnapshot: LensSnapshot = {
-      ...PRESEASON_2026_SNAPSHOT,
-      teams: [],
-    };
-    setLensSnapshotSource({ id: "empty-test", load: async () => emptySnapshot });
+  it("shows the empty state when the backend has no evidence for this game", async () => {
+    fetchMock?.restore();
+    fetchMock = installLensFetchMock({
+      body: {
+        schema_version: "matchup_lens_v1",
+        available: false,
+        reason: "Evidence is not ready for this matchup yet.",
+        game: null,
+        display: null,
+        basis: null,
+        metric_catalog: null,
+        away: null,
+        home: null,
+        coverage: null,
+        warnings: null,
+        league_context: null,
+        method: null,
+      },
+    });
     renderPage();
     await waitFor(() => expect(screen.getByTestId("dashboard-empty")).toBeTruthy());
-    expect(screen.getByTestId("dashboard-empty").textContent).toMatch(/No profile data/);
+    expect(screen.getByTestId("dashboard-empty").textContent).toMatch(
+      /Evidence is not ready for this matchup yet/,
+    );
     expect(screen.queryByTestId("destination-cards")).toBeNull();
+    expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
   });
 });
 
