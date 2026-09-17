@@ -23,22 +23,22 @@ describe("matchup_lens_v1 adapter", () => {
 
   it("excludes context metrics from definitions and from percentile records", () => {
     const context = adaptMatchupLensV1(
-      makeLensV1Payload({ contextMetrics: ["opponent_total_plays", "points_allowed"] }),
+      makeLensV1Payload({ contextMetrics: ["ctx_opponent_total_plays", "ctx_points_allowed"] }),
     );
 
     const names = context.snapshot.metrics.map((metric) => metric.metric);
-    expect(names).not.toContain("opponent_total_plays");
-    expect(names).not.toContain("points_allowed");
+    expect(names).not.toContain("ctx_opponent_total_plays");
+    expect(names).not.toContain("ctx_points_allowed");
     for (const team of context.snapshot.teams) {
-      expect(team.percentiles.opponent_total_plays).toBeUndefined();
-      expect(team.percentiles.points_allowed).toBeUndefined();
+      expect(team.percentiles.ctx_opponent_total_plays).toBeUndefined();
+      expect(team.percentiles.ctx_points_allowed).toBeUndefined();
     }
   });
 
   it("produces identical lens scores whether or not context metrics are transported", () => {
     const withoutContext = adaptMatchupLensV1(makeLensV1Payload());
     const withContext = adaptMatchupLensV1(
-      makeLensV1Payload({ contextMetrics: ["opponent_total_plays"] }),
+      makeLensV1Payload({ contextMetrics: ["ctx_opponent_total_plays"] }),
     );
 
     const score = (context: ReturnType<typeof adaptMatchupLensV1>) =>
