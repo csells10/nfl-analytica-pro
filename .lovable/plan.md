@@ -28,7 +28,7 @@ No code changes, no publication, no deployment are proposed. This records the co
 16. **Console hygiene** — Detailed contract-violation text removed from browser logging; page shows the generic unreadable-response state on adapter rejection.
 17. **Five contested mismatches** — Resolved: no-game copy, 403 access-denied copy, invalid-response state without partial scoring, retry scoped to current game, uneven-evidence wording names affected team/lens without implying zero.
 18. **Obsolete tests removed** — "a non-league percentile basis" and "an uncorrected polarity" (fields invented by the earlier transcription, not in the frozen contract); replaced by frozen-method regression and negative tests.
-19. **Test results** — Adapter and live-page suites pass; full frontend suite green (post-repair run); typecheck clean; production build OK.
+19. **Test results** — Adapter suite 42/42; live-page suite 13/13; full frontend suite 160/160 across 11 files; typecheck clean; production build successful in 9.9 seconds with only the pre-existing chunk-size advisory.
 20. **Authenticated DET/BUF acceptance — PASS** in authenticated Lovable preview (`/matchup-lens?a=DET&b=BUF&view=overview&game=20260917_DET%40BUF`):
     - HTTP 200 accepted by the frontend; scored UI rendered; prior unreadable-response state gone.
     - `schema_version` `matchup_lens_v1`; `available:true`, `reason:null`.

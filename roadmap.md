@@ -9,6 +9,8 @@
 - [x] Readiness disclosure (context bar + Lens Explorer/Detail)
 - [x] League-context suppression via presentation guards only
 - [x] Tests: new adapter + live-page suites; migrate only page-level assertions, record each
-- [ ] Authenticated DET/BUF acceptance verification — BLOCKED: app sign-in is Google-only (Firebase); no
-      signed-in session or token can be established in this environment
-- [x] Return 21-item evidence packet; nothing published
+- [x] Authenticated DET/BUF acceptance verification — PASS in authenticated Lovable preview (user-held session);
+      scored UI rendered, no Matchup Lens console error
+- [x] Return 21-item evidence packet; item 19 records adapter 42/42, live-page 13/13, full suite 160/160 (11 files),
+      clean typecheck, build OK in 9.9s; nothing published or deployed
+- [x] Phase G3 CLOSED — pending independent Phase G4 verification (Christian's decision)
