@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
 import { LensDetail } from "@/components/matchup-lens/LensDetail";
 import { LensExplorer } from "@/components/matchup-lens/LensExplorer";
