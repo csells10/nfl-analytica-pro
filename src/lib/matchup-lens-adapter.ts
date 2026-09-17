@@ -372,11 +372,11 @@ export function adaptMatchupLensV1(payload: MatchupLensV1Response): AdaptedMatch
   const methodRaw = payload.method;
   if (!isRecord(methodRaw)) fail("method must be an object");
 
-  const { definitions, scoringMetrics } = adaptCatalog(payload.metric_catalog);
+  const { definitions, scoringMetrics, catalogSignals } = adaptCatalog(payload.metric_catalog);
   if (definitions.length === 0) fail("metric_catalog contains no scoring metrics");
 
-  const awayRow = adaptTeamEvidence(payload.away, "away", away, scoringMetrics);
-  const homeRow = adaptTeamEvidence(payload.home, "home", home, scoringMetrics);
+  const awayRow = adaptTeamEvidence(payload.away, "away", away, scoringMetrics, catalogSignals);
+  const homeRow = adaptTeamEvidence(payload.home, "home", home, scoringMetrics, catalogSignals);
 
   const warnings = adaptWarnings(payload.warnings);
   const coverage = adaptCoverage(payload.coverage, warnings);
