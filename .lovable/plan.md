@@ -1,37 +1,37 @@
-# Phase G3 — finish verification and evidence packet
+# Repair: adapter rejects the real `method` block
 
-Continue the live Matchup Lens integration. No publishing, no deployment, no changes to lens formulas.
+The authenticated production response for `20260917_DET@BUF` returned HTTP 200, but the page discarded it because the adapter demands two `method` fields that the frozen contract never defined. This is a frontend-only repair.
 
-## 1. Resolve the five test/UI mismatches against the contract (not against green results)
+## What goes wrong today
 
-For each, judge the rendered behaviour first, then change whichever side is wrong.
+`src/lib/matchup-lens-adapter.ts` validates and maps:
 
-| Case | Rendered today | Judgement | Action |
-| --- | --- | --- | --- |
-| No game | "Choose a matchup first" + "Go to the Slate" action | Satisfies the contract (clearly directs to the Slate) | Align test expectation to the real copy, including the typographic apostrophes |
-| 403 | Title "Access denied", no retry control | Safe, but the title is system-speak rather than user language | Reword UI to "You don't have access to this matchup" and keep the no-retry behaviour; test asserts that copy |
-| Unreadable / contract-invalid response | "The matchup evidence didn't arrive in a usable form", nothing scored | Behaviour is correct; wording is long and does not name the cause | Reword UI to "This matchup's evidence couldn't be read" plus the existing explanatory line; test asserts the new title and asserts that no lens score renders |
-| Retry control | Calls `refetch()` on the current query key only | Correct — retries only the current game | Align test to the real button label and add an assertion that the refetched URL carries the same game id |
-| Uneven evidence | Page notice "Evidence is uneven for …"; per-lens note "Uneven evidence — the score uses only the values present. TEAM: missing metric" | Correct: names team and lens, never implies zero | Align tests to the real wording, and keep the existing assertion that "counted as zero" never appears |
+- `method.percentile_basis` must equal `"league"` (invented)
+- `method.polarity` must equal `"corrected"` (invented)
+- `method.notes` (invented)
 
-## 2. Migrate the older page tests
+The frozen contract's `method` is exactly `selection`, `frontend_role`, `forecast`. Production sends those three, so the first check fails and a valid 200 is thrown away.
 
-Files: `matchup-lens-page.test.tsx`, `matchup-lens-continuity.test.tsx`, `matchup-lens.test.tsx`, `matchup-lens-journey.test.tsx`, `matchup-lens-presentations.test.tsx`, `matchup-lens-new-features.test.tsx`.
+## Repair
 
-- Keep every scoring, navigation, accessibility, Collision, Turnover Watch, continuity and interaction assertion as-is; only their data source changes from the preseason snapshot to the live fixture harness (`installLensFetchMock`, `withGame`).
-- Replace only two classes of expectation: those that require the removed preseason runtime source, and those that require visible league-rank output in the page. Each replacement becomes an explicit live-only / no-static-fallback / rank-suppression assertion.
-- Pure unit tests of the ranking helpers (`matchup-lens-rank`, `rankText`) stay unchanged — the helpers are untouched; only their display is suppressed.
-- Record every replaced assertion (file, test name, old expectation, new expectation, reason) for the evidence packet.
+1. **Transport type** (`src/lib/matchup-lens-api-types.ts`) — replace `MatchupLensV1Method` with the frozen shape: `selection: string`, `frontend_role: string`, `forecast: boolean`.
+2. **Adapter** (`src/lib/matchup-lens-adapter.ts`) — remove the `percentile_basis` / `polarity` / `notes` checks and mapping. Validate the real fields instead: `method` must be an object, `selection` and `frontend_role` non-empty strings, `forecast` a boolean. `AdaptedMatchupLensContext.method` becomes `{ selection, frontendRole, forecast }`. No other validation is loosened; the percentile 0-100 range check, signal-strength agreement, six-row readiness order, canonical team agreement and league-context mode checks all stay exactly as they are.
+3. **Field-by-field audit** — walk every key the type file and validator touch (`schema_version`, `available`, `reason`, `game`, `display`, `basis`, `metric_catalog`, `away`, `home`, `coverage`, `warnings`, `league_context`, `method`) against the frozen contract and against the shape actually returned by the authenticated call. Anything invented or renamed gets the same treatment as `method`: removed, not synthesised. Anything the contract really declares keeps its current strictness. The audit result is reported in the evidence packet, including a statement that no other invented field was found (or the list, if any).
+4. **Console hygiene** (`src/lib/matchup-lens-live.ts`) — drop the `console.error("[matchup-lens] contract violation:", err.detail)` line. The typed `ApiError` still flows to the page, which keeps showing its safe generic unreadable-response state. Validator detail stays inside the thrown error object, out of browser logs.
+5. **Fixtures** (`src/test/matchup-lens-v1-fixture.ts`) — its `method` block currently carries the invented fields; switch it to the production shape.
 
-## 3. Verify
+## Tests
 
-- Full frontend suite, typecheck, build; read the build log before reporting.
-- Authenticated DET/BUF acceptance against `GET /game/20260917_DET@BUF/lens-context`: status 200, schema and availability, canonical teams and ids, dates and counts (63/62/63/62), six readiness rows in frozen order, 16 context metrics excluded by the adapter, DET Drive Control partial and BUF complete, warnings present, league context suppressed, no numerator/denominator fields. No token is printed, logged or stored.
+- Regression test: adapter accepts a payload whose `method` is exactly the production object (`selection`, `frontend_role`, `forecast: false`) with no `percentile_basis`, and produces a scored snapshot.
+- Negative test: a `method` that is malformed in a way the contract does care about (e.g. `forecast` not a boolean, or `method` null) still throws `MatchupLensContractError` and scores nothing.
+- Remove the now-obsolete rejection cases "a non-league percentile basis" and "an uncorrected polarity" from the adapter suite; record both removals in the evidence packet.
+- No other assertion is changed or weakened.
 
-## 4. Deliver
+## Verification
 
-Return the 21-item evidence packet, stating explicitly what is local implementation versus preview versus production-published (nothing published).
+Adapter tests, live-page tests, full frontend suite, typecheck, build. Then reload the authenticated DET/BUF page in the preview and read the console and rendered state.
 
-## Known blocker risk
+- If the page renders, collect the authenticated acceptance evidence (canonical teams and IDs, dates, metric counts, six readiness rows, context metrics excluded, DET Drive Control partial vs BUF complete, warnings, league suppression, absence of numerator/denominator) and update the 21-item packet.
+- If a different contract mismatch appears, stop immediately and report the exact field and expected-vs-actual value before touching anything else.
 
-The signed-in acceptance check needs a browser session for the app's Google sign-in. If no session can be established in this environment, everything else completes and the acceptance check is reported as an open blocker with the exact reason rather than being faked or skipped silently.
+Nothing is published or deployed.
