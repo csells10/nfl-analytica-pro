@@ -209,15 +209,9 @@ export default function MatchupLens() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
 
-  const teamOptions = useMemo(
-    () => (snapshot ? snapshot.teams.map((team) => team.teamAbv).sort() : []),
-    [snapshot],
-  );
-
-
-
-  const away = snapshot ? findTeam(snapshot, awayAbv) : undefined;
-  const home = snapshot ? findTeam(snapshot, homeAbv) : undefined;
+  // Canonical rows, not URL-selected rows.
+  const away = snapshot && context ? findTeam(snapshot, context.game.away.teamAbv) : undefined;
+  const home = snapshot && context ? findTeam(snapshot, context.game.home.teamAbv) : undefined;
 
   const scoresA = useMemo(
     () => (snapshot && away ? scoreAllLenses(snapshot, away) : []),
