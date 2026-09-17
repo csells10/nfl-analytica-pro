@@ -136,8 +136,10 @@ function readUrlState(params: URLSearchParams): UrlState {
 /** Write dashboard state back into a params object, leaving other keys alone. */
 function writeUrlState(params: URLSearchParams, state: UrlState): URLSearchParams {
   params.delete("mode");
-  params.set("a", state.awayAbv);
-  params.set("b", state.homeAbv);
+  if (state.awayAbv) params.set("a", state.awayAbv);
+  else params.delete("a");
+  if (state.homeAbv) params.set("b", state.homeAbv);
+  else params.delete("b");
   params.set("view", state.view);
   if (state.view === "overview") params.delete("from");
   else params.set("from", state.origin);
