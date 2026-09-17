@@ -12,6 +12,9 @@ vi.mock("@/lib/firebase", () => ({
   getAuthToken: async () => "test-token",
   firebaseAuth: {},
 }));
+// 401 must still drive the shared Firebase sign-out, so the real call is
+// observed rather than executed against a live auth client.
+vi.mock("firebase/auth", () => ({ signOut: vi.fn(async () => undefined) }));
 
 import MatchupLens from "@/pages/MatchupLens";
 import { installLensFetchMock, withGame, type LensFetchMock } from "./matchup-lens-live-harness";
