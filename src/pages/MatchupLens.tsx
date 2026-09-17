@@ -586,13 +586,12 @@ export default function MatchupLens() {
     if (suppressLeagueContext) notes.push(LEAGUE_CONTEXT_SUPPRESSED_NOTE);
 
     // Backend warnings are disclosure only — they never change a score. A
-    // warning whose condition is already visible through readiness or the
-    // suppression notice is dropped instead of repeated; anything else is
-    // surfaced once, using the backend's own safe message.
+    // code already represented by the readiness or suppression UI is dropped
+    // rather than repeated; only the two codes with no existing home are
+    // displayed, once each, using the backend's own message. Unrecognised
+    // codes are ignored entirely.
     for (const warning of context?.coverage.warnings ?? []) {
-      const represented = warningDisclosure(warning.code);
-      if (represented === "readiness" && hasReadinessNotice) continue;
-      if (represented === "suppression" && suppressLeagueContext) continue;
+      if (warningDisclosure(warning.code) !== "display") continue;
       if (!notes.includes(warning.message)) notes.push(warning.message);
     }
     return notes;
