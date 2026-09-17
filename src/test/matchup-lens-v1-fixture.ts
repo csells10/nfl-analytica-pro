@@ -170,9 +170,11 @@ export function makeLensV1Payload(options: FixtureOptions = {}): MatchupLensV1Re
       teams_in_payload: 2,
     },
     method: {
-      percentile_basis: "league",
-      polarity: "corrected",
-      notes: null,
+      selection:
+        "Latest phase-appropriate ranking snapshot strictly before the scheduled game date.",
+      frontend_role:
+        "Existing Matchup Lens formulas transform this evidence into lens scores and comparison language.",
+      forecast: false,
     },
   };
 }

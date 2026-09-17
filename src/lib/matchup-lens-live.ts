@@ -92,7 +92,7 @@ export async function fetchMatchupLensContext(gameId: string): Promise<MatchupLe
     return { kind: "available", context: adaptMatchupLensV1(payload) };
   } catch (err) {
     if (err instanceof MatchupLensContractError) {
-      console.error("[matchup-lens] contract violation:", err.detail);
+      // Validator detail stays inside the error object; never in browser logs.
       throw new ApiError("invalid-response", "Contract violation", res.status);
     }
     throw err;
