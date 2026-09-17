@@ -340,9 +340,10 @@ export default function MatchupLens() {
             gaps,
             angle,
             directions,
+            suppressLeagueContext,
           })
         : [],
-    [snapshot, away, home, awayAbv, homeAbv, gaps, angle, directions],
+    [snapshot, away, home, awayAbv, homeAbv, gaps, angle, directions, suppressLeagueContext],
   );
 
   const openTrace = useCallback((target: TraceTarget) => commit({ trace: target }), [commit]);
