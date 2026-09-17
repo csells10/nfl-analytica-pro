@@ -56,7 +56,7 @@ export function userMessageForError(err: unknown): string {
  * Bearer token. The backend enforces this — unauthenticated requests are
  * rejected with 401.
  */
-async function authHeaders(): Promise<HeadersInit> {
+export async function authHeaders(): Promise<HeadersInit> {
   const token = await getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
