@@ -62,6 +62,7 @@ export function ScoreBlock({
   standing: LeagueStanding;
   tone: "a" | "b";
 }) {
+  const rank = useRankText();
   return (
     <div className="rounded-md border border-border bg-muted/20 p-3">
       <p
