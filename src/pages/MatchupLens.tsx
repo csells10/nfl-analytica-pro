@@ -64,6 +64,23 @@ export function snapshotAbbr(teamAbv: string): string {
   return teamAbv.toUpperCase() === "WAS" ? "WSH" : teamAbv.toUpperCase();
 }
 
+/**
+ * Where a backend warning is already visible in the page. Partial and
+ * asymmetric evidence is disclosed by the readiness notice and the
+ * side-specific readiness notes; league-rank suppression is disclosed by the
+ * suppression notice. Anything else has no existing home and is shown as its
+ * own safe notice. The rule reads the warning code only — never free text.
+ */
+export type WarningDisclosure = "readiness" | "suppression" | "none";
+
+export function warningDisclosure(code: string): WarningDisclosure {
+  const normalized = code.toUpperCase();
+  if (normalized.includes("PARTIAL") || normalized.includes("ASYMMETRIC")) return "readiness";
+  if (normalized.includes("SUPPRESS") || normalized.includes("LEAGUE_RANK")) return "suppression";
+  return "none";
+}
+
+
 function teamName(teamAbv: string): string {
   return getTeam(registryAbbr(teamAbv)).fullName;
 }
@@ -551,7 +568,8 @@ export default function MatchupLens() {
     const uneven = (context?.coverage.lensReadiness ?? []).filter(
       (row) => row.status !== "complete",
     );
-    if (uneven.length > 0) {
+    const hasReadinessNotice = uneven.length > 0;
+    if (hasReadinessNotice) {
       notes.push(
         `Evidence is uneven for ${uneven
           .map((row) => row.lensName ?? row.lensKey)
@@ -559,6 +577,17 @@ export default function MatchupLens() {
       );
     }
     if (suppressLeagueContext) notes.push(LEAGUE_CONTEXT_SUPPRESSED_NOTE);
+
+    // Backend warnings are disclosure only — they never change a score. A
+    // warning whose condition is already visible through readiness or the
+    // suppression notice is dropped instead of repeated; anything else is
+    // surfaced once, using the backend's own safe message.
+    for (const warning of context?.coverage.warnings ?? []) {
+      const represented = warningDisclosure(warning.code);
+      if (represented === "readiness" && hasReadinessNotice) continue;
+      if (represented === "suppression" && suppressLeagueContext) continue;
+      if (!notes.includes(warning.message)) notes.push(warning.message);
+    }
     return notes;
   }, [context, suppressLeagueContext]);
 
@@ -681,11 +710,15 @@ export default function MatchupLens() {
             />
           )
         ) : result?.kind === "unavailable" ? (
+          // `available: false` is a valid product state, so nothing retries
+          // automatically; the reader decides when to check again.
           <DashboardEmpty
             title={LENS_STATE_COPY.unavailable.title}
             message={result.reason ?? LENS_STATE_COPY.unavailable.message}
             actionLabel={LENS_STATE_COPY.unavailable.action}
             onAction={goToSlate}
+            onRetry={() => void refetch()}
+            isRetrying={isFetching}
           />
         ) : !snapshot || !away || !home ? (
           <DashboardEmpty

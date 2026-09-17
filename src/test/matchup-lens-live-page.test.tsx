@@ -12,6 +12,9 @@ vi.mock("@/lib/firebase", () => ({
   getAuthToken: async () => "test-token",
   firebaseAuth: {},
 }));
+// 401 must still drive the shared Firebase sign-out, so the real call is
+// observed rather than executed against a live auth client.
+vi.mock("firebase/auth", () => ({ signOut: vi.fn(async () => undefined) }));
 
 import MatchupLens from "@/pages/MatchupLens";
 import { installLensFetchMock, withGame, type LensFetchMock } from "./matchup-lens-live-harness";
@@ -202,5 +205,173 @@ describe("Matchup Lens live evidence", () => {
       expect(screen.getByTestId("lens-context-label").textContent).toContain("BUF"),
     );
     expect(screen.getByTestId("lens-context-label").textContent).not.toContain("LAR");
+  });
+});
+
+/** Envelope returned for HTTP 200 with `available: false`. */
+const UNAVAILABLE_BODY = {
+  schema_version: "matchup_lens_v1",
+  available: false,
+  reason: "Evidence is not ready for this matchup yet.",
+  game: null,
+  display: null,
+  basis: null,
+  metric_catalog: null,
+  teams: null,
+  coverage: null,
+  league_context: null,
+  method: null,
+};
+
+describe("Matchup Lens unavailable manual retry", () => {
+  it("offers an inline retry that reloads only the current game, with no automatic retry", async () => {
+    const user = userEvent.setup();
+    const { makeLensV1Payload } = await import("./matchup-lens-v1-fixture");
+    const urls: string[] = [];
+    let attempt = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        urls.push(typeof input === "string" ? input : input.toString());
+        attempt += 1;
+        const body = attempt === 1 ? UNAVAILABLE_BODY : makeLensV1Payload();
+        return new Response(JSON.stringify(body), { status: 200 });
+      }),
+    );
+
+    renderPage();
+    await screen.findByText("Evidence is not ready for this matchup yet.");
+
+    // No scored content, no baseline evidence and no automatic second request.
+    expect(screen.queryByTestId("insight-ticker")).toBeNull();
+    expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
+    expect(urls).toHaveLength(1);
+
+    // The Slate route stays available alongside the retry.
+    expect(screen.getByTestId("dashboard-empty-action")).toBeTruthy();
+
+    await user.click(screen.getByTestId("dashboard-empty-retry"));
+    await waitFor(() => expect(screen.getByTestId("insight-ticker")).toBeTruthy());
+
+    expect(urls.length).toBeGreaterThan(1);
+    for (const url of urls) expect(url).toContain("/game/20260917_LAR%40CLE/lens-context");
+  });
+});
+
+describe("Matchup Lens backend warnings", () => {
+  async function renderWithWarnings(
+    warnings: Array<{ code: string; message: string }>,
+    options: { awayMissing?: string[]; leagueMode?: "suppressed" | "available" } = {},
+  ) {
+    const { makeLensV1Payload } = await import("./matchup-lens-v1-fixture");
+    const payload = makeLensV1Payload(options);
+    payload.coverage!.warnings = warnings.map((warning) => ({
+      ...warning,
+      lens_key: null,
+      team_side: null,
+      metrics: [],
+    }));
+    fetchMock = installLensFetchMock({ body: payload });
+    renderPage();
+    return await screen.findByTestId("context-notices");
+  }
+
+  function occurrences(text: string, needle: string): number {
+    return text.split(needle).length - 1;
+  }
+
+  it("does not repeat a partial-evidence warning already shown by readiness", async () => {
+    const notices = await renderWithWarnings(
+      [{ code: "PARTIAL_LENS_EVIDENCE", message: "Some lens evidence is partial." }],
+      { awayMissing: ["yards_per_play"] },
+    );
+    expect(notices.textContent).toMatch(/Evidence is uneven/);
+    expect(notices.textContent).not.toContain("Some lens evidence is partial.");
+    expect(occurrences(notices.textContent ?? "", "Evidence is uneven")).toBe(1);
+  });
+
+  it("does not repeat an asymmetric-evidence warning already shown by readiness", async () => {
+    const notices = await renderWithWarnings(
+      [{ code: "ASYMMETRIC_LENS_EVIDENCE", message: "One team is missing evidence." }],
+      { awayMissing: ["yards_per_play"] },
+    );
+    expect(notices.textContent).toMatch(/Evidence is uneven/);
+    expect(notices.textContent).not.toContain("One team is missing evidence.");
+  });
+
+  it("does not repeat a league-suppression warning already shown by the suppression notice", async () => {
+    const notices = await renderWithWarnings([
+      { code: "LEAGUE_RANK_SUPPRESSED", message: "League ranks are suppressed." },
+    ]);
+    expect(notices.textContent).toMatch(/League rankings are hidden/);
+    expect(notices.textContent).not.toContain("League ranks are suppressed.");
+  });
+
+  it("shows a safe backend warning that no existing disclosure represents", async () => {
+    const notices = await renderWithWarnings([
+      { code: "SOURCE_DATA_LAG", message: "Source data is one day behind." },
+    ]);
+    expect(notices.textContent).toContain("Source data is one day behind.");
+  });
+
+  it("keeps scoring intact while warnings are displayed", async () => {
+    await renderWithWarnings([
+      { code: "SOURCE_DATA_LAG", message: "Source data is one day behind." },
+    ]);
+    expect(screen.getByTestId("insight-ticker")).toBeTruthy();
+  });
+});
+
+describe("Matchup Lens HTTP state coverage", () => {
+  const cases: Array<{ status: number; text: RegExp; retryable: boolean }> = [
+    { status: 400, text: /That matchup link isn’t valid/, retryable: false },
+    { status: 404, text: /We don’t have this game/, retryable: false },
+    { status: 409, text: /This game’s evidence can’t be used/, retryable: false },
+    { status: 403, text: /You don’t have access to this matchup/, retryable: false },
+  ];
+
+  for (const testCase of cases) {
+    it(`shows a safe state with no automatic retry for HTTP ${testCase.status}`, async () => {
+      fetchMock = installLensFetchMock({ status: testCase.status });
+      renderPage();
+      await screen.findByText(testCase.text);
+      expect(fetchMock.calls()).toHaveLength(1);
+      expect(screen.queryByRole("button", { name: /try again/i })).toBeNull();
+      expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
+      expect(document.body.textContent).not.toContain("detail");
+    });
+  }
+
+  it("signs the user out on HTTP 401 so the protected route returns to sign-in", async () => {
+    const { firebaseAuth } = await import("@/lib/firebase");
+    const { signOut } = await import("firebase/auth");
+    fetchMock = installLensFetchMock({ status: 401 });
+    renderPage();
+    await waitFor(() => expect(signOut).toHaveBeenCalledWith(firebaseAuth));
+    expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
+  });
+
+  it("retries a 504 once automatically and then offers manual retry", async () => {
+    fetchMock = installLensFetchMock({ status: 504 });
+    renderPage();
+    await screen.findByText("This matchup took too long to load", undefined, { timeout: 5000 });
+    // One original request plus at most one automatic retry.
+    expect(fetchMock.calls()).toHaveLength(2);
+    expect(screen.getByTestId("dashboard-retry")).toBeTruthy();
+  });
+
+  it("retries a network failure once and then stops, showing a safe failure", async () => {
+    fetchMock = installLensFetchMock({ networkError: true });
+    renderPage();
+    await screen.findByText(/couldn’t be loaded right now/, undefined, { timeout: 5000 });
+    expect(fetchMock.calls()).toHaveLength(2);
+    expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
+  });
+
+  it("does not retry a 500 more than once automatically", async () => {
+    fetchMock = installLensFetchMock({ status: 500 });
+    renderPage();
+    await screen.findByRole("button", { name: /try again/i }, { timeout: 5000 });
+    expect(fetchMock.calls()).toHaveLength(2);
   });
 });
