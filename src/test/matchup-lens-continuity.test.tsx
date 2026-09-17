@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,18 +8,20 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { email: "qa@gamelens.io" }, signOut: vi.fn() }),
 }));
 vi.mock("@/lib/admin-api", () => ({ useMe: () => ({ data: { is_admin: false } }) }));
+vi.mock("@/lib/firebase", () => ({ getAuthToken: async () => "test-token", firebaseAuth: {} }));
 
 import MatchupLens from "@/pages/MatchupLens";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
 import { findTeam } from "@/lib/matchup-lens";
 import { PRESEASON_2026_SNAPSHOT } from "@/lib/matchup-lens-snapshot";
-import {
-  getLensSnapshotSource,
-  setLensSnapshotSource,
-  staticLensSnapshotSource,
-} from "@/lib/matchup-lens-source";
-import type { LensSnapshot } from "@/lib/matchup-lens-types";
 import { DASHBOARD_ERROR_MESSAGE } from "@/components/matchup-lens/DashboardStates";
+import {
+  installLensFetchMock,
+  withGame,
+  LIVE_GAME_ID,
+  type LensFetchMock,
+} from "./matchup-lens-live-harness";
+import { makeLensV1Payload } from "./matchup-lens-v1-fixture";
 
 // Radix Select needs these pointer APIs, which jsdom does not implement.
 beforeAll(() => {
@@ -29,16 +31,28 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
+// The page is live-only; evidence always arrives from the contract fixture.
+let fetchMock: LensFetchMock | null = null;
+beforeEach(() => {
+  fetchMock = installLensFetchMock();
+});
+
 afterEach(() => {
-  setLensSnapshotSource(staticLensSnapshotSource);
+  fetchMock?.restore();
+  fetchMock = null;
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
 function renderPage(entry = "/matchup-lens") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const router = createMemoryRouter([{ path: "/matchup-lens", element: <MatchupLens /> }], {
-    initialEntries: [entry],
-  });
+  const router = createMemoryRouter(
+    [
+      { path: "/matchup-lens", element: <MatchupLens /> },
+      { path: "/", element: <div data-testid="slate-page" /> },
+    ],
+    { initialEntries: [withGame(entry)] },
+  );
   render(
     <QueryClientProvider client={client}>
       <RouterProvider router={router} />
@@ -65,17 +79,6 @@ function largestGapKey(awayAbv: string, homeAbv: string): string {
   const teamB = findTeam(snapshot, homeAbv)!;
   const brief = buildGameBrief(snapshot, teamA, teamB, awayAbv, homeAbv, awayAbv, homeAbv);
   return brief.largest!.key;
-}
-
-/** Pick a team from one of the Overview matchup selectors. */
-async function pickTeam(
-  user: ReturnType<typeof userEvent.setup>,
-  role: "Team A team" | "Team B team",
-  abv: string,
-) {
-  await user.click(screen.getByRole("combobox", { name: role }));
-  const option = await screen.findByRole("option", { name: new RegExp(`^${abv} ·`) });
-  await user.click(option);
 }
 
 describe("browser history continuity", () => {
