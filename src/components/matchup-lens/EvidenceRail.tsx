@@ -6,9 +6,9 @@ import { metricStanding } from "@/lib/matchup-lens-rank";
 import {
   betterThanText,
   influenceNotes,
-  rankText,
   signalRoleLabel,
 } from "@/lib/matchup-lens-language";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 import { RoleBadge, type TraceHandlers } from "./TraceChips";
 
 interface EvidenceRailProps extends TraceHandlers {
