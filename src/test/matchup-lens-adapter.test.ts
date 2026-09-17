@@ -170,8 +170,9 @@ describe("matchup_lens_v1 adapter", () => {
       },
     ],
     ["an unknown league-context mode", (p) => (p.league_context!.mode = "partial" as never)],
-    ["a non-league percentile basis", (p) => (p.method!.percentile_basis = "division")],
-    ["an uncorrected polarity", (p) => (p.method!.polarity = "raw")],
+    ["an incorrect method.selection", (p) => (p.method!.selection = "Something else" as never)],
+    ["an incorrect method.frontend_role", (p) => (p.method!.frontend_role = "Other" as never)],
+    ["a forecasting method block", (p) => (p.method!.forecast = true as never)],
   ];
 
   for (const [label, mutate] of rejections) {

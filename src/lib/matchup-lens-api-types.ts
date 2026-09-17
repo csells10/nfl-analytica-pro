@@ -133,10 +133,17 @@ export interface MatchupLensV1LeagueContext {
   teams_in_payload: number | null;
 }
 
+export const MATCHUP_LENS_V1_METHOD_SELECTION =
+  "Latest phase-appropriate ranking snapshot strictly before the scheduled game date." as const;
+
+export const MATCHUP_LENS_V1_METHOD_FRONTEND_ROLE =
+  "Existing Matchup Lens formulas transform this evidence into lens scores and comparison language." as const;
+
+/** Frozen literals. The contract admits no other values. */
 export interface MatchupLensV1Method {
-  percentile_basis: string;
-  polarity: string;
-  notes: string | null;
+  selection: typeof MATCHUP_LENS_V1_METHOD_SELECTION;
+  frontend_role: typeof MATCHUP_LENS_V1_METHOD_FRONTEND_ROLE;
+  forecast: false;
 }
 
 /**

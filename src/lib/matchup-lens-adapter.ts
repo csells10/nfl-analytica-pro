@@ -11,6 +11,8 @@
 import { LENSES } from "./matchup-lens";
 import {
   MATCHUP_LENS_SCHEMA_VERSION,
+  MATCHUP_LENS_V1_METHOD_FRONTEND_ROLE,
+  MATCHUP_LENS_V1_METHOD_SELECTION,
   type MatchupLensV1CatalogMetric,
   type MatchupLensV1Coverage,
   type MatchupLensV1LensReadiness,
@@ -93,9 +95,9 @@ export interface MatchupLensLeagueContext {
 }
 
 export interface MatchupLensMethod {
-  percentileBasis: string;
-  polarity: string;
-  notes: string | null;
+  selection: string;
+  frontendRole: string;
+  forecast: false;
 }
 
 export interface AdaptedMatchupLensContext {
@@ -371,10 +373,14 @@ export function adaptMatchupLensV1(payload: MatchupLensV1Response): AdaptedMatch
 
   const methodRaw = payload.method;
   if (!isRecord(methodRaw)) fail("method must be an object");
-  // The frontend applies no polarity or rescaling of its own, so the payload
-  // must state that percentiles are league-based and already direction-correct.
-  if (methodRaw.percentile_basis !== "league") fail("method.percentile_basis must be league");
-  if (methodRaw.polarity !== "corrected") fail("method.polarity must be corrected");
+  // The contract freezes these three values exactly; nothing else is accepted.
+  if (methodRaw.selection !== MATCHUP_LENS_V1_METHOD_SELECTION) {
+    fail("method.selection does not match the frozen contract value");
+  }
+  if (methodRaw.frontend_role !== MATCHUP_LENS_V1_METHOD_FRONTEND_ROLE) {
+    fail("method.frontend_role does not match the frozen contract value");
+  }
+  if (methodRaw.forecast !== false) fail("method.forecast must be false");
 
   const { definitions, scoringMetrics, catalogSignals } = adaptCatalog(payload.metric_catalog);
   if (definitions.length === 0) fail("metric_catalog contains no scoring metrics");
@@ -420,9 +426,9 @@ export function adaptMatchupLensV1(payload: MatchupLensV1Response): AdaptedMatch
       reason: requireNullableString(leagueRaw.reason ?? null, "league_context.reason"),
     },
     method: {
-      percentileBasis: requireString(methodRaw.percentile_basis, "method.percentile_basis"),
-      polarity: requireString(methodRaw.polarity, "method.polarity"),
-      notes: requireNullableString(methodRaw.notes ?? null, "method.notes"),
+      selection: MATCHUP_LENS_V1_METHOD_SELECTION,
+      frontendRole: MATCHUP_LENS_V1_METHOD_FRONTEND_ROLE,
+      forecast: false,
     },
   };
 }
