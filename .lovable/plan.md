@@ -1,52 +1,49 @@
-# Diagnosis: adapter vs. authenticated DET/BUF production response
+# Phase G3 — Final Evidence Packet (read-only closure)
 
-Read-only. The captured payload was run through the current production adapter path (`adaptMatchupLensV1`) exactly as the page calls it. Nothing was edited, published, or added to source control.
+No code changes, no publication, no deployment are proposed. This records the completed Phase G3 state.
 
-## Result
+## Status taxonomy
+- **Implemented locally in Lovable source:** all Phase G3 code and tests.
+- **Verified in authenticated Lovable preview:** the authenticated DET/BUF acceptance.
+- **Production frontend publication:** not published.
+- **Deployment:** not performed.
 
-`adaptMatchupLensV1()` **rejects** the payload.
+## The 21 items
 
-- First rejection: `metric_catalog[0] must be an object`
-- Expected (current code): `{ metric, label, signal_strength, lens_tags }`
-- Actual (production): `"1st_down_rate"` — `metric_catalog` is a flat array of 63 metric-name strings
+1. **Scope** — Frontend-only connection of Matchup Lens to the authenticated production `matchup_lens_v1` endpoint; no backend changes.
+2. **Endpoint** — `GET /game/<encoded-game-id>/lens-context` on the retained shared API base.
+3. **API base** — Verified against the endpoint; current base retained (unauthenticated probe returned 401 at the endpoint, 405 at root on both candidate hosts).
+4. **Auth** — Existing Firebase bearer via `src/lib/nfl-api.ts` (`authHeaders()`); no token value logged, persisted, or exposed.
+5. **Transport types** — `src/lib/matchup-lens-api-types.ts`, aligned to the real production envelope (`metric_catalog: string[]`, `teams.away/home`, `basis.window_type/source_data_dates/...`, readiness `display_name/comparison_status/counts`, `coverage.warnings`, league context `mode/reason_code/message`, frozen method literals).
+6. **Adapter** — `src/lib/matchup-lens-adapter.ts` `adaptMatchupLensV1()`: strict validation; scoring `MetricDefinition`s built deterministically in catalog order from the union of team metric entries; cross-side metadata agreement required; `available:false` is valid, not malformed.
+7. **Context exclusion** — 16 transported `context` metrics excluded from scoring definitions and percentile maps without coercion; 47 scoring definitions remain.
+8. **Scoring engine** — Unchanged: six-lens order, formulas, strong=2/supporting=1, volume ×0.5, volatility ×0.75, tag matching, exclusions. `matchup-lens-rank.ts` untouched.
+9. **Query wiring** — Key exactly `["matchup-lens-context", gameId]`, enabled only for valid IDs, `meta:{persist:false}`, no previous/placeholder data, `refetchOnWindowFocus:false`, retry at most once for network/500/504.
+10. **Static runtime removed** — No static/preseason/persisted/placeholder/previous-game fallback can render during loading, failure, or success.
+11. **Canonical teams** — Team identity from the payload (`game.away_team`/`game.home_team`); URL `a`/`b` display-only.
+12. **Controlled states** — No-game directs to Slate; malformed ID; 400/401/403/404/409/500/504; unavailable; invalid-response; safe copy with no raw backend detail.
+13. **Readiness disclosure** — Six readiness rows in frozen order; partial keeps renormalized score (no zero-fill), global notice, side-specific Lens Explorer/Detail notes.
+14. **League suppression** — `league_context.mode === "suppressed"` enforced via presentation guards only; standings/ranks/ordinals hidden.
+15. **Warnings preserved** — `coverage.warnings` adapted as structured `{code, message, ...}` data; safe messages for presentation; no adapter details in browser logs.
+16. **Console hygiene** — Detailed contract-violation text removed from browser logging; page shows the generic unreadable-response state on adapter rejection.
+17. **Five contested mismatches** — Resolved: no-game copy, 403 access-denied copy, invalid-response state without partial scoring, retry scoped to current game, uneven-evidence wording names affected team/lens without implying zero.
+18. **Obsolete tests removed** — "a non-league percentile basis" and "an uncorrected polarity" (fields invented by the earlier transcription, not in the frozen contract); replaced by frozen-method regression and negative tests.
+19. **Test results** — Adapter and live-page suites pass; full frontend suite green (post-repair run); typecheck clean; production build OK.
+20. **Authenticated DET/BUF acceptance — PASS** in authenticated Lovable preview (`/matchup-lens?a=DET&b=BUF&view=overview&game=20260917_DET%40BUF`):
+    - HTTP 200 accepted by the frontend; scored UI rendered; prior unreadable-response state gone.
+    - `schema_version` `matchup_lens_v1`; `available:true`, `reason:null`.
+    - Canonical DET (ID "11") and BUF (ID "4").
+    - Dates `2026-09-14` (as-of) / `2026-09-13` (source data).
+    - Coverage 63 / 62 / 63 / 62 (catalog / DET / BUF / shared).
+    - Six readiness rows in frozen order; DET Drive Control partial missing `fourth_down_pct`; BUF Drive Control complete.
+    - 16 context metrics transported and excluded from scoring (47 definitions scored).
+    - Warnings present (asymmetric, partial, league-suppression); league context suppressed.
+    - No `numerator` or `denominator` anywhere.
+    - No static/preseason evidence rendered; no Matchup Lens API/adapter/query/auth/render console error. The repeated Lovable preview-shell `postMessage` target-origin output is recorded as unrelated preview-environment noise.
+21. **Publication state** — Nothing published; nothing deployed; captured production payload and authentication material never committed.
 
-Responsible code: `src/lib/matchup-lens-adapter.ts` → `adaptCatalog()` → the `if (!isRecord(entry)) fail(...)` branch, reached from `adaptMatchupLensV1()`.
+## Verdict
+Phase G3 is **complete and accepted**: implemented locally, verified in authenticated preview, with production publication and deployment deliberately not performed.
 
-Failure layer: **adapter validation**. Response parsing is fine (HTTP 200, valid JSON, correct `schema_version` / `available` / `reason`). Query handling is fine (request reached the right URL, single game key). Post-adapter rendering is fine — the safe unreadable-response state is exactly the contracted behaviour when the adapter throws.
-
-## Additional mismatches (diagnostic-only continuation)
-
-The validator stops at the first error, so the remaining ones were found by inspecting the payload directly. All are shape mismatches between our assumed envelope and the real one — the payload itself is internally consistent.
-
-1. **Team evidence location** — production nests both sides under `teams.away` / `teams.home`. The adapter reads top-level `payload.away` / `payload.home`, which are absent.
-2. **Metric metadata location** — `label`, `signal_strength`, `lens_tags` live on each team metric entry, not in the catalog. Away/home agree on all shared metrics (0 conflicts), so a union of team entries is a safe definition source. Counts: 10 strong, 37 supporting, 16 context.
-3. **Team header** — `away_team`/`home_team` carry `team_id`, `team_abv`, `logo_url`; there is no `team_name`.
-4. **Basis** — `window_type` (not `window`), `source_data_dates` (array, not `source_data_date`), plus `max_data_lag_days`, `pregame_safe`, `comparison_not_forecast`, `rankings_source`, `window_source`. No top-level `latest_included_game`; each team carries `latest_included_game_id`.
-5. **Readiness rows** — six rows, frozen order confirmed (`explosiveness`, `drive-control`, `scoring-finish`, `defensive-resistance`, `disruption-protection`, `turnover-balance`). Fields are `display_name` (not `lens_name`) and `comparison_status` (not `status`); each side has `catalog_eligible_metric_count` / `eligible_numeric_metric_count` / `missing_metrics`. DET Drive Control `partial` missing `fourth_down_pct`, BUF `complete`.
-6. **Warnings** — live under `coverage.warnings` (3 entries: asymmetric, league-rank-suppressed, partial), not top level. The adapter currently silently drops them (it tolerates an absent top-level `warnings`), so disclosure copy would be lost even after the other fixes.
-7. **Coverage** — no `named_metric_coverage`; adds `missing_away_metrics` / `missing_home_metrics`. Counts confirmed 63 / 62 / 63 / 62.
-8. **League context** — `mode: "suppressed"` plus `reason_code` and `message`; no `reason`, no `teams_in_payload`.
-9. **Method** — matches the frozen contract exactly (`selection`, `frontend_role`, `forecast: false`). No `numerator` / `denominator` anywhere.
-10. Percentiles are numeric, in 0–100, with no nulls on either side.
-
-## Smallest proposed repair (not applied)
-
-Realign the transport types and adapter reads to the real envelope, keeping every scoring formula, weight, tag rule and exclusion untouched:
-
-- `metric_catalog: string[]`; build scoring `MetricDefinition`s from the union of team metric entries (`label`, `signal_strength`, `lens_tags`), still dropping `context` metrics from scoring while accepting them as transport.
-- Read evidence from `teams.away` / `teams.home`; keep canonical-identity agreement with the game header.
-- Keep cross-side agreement validation for shared metrics (label, signal strength, tags) — this replaces the current catalog-agreement check without weakening it.
-- Basis: `window_type`, `source_data_dates[]`, `max_data_lag_days`; team-level `latest_included_game_id`.
-- Readiness: `display_name`, `comparison_status`, side counts; keep the exactly-six-rows-in-frozen-order check.
-- Warnings: read `coverage.warnings[].message`; `named_metric_coverage` optional.
-- League context: `mode` plus `reason_code` / `message`; keep the suppression behaviour unchanged.
-- Method: unchanged frozen-literal checks.
-
-## Tests required
-
-- Adapter: accepts a fixture matching the real envelope; produces 47 scoring definitions (16 context excluded); DET omits `fourth_down_pct` with no zero fill; identical lens scores to the current expected values; warnings surfaced from `coverage.warnings`; suppression flag set.
-- Negative: non-string catalog entry, missing `teams`, team header mismatch, shared-metric definition conflict, wrong readiness order or count, wrong method literals, `forecast: true`, out-of-range or non-numeric percentile — each still rejected.
-- Live page: DET/BUF fixture renders scored content, Drive Control partial notice names DET, league standings and ordinals hidden, no static/preseason path.
-- Full suite, typecheck, build, then an authenticated DET/BUF reload for acceptance evidence.
-
-Stopping here as instructed — no repair made.
+## Next dependency
+Christian's decision on when/how to publish the production frontend — Phase G3 has no remaining technical blocker.
