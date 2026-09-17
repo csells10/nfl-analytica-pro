@@ -551,7 +551,8 @@ export default function MatchupLens() {
     const uneven = (context?.coverage.lensReadiness ?? []).filter(
       (row) => row.status !== "complete",
     );
-    if (uneven.length > 0) {
+    const hasReadinessNotice = uneven.length > 0;
+    if (hasReadinessNotice) {
       notes.push(
         `Evidence is uneven for ${uneven
           .map((row) => row.lensName ?? row.lensKey)
@@ -559,6 +560,17 @@ export default function MatchupLens() {
       );
     }
     if (suppressLeagueContext) notes.push(LEAGUE_CONTEXT_SUPPRESSED_NOTE);
+
+    // Backend warnings are disclosure only — they never change a score. A
+    // warning whose condition is already visible through readiness or the
+    // suppression notice is dropped instead of repeated; anything else is
+    // surfaced once, using the backend's own safe message.
+    for (const warning of context?.coverage.warnings ?? []) {
+      const represented = warningDisclosure(warning.code);
+      if (represented === "readiness" && hasReadinessNotice) continue;
+      if (represented === "suppression" && suppressLeagueContext) continue;
+      if (!notes.includes(warning.message)) notes.push(warning.message);
+    }
     return notes;
   }, [context, suppressLeagueContext]);
 
