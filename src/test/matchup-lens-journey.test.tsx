@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,15 +8,27 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { email: "qa@gamelens.io" }, signOut: vi.fn() }),
 }));
 vi.mock("@/lib/admin-api", () => ({ useMe: () => ({ data: { is_admin: false } }) }));
+vi.mock("@/lib/firebase", () => ({ getAuthToken: async () => "test-token", firebaseAuth: {} }));
 
 import MatchupLens from "@/pages/MatchupLens";
 import { originReturn, parseOrigin } from "@/lib/matchup-lens-view";
+import { installLensFetchMock, withGame, type LensFetchMock } from "./matchup-lens-live-harness";
+
+// The page is live-only: every render is served by the contract fixture.
+let fetchMock: LensFetchMock | null = null;
+beforeEach(() => {
+  fetchMock = installLensFetchMock();
+});
+afterEach(() => {
+  fetchMock?.restore();
+  fetchMock = null;
+});
 
 function renderPage(initialEntry = "/matchup-lens") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[initialEntry]}>
+      <MemoryRouter initialEntries={[withGame(initialEntry)]}>
         <MatchupLens />
       </MemoryRouter>
     </QueryClientProvider>,

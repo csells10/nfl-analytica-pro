@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,14 +8,25 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { email: "qa@gamelens.io" }, signOut: vi.fn() }),
 }));
 vi.mock("@/lib/admin-api", () => ({ useMe: () => ({ data: { is_admin: false } }) }));
+vi.mock("@/lib/firebase", () => ({ getAuthToken: async () => "test-token", firebaseAuth: {} }));
 
 import MatchupLens from "@/pages/MatchupLens";
+import { installLensFetchMock, withGame, type LensFetchMock } from "./matchup-lens-live-harness";
+
+let fetchMock: LensFetchMock | null = null;
+beforeEach(() => {
+  fetchMock = installLensFetchMock();
+});
+afterEach(() => {
+  fetchMock?.restore();
+  fetchMock = null;
+});
 
 function renderPage(initialEntry = "/matchup-lens") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[initialEntry]}>
+      <MemoryRouter initialEntries={[withGame(initialEntry)]}>
         <MatchupLens />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -137,13 +148,19 @@ describe("Matchup Dashboard overview", () => {
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
   });
 
-  it("honours a deep link with teams, view and lens", async () => {
-    renderPage("/matchup-lens?a=KC&b=WAS&view=lens&lens=turnover-balance");
+  it("honours a deep link with game, view and lens, taking teams from the response", async () => {
+    // Replaces the former `a=KC&b=WAS` team-selection deep link: the URL can no
+    // longer choose evidence, so the game identifies the matchup and the
+    // response supplies the canonical teams.
+    fetchMock?.restore();
+    fetchMock = installLensFetchMock({ awayAbv: "KC", homeAbv: "WSH" });
+    renderPage("/matchup-lens?game=20260917_KC%40WSH&view=lens&lens=turnover-balance");
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
     expect(screen.getByTestId("lens-evidence").getAttribute("data-lens-key")).toBe(
       "turnover-balance",
     );
     expect(screen.getAllByText(/Turnover Balance/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("matchup-context-bar").textContent).toMatch(/KC/);
   });
 
   it("maps legacy mode links forward without breaking", async () => {

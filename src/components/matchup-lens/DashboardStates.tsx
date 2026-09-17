@@ -79,8 +79,8 @@ export const LENS_STATE_COPY = {
     action: "Go to the Slate",
   },
   accessDenied: {
-    title: "Access denied",
-    message: "This account is not authorized for GameLens matchup evidence.",
+    title: "You don’t have access to this matchup",
+    message: "This account isn’t authorised to see GameLens evidence for this game.",
   },
   conflict: {
     title: "This game’s evidence can’t be used",
@@ -89,7 +89,7 @@ export const LENS_STATE_COPY = {
     action: "Go to the Slate",
   },
   invalidResponse: {
-    title: "The matchup evidence didn’t arrive in a usable form",
+    title: "This matchup’s evidence couldn’t be read",
     message:
       "Nothing is shown rather than a partial comparison. Try again in a moment, or pick another matchup.",
   },

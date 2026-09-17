@@ -555,7 +555,7 @@ export default function MatchupLens() {
       notes.push(
         `Evidence is uneven for ${uneven
           .map((row) => row.lensName ?? row.lensKey)
-          .join(", ")}. Each score uses only the values present — nothing is counted as zero.`,
+          .join(", ")}. Each score uses only the values that are present.`,
       );
     }
     if (suppressLeagueContext) notes.push(LEAGUE_CONTEXT_SUPPRESSED_NOTE);

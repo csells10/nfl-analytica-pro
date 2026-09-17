@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -19,17 +19,28 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { email: "qa@gamelens.io" }, signOut: vi.fn() }),
 }));
 vi.mock("@/lib/admin-api", () => ({ useMe: () => ({ data: { is_admin: false } }) }));
+vi.mock("@/lib/firebase", () => ({ getAuthToken: async () => "test-token", firebaseAuth: {} }));
 
 import MatchupLens from "@/pages/MatchupLens";
+import { installLensFetchMock, withGame, type LensFetchMock } from "./matchup-lens-live-harness";
 
 const lar = findTeam(snapshot, "LAR")!;
 const cle = findTeam(snapshot, "CLE")!;
+
+let fetchMock: LensFetchMock | null = null;
+beforeEach(() => {
+  fetchMock = installLensFetchMock();
+});
+afterEach(() => {
+  fetchMock?.restore();
+  fetchMock = null;
+});
 
 function renderPage(entry = "/matchup-lens") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[entry]}>
+      <MemoryRouter initialEntries={[withGame(entry)]}>
         <MatchupLens />
       </MemoryRouter>
     </QueryClientProvider>,

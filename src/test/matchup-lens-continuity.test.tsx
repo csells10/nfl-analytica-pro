@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,18 +8,20 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { email: "qa@gamelens.io" }, signOut: vi.fn() }),
 }));
 vi.mock("@/lib/admin-api", () => ({ useMe: () => ({ data: { is_admin: false } }) }));
+vi.mock("@/lib/firebase", () => ({ getAuthToken: async () => "test-token", firebaseAuth: {} }));
 
 import MatchupLens from "@/pages/MatchupLens";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
 import { findTeam } from "@/lib/matchup-lens";
 import { PRESEASON_2026_SNAPSHOT } from "@/lib/matchup-lens-snapshot";
-import {
-  getLensSnapshotSource,
-  setLensSnapshotSource,
-  staticLensSnapshotSource,
-} from "@/lib/matchup-lens-source";
-import type { LensSnapshot } from "@/lib/matchup-lens-types";
 import { DASHBOARD_ERROR_MESSAGE } from "@/components/matchup-lens/DashboardStates";
+import {
+  installLensFetchMock,
+  withGame,
+  LIVE_GAME_ID,
+  type LensFetchMock,
+} from "./matchup-lens-live-harness";
+import { makeLensV1Payload } from "./matchup-lens-v1-fixture";
 
 // Radix Select needs these pointer APIs, which jsdom does not implement.
 beforeAll(() => {
@@ -29,16 +31,28 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
+// The page is live-only; evidence always arrives from the contract fixture.
+let fetchMock: LensFetchMock | null = null;
+beforeEach(() => {
+  fetchMock = installLensFetchMock();
+});
+
 afterEach(() => {
-  setLensSnapshotSource(staticLensSnapshotSource);
+  fetchMock?.restore();
+  fetchMock = null;
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
 function renderPage(entry = "/matchup-lens") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const router = createMemoryRouter([{ path: "/matchup-lens", element: <MatchupLens /> }], {
-    initialEntries: [entry],
-  });
+  const router = createMemoryRouter(
+    [
+      { path: "/matchup-lens", element: <MatchupLens /> },
+      { path: "/", element: <div data-testid="slate-page" /> },
+    ],
+    { initialEntries: [withGame(entry)] },
+  );
   render(
     <QueryClientProvider client={client}>
       <RouterProvider router={router} />
@@ -65,17 +79,6 @@ function largestGapKey(awayAbv: string, homeAbv: string): string {
   const teamB = findTeam(snapshot, homeAbv)!;
   const brief = buildGameBrief(snapshot, teamA, teamB, awayAbv, homeAbv, awayAbv, homeAbv);
   return brief.largest!.key;
-}
-
-/** Pick a team from one of the Overview matchup selectors. */
-async function pickTeam(
-  user: ReturnType<typeof userEvent.setup>,
-  role: "Team A team" | "Team B team",
-  abv: string,
-) {
-  await user.click(screen.getByRole("combobox", { name: role }));
-  const option = await screen.findByRole("option", { name: new RegExp(`^${abv} ·`) });
-  await user.click(option);
 }
 
 describe("browser history continuity", () => {
@@ -125,37 +128,38 @@ describe("browser history continuity", () => {
   });
 });
 
+const SECOND_GAME_ID = "20260917_KC@WSH";
+
+/** Serves the right matchup for whichever game the page requests. */
+function installTwoGameFetchMock() {
+  fetchMock?.restore();
+  const first = makeLensV1Payload({ awayAbv: "LAR", homeAbv: "CLE" });
+  const second = makeLensV1Payload({ awayAbv: "KC", homeAbv: "WSH" });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      const body = url.includes("KC") ? second : first;
+      return new Response(JSON.stringify(body), { status: 200 });
+    }),
+  );
+}
+
 describe("matchup changes", () => {
-  it("returns to the Overview and clears every focused state", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
+  // Replaces the former in-page team-selector assertions: the URL can no longer
+  // choose teams, so a new matchup is a new `game`.
+  it("returns to the Overview and clears every focused state when the game changes", async () => {
+    installTwoGameFetchMock();
     const router = renderPage(
       "/matchup-lens?view=lens&lens=turnover-balance&from=all-lenses&trace=metric:points_per_game",
     );
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
 
-    await user.click(screen.getByTestId("context-change-matchup"));
-    await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
-
-    await pickTeam(user, "Team B team", "KC");
-
-    await waitFor(() => expect(params(router).get("b")).toBe("KC"));
-    const search = params(router);
-    expect(search.get("view")).toBe("overview");
-    expect(search.get("lens")).toBeNull();
-    expect(search.get("collision")).toBeNull();
-    expect(search.get("trace")).toBeNull();
-    expect(search.get("from")).toBeNull();
-    expect(screen.queryByTestId("lens-evidence")).toBeNull();
-    expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/);
-  });
-  it("clears focused state as soon as Change matchup is used", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
-    const router = renderPage(
-      "/matchup-lens?view=lens&lens=turnover-balance&from=all-lenses&layout=side&trace=metric:takeaways_per_game",
-    );
-    await waitFor(() => expect(screen.getByTestId("trace-drawer")).toBeTruthy());
-
-    await user.click(screen.getByTestId("context-change-matchup"));
+    await act(async () => {
+      await router.navigate(
+        `/matchup-lens?game=${encodeURIComponent(SECOND_GAME_ID)}&view=lens&lens=turnover-balance&from=all-lenses&layout=side&trace=metric:points_per_game`,
+      );
+    });
 
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
     const search = params(router);
@@ -165,17 +169,29 @@ describe("matchup changes", () => {
     expect(search.get("trace")).toBeNull();
     expect(search.get("layout")).toBeNull();
     expect(search.get("from")).toBeNull();
-    expect(screen.queryByTestId("trace-drawer")).toBeNull();
     expect(screen.queryByTestId("lens-evidence")).toBeNull();
+    expect(screen.queryByTestId("trace-drawer")).toBeNull();
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole("combobox", { name: "Team A team" })),
+      expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/),
     );
+    // No trace of the previous matchup survives the switch.
+    expect(screen.getByTestId("lens-context-label").textContent).not.toMatch(/LAR/);
+  });
+
+  it("sends Change matchup back to the Slate, where a game is chosen", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderPage("/matchup-lens?view=lens&lens=turnover-balance&from=all-lenses");
+    await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
+
+    await user.click(screen.getByTestId("context-change-matchup"));
+    await waitFor(() => expect(screen.getByTestId("slate-page")).toBeTruthy());
   });
 });
 
 describe("biggest edge", () => {
   it("always opens the current matchup's largest separation", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
+    installTwoGameFetchMock();
     const router = renderPage();
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
 
@@ -200,13 +216,15 @@ describe("biggest edge", () => {
     );
     expect(params(router).get("lens")).toBe(expected);
 
-    // …and again after the matchup changes.
-    await user.click(screen.getByTestId("context-change-matchup"));
-    await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
-    await pickTeam(user, "Team B team", "KC");
-    await waitFor(() => expect(params(router).get("b")).toBe("KC"));
+    // …and again after the game changes.
+    await act(async () => {
+      await router.navigate(`/matchup-lens?game=${encodeURIComponent(SECOND_GAME_ID)}`);
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/),
+    );
 
-    const nextExpected = largestGapKey("LAR", "KC");
+    const nextExpected = largestGapKey("KC", "WSH");
     await user.click(screen.getByTestId("destination-open-biggest-edge"));
     await waitFor(() =>
       expect(screen.getByTestId("lens-evidence").getAttribute("data-lens-key")).toBe(nextExpected),
@@ -259,29 +277,34 @@ describe("deep-link normalisation", () => {
 });
 
 describe("lifecycle states", () => {
-  it("shows the loading skeleton before data arrives", async () => {
+  it("shows the loading skeleton before live evidence arrives", async () => {
     renderPage();
     expect(screen.getByTestId("dashboard-skeleton")).toBeTruthy();
+    // Nothing from the retired baseline can appear while the request is open.
+    expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
   });
 
   it("shows a background refresh status without replacing the canvas", async () => {
-    let resolveSecond: ((snapshot: LensSnapshot) => void) | undefined;
+    fetchMock?.restore();
+    let releaseSecond: (() => void) | undefined;
     let calls = 0;
-    setLensSnapshotSource({
-      id: "refresh-test",
-      load: () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
         calls += 1;
-        if (calls === 1) return Promise.resolve(PRESEASON_2026_SNAPSHOT);
-        return new Promise<LensSnapshot>((resolve) => {
-          resolveSecond = resolve;
-        });
-      },
-    });
+        if (calls > 1) {
+          await new Promise<void>((resolve) => {
+            releaseSecond = resolve;
+          });
+        }
+        return new Response(JSON.stringify(makeLensV1Payload()), { status: 200 });
+      }),
+    );
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const router = createMemoryRouter([{ path: "/matchup-lens", element: <MatchupLens /> }], {
-      initialEntries: ["/matchup-lens"],
+      initialEntries: [withGame("/matchup-lens")],
     });
     render(
       <QueryClientProvider client={client}>
@@ -291,53 +314,77 @@ describe("lifecycle states", () => {
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
 
     await act(async () => {
-      void client.refetchQueries({ queryKey: ["lens-snapshot", "refresh-test"] });
+      void client.refetchQueries({ queryKey: ["matchup-lens-context", LIVE_GAME_ID] });
       await Promise.resolve();
     });
     await waitFor(() => expect(screen.getByTestId("context-refreshing")).toBeTruthy());
     expect(screen.getByTestId("destination-cards")).toBeTruthy();
 
     await act(async () => {
-      resolveSecond?.(PRESEASON_2026_SNAPSHOT);
+      releaseSecond?.();
+      await Promise.resolve();
     });
     await waitFor(() => expect(screen.queryByTestId("context-refreshing")).toBeNull());
   });
 
   it("shows plain-language error copy and retries without echoing the error", async () => {
+    fetchMock?.restore();
     let attempts = 0;
-    setLensSnapshotSource({
-      id: "error-test",
-      load: () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
         attempts += 1;
-        if (attempts === 1) {
-          return Promise.reject(new Error("ECONNREFUSED 10.0.0.4:5432 internal-db"));
+        // The hook already retries a server failure once on its own.
+        if (attempts <= 2) {
+          return new Response(JSON.stringify({ detail: "ECONNREFUSED 10.0.0.4:5432 internal-db" }), {
+            status: 500,
+          });
         }
-        return Promise.resolve(PRESEASON_2026_SNAPSHOT);
-      },
-    });
+        return new Response(JSON.stringify(makeLensV1Payload()), { status: 200 });
+      }),
+    );
 
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     renderPage();
-    await waitFor(() => expect(screen.getByTestId("dashboard-error")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("dashboard-error")).toBeTruthy(), {
+      timeout: 5000,
+    });
     const errorCard = screen.getByTestId("dashboard-error");
     expect(errorCard.textContent).toContain(DASHBOARD_ERROR_MESSAGE);
     expect(errorCard.textContent).not.toMatch(/ECONNREFUSED|10\.0\.0\.4|internal-db/);
+    // A failure never falls back to the retired baseline evidence.
+    expect(screen.queryByTestId("destination-cards")).toBeNull();
 
     await user.click(screen.getByTestId("dashboard-retry"));
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
-    expect(attempts).toBe(2);
   });
 
-  it("shows the empty state when the snapshot has no rows for the matchup", async () => {
-    const emptySnapshot: LensSnapshot = {
-      ...PRESEASON_2026_SNAPSHOT,
-      teams: [],
-    };
-    setLensSnapshotSource({ id: "empty-test", load: async () => emptySnapshot });
+  it("shows the empty state when the backend has no evidence for this game", async () => {
+    fetchMock?.restore();
+    fetchMock = installLensFetchMock({
+      body: {
+        schema_version: "matchup_lens_v1",
+        available: false,
+        reason: "Evidence is not ready for this matchup yet.",
+        game: null,
+        display: null,
+        basis: null,
+        metric_catalog: null,
+        away: null,
+        home: null,
+        coverage: null,
+        warnings: null,
+        league_context: null,
+        method: null,
+      },
+    });
     renderPage();
     await waitFor(() => expect(screen.getByTestId("dashboard-empty")).toBeTruthy());
-    expect(screen.getByTestId("dashboard-empty").textContent).toMatch(/No profile data/);
+    expect(screen.getByTestId("dashboard-empty").textContent).toMatch(
+      /Evidence is not ready for this matchup yet/,
+    );
     expect(screen.queryByTestId("destination-cards")).toBeNull();
+    expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
   });
 });
 
