@@ -22,6 +22,7 @@ interface TraceDrawerProps {
 }
 
 function Readings({ readings }: { readings: TeamMetricReading[] }) {
+  const rank = useRankText();
   return (
     <ul className="mt-1.5 space-y-1">
       {readings.map((reading, index) => (
