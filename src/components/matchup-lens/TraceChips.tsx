@@ -1,6 +1,7 @@
 import type { TraceTarget } from "@/lib/matchup-lens-trace";
-import { readableTag, scoreText, rankText } from "@/lib/matchup-lens-language";
+import { readableTag, scoreText } from "@/lib/matchup-lens-language";
 import type { LeagueStanding } from "@/lib/matchup-lens-rank";
+import { useRankText } from "@/lib/matchup-lens-presentation";
 
 export interface TraceHandlers {
   onOpenTrace: (target: TraceTarget) => void;
