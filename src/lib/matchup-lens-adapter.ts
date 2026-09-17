@@ -508,18 +508,9 @@ export function adaptMatchupLensV1(payload: MatchupLensV1Response): AdaptedMatch
   }
   if (definitions.length === 0) fail("metric_catalog contains no scoring metrics");
 
-  const awayRow = buildMetricRow(
-    teamsRaw.away as Record<string, unknown>,
-    awaySide.identity,
-    awaySide.metrics,
-    scoringMetrics,
-  );
-  const homeRow = buildMetricRow(
-    teamsRaw.home as Record<string, unknown>,
-    homeSide.identity,
-    homeSide.metrics,
-    scoringMetrics,
-  );
+  const awayRow = buildMetricRow(awaySide, scoringMetrics);
+  const homeRow = buildMetricRow(homeSide, scoringMetrics);
+
 
   const coverage = adaptCoverage(payload.coverage);
 
