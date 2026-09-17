@@ -42,7 +42,7 @@ describe("matchup_lens_v1 adapter", () => {
     );
 
     const score = (context: ReturnType<typeof adaptMatchupLensV1>) =>
-      scoreAllLenses(context.snapshot, context.snapshot.teams[0].teamAbv).map((row) => row.score);
+      scoreAllLenses(context.snapshot, context.snapshot.teams[0]).map((row) => row.score);
 
     expect(score(withContext)).toEqual(score(withoutContext));
   });
