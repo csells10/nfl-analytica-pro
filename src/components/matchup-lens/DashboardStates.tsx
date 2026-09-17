@@ -141,10 +141,24 @@ interface DashboardEmptyProps {
   message: string;
   actionLabel?: string;
   onAction?: () => void;
+  /**
+   * Optional inline manual retry, used by the `available:false` state. It sits
+   * alongside the navigation action: neither replaces the other.
+   */
+  onRetry?: () => void;
+  /** True while the manual retry is in flight, so the state stays honest. */
+  isRetrying?: boolean;
 }
 
 /** Empty is not an error: explain the gap and offer the nearest useful move. */
-export function DashboardEmpty({ title, message, actionLabel, onAction }: DashboardEmptyProps) {
+export function DashboardEmpty({
+  title,
+  message,
+  actionLabel,
+  onAction,
+  onRetry,
+  isRetrying = false,
+}: DashboardEmptyProps) {
   return (
     <Card className="border-border bg-card" data-testid="dashboard-empty">
       <CardContent className="p-4">
@@ -153,16 +167,34 @@ export function DashboardEmpty({ title, message, actionLabel, onAction }: Dashbo
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">{title}</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{message}</p>
-            {actionLabel && onAction && (
-              <button
-                type="button"
-                data-testid="dashboard-empty-action"
-                onClick={onAction}
-                className="mt-3 inline-flex min-h-[44px] cursor-pointer items-center rounded-md border border-border px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[36px]"
-              >
-                {actionLabel}
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {onRetry && (
+                <button
+                  type="button"
+                  data-testid="dashboard-empty-retry"
+                  onClick={onRetry}
+                  disabled={isRetrying}
+                  aria-busy={isRetrying}
+                  className="mt-3 inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-60 sm:min-h-[36px]"
+                >
+                  <RefreshCcw
+                    className={`h-3.5 w-3.5 ${isRetrying ? "animate-spin" : ""}`}
+                    aria-hidden="true"
+                  />
+                  {isRetrying ? "Checking again…" : "Try again"}
+                </button>
+              )}
+              {actionLabel && onAction && (
+                <button
+                  type="button"
+                  data-testid="dashboard-empty-action"
+                  onClick={onAction}
+                  className="mt-3 inline-flex min-h-[44px] cursor-pointer items-center rounded-md border border-border px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[36px]"
+                >
+                  {actionLabel}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>
