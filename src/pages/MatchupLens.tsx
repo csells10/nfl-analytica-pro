@@ -658,6 +658,7 @@ export default function MatchupLens() {
               viewingLabel={viewingLabel}
               isOverview={view === "overview"}
               isRefreshing={isFetching && !isLoading}
+              notices={contextNotices}
               onBack={goOverview}
               onChangeMatchup={changeMatchup}
             />
