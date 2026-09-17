@@ -128,37 +128,38 @@ describe("browser history continuity", () => {
   });
 });
 
+const SECOND_GAME_ID = "20260917_KC@WSH";
+
+/** Serves the right matchup for whichever game the page requests. */
+function installTwoGameFetchMock() {
+  fetchMock?.restore();
+  const first = makeLensV1Payload({ awayAbv: "LAR", homeAbv: "CLE" });
+  const second = makeLensV1Payload({ awayAbv: "KC", homeAbv: "WSH" });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      const body = url.includes("KC") ? second : first;
+      return new Response(JSON.stringify(body), { status: 200 });
+    }),
+  );
+}
+
 describe("matchup changes", () => {
-  it("returns to the Overview and clears every focused state", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
+  // Replaces the former in-page team-selector assertions: the URL can no longer
+  // choose teams, so a new matchup is a new `game`.
+  it("returns to the Overview and clears every focused state when the game changes", async () => {
+    installTwoGameFetchMock();
     const router = renderPage(
       "/matchup-lens?view=lens&lens=turnover-balance&from=all-lenses&trace=metric:points_per_game",
     );
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
 
-    await user.click(screen.getByTestId("context-change-matchup"));
-    await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
-
-    await pickTeam(user, "Team B team", "KC");
-
-    await waitFor(() => expect(params(router).get("b")).toBe("KC"));
-    const search = params(router);
-    expect(search.get("view")).toBe("overview");
-    expect(search.get("lens")).toBeNull();
-    expect(search.get("collision")).toBeNull();
-    expect(search.get("trace")).toBeNull();
-    expect(search.get("from")).toBeNull();
-    expect(screen.queryByTestId("lens-evidence")).toBeNull();
-    expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/);
-  });
-  it("clears focused state as soon as Change matchup is used", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
-    const router = renderPage(
-      "/matchup-lens?view=lens&lens=turnover-balance&from=all-lenses&layout=side&trace=metric:takeaways_per_game",
-    );
-    await waitFor(() => expect(screen.getByTestId("trace-drawer")).toBeTruthy());
-
-    await user.click(screen.getByTestId("context-change-matchup"));
+    await act(async () => {
+      await router.navigate(
+        `/matchup-lens?game=${encodeURIComponent(SECOND_GAME_ID)}&view=lens&lens=turnover-balance&from=all-lenses&layout=side&trace=metric:points_per_game`,
+      );
+    });
 
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
     const search = params(router);
@@ -168,17 +169,29 @@ describe("matchup changes", () => {
     expect(search.get("trace")).toBeNull();
     expect(search.get("layout")).toBeNull();
     expect(search.get("from")).toBeNull();
-    expect(screen.queryByTestId("trace-drawer")).toBeNull();
     expect(screen.queryByTestId("lens-evidence")).toBeNull();
+    expect(screen.queryByTestId("trace-drawer")).toBeNull();
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole("combobox", { name: "Team A team" })),
+      expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/),
     );
+    // No trace of the previous matchup survives the switch.
+    expect(screen.getByTestId("lens-context-label").textContent).not.toMatch(/LAR/);
+  });
+
+  it("sends Change matchup back to the Slate, where a game is chosen", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderPage("/matchup-lens?view=lens&lens=turnover-balance&from=all-lenses");
+    await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
+
+    await user.click(screen.getByTestId("context-change-matchup"));
+    await waitFor(() => expect(screen.getByTestId("slate-page")).toBeTruthy());
   });
 });
 
 describe("biggest edge", () => {
   it("always opens the current matchup's largest separation", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
+    installTwoGameFetchMock();
     const router = renderPage();
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
 
@@ -203,13 +216,15 @@ describe("biggest edge", () => {
     );
     expect(params(router).get("lens")).toBe(expected);
 
-    // …and again after the matchup changes.
-    await user.click(screen.getByTestId("context-change-matchup"));
-    await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
-    await pickTeam(user, "Team B team", "KC");
-    await waitFor(() => expect(params(router).get("b")).toBe("KC"));
+    // …and again after the game changes.
+    await act(async () => {
+      await router.navigate(`/matchup-lens?game=${encodeURIComponent(SECOND_GAME_ID)}`);
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/),
+    );
 
-    const nextExpected = largestGapKey("LAR", "KC");
+    const nextExpected = largestGapKey("KC", "WSH");
     await user.click(screen.getByTestId("destination-open-biggest-edge"));
     await waitFor(() =>
       expect(screen.getByTestId("lens-evidence").getAttribute("data-lens-key")).toBe(nextExpected),
