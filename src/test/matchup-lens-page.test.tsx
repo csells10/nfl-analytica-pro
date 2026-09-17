@@ -160,7 +160,7 @@ describe("Matchup Dashboard overview", () => {
       "turnover-balance",
     );
     expect(screen.getAllByText(/Turnover Balance/).length).toBeGreaterThan(0);
-    expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/);
+    expect(screen.getByTestId("matchup-context-bar").textContent).toMatch(/KC/);
   });
 
   it("maps legacy mode links forward without breaking", async () => {

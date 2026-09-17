@@ -127,13 +127,14 @@ describe("Matchup Lens live evidence", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         urls.push(typeof input === "string" ? input : input.toString());
         attempt += 1;
-        if (attempt === 1) return new Response("{}", { status: 500 });
+        // The hook retries a server failure once on its own before giving up.
+        if (attempt <= 2) return new Response("{}", { status: 500 });
         return new Response(JSON.stringify(makeLensV1Payload()), { status: 200 });
       }),
     );
 
     renderPage();
-    const retry = await screen.findByRole("button", { name: /try again/i });
+    const retry = await screen.findByRole("button", { name: /try again/i }, { timeout: 5000 });
     await user.click(retry);
     await waitFor(() => expect(screen.getByTestId("insight-ticker")).toBeTruthy());
     // Every request — original and retry — targets the same game.
