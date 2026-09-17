@@ -12,6 +12,11 @@ interface MatchupContextBarProps {
   isOverview: boolean;
   /** True while a background refresh is in flight; current data stays visible. */
   isRefreshing?: boolean;
+  /**
+   * One concise line per disclosure (uneven evidence, hidden league ranks).
+   * Deliberately shown once here rather than repeated on every card.
+   */
+  notices?: string[];
   onBack: () => void;
   onChangeMatchup: () => void;
 }
