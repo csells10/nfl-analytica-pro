@@ -292,7 +292,8 @@ export default function MatchupLens() {
   }, [
     snapshot,
     urlState,
-    teamOptions,
+    awayAbv,
+    homeAbv,
     momentum.eligible,
     laneKeys,
     traceData,
@@ -300,14 +301,21 @@ export default function MatchupLens() {
     setSearchParams,
   ]);
 
-
-
   const brief = useMemo(
     () =>
       snapshot && away && home
-        ? buildGameBrief(snapshot, away, home, awayAbv, homeAbv, teamName(awayAbv), teamName(homeAbv))
+        ? buildGameBrief(
+            snapshot,
+            away,
+            home,
+            awayAbv,
+            homeAbv,
+            teamName(awayAbv),
+            teamName(homeAbv),
+            { suppressLeagueContext },
+          )
         : null,
-    [snapshot, away, home, awayAbv, homeAbv],
+    [snapshot, away, home, awayAbv, homeAbv, suppressLeagueContext],
   );
 
   const angle = useMemo(() => {
