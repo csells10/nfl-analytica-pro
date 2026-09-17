@@ -47,6 +47,7 @@ export function EvidenceRail({
   onOpenTrace,
 }: EvidenceRailProps) {
   const scroller = useRef<HTMLDivElement>(null);
+  const rank = useRankText();
 
   const nudge = useCallback((direction: -1 | 1) => {
     const node = scroller.current;
