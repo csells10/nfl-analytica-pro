@@ -34,7 +34,8 @@ function Readings({ readings }: { readings: TeamMetricReading[] }) {
         >
           <span className="font-semibold">{reading.teamAbv}</span>
           <span className="font-mono text-muted-foreground">
-            {reading.readable} · {rankText(reading.standing.rank, reading.standing.total)}
+            {reading.readable}
+            {rank(reading.standing) ? ` · ${rank(reading.standing)}` : ""}
           </span>
         </li>
       ))}
