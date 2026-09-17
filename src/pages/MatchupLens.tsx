@@ -604,30 +604,51 @@ export default function MatchupLens() {
           <p className="mt-0.5 text-xs text-muted-foreground">{DASHBOARD_PURPOSE}</p>
         </header>
 
-        {isLoading ? (
+        {gameIdState.kind === "missing" ? (
+          <DashboardEmpty
+            title={LENS_STATE_COPY.noGame.title}
+            message={LENS_STATE_COPY.noGame.message}
+            actionLabel={LENS_STATE_COPY.noGame.action}
+            onAction={goToSlate}
+          />
+        ) : gameIdState.kind === "malformed" ? (
+          <DashboardEmpty
+            title={LENS_STATE_COPY.malformedGame.title}
+            message={LENS_STATE_COPY.malformedGame.message}
+            actionLabel={LENS_STATE_COPY.malformedGame.action}
+            onAction={goToSlate}
+          />
+        ) : isLoading ? (
           <DashboardSkeleton />
         ) : isError ? (
-          <DashboardError onRetry={() => void refetch()} />
+          failure.retryable ? (
+            <DashboardError
+              onRetry={() => void refetch()}
+              title={failure.title}
+              message={failure.message}
+            />
+          ) : (
+            <DashboardEmpty
+              title={failure.title}
+              message={failure.message}
+              actionLabel={failure.action}
+              onAction={failure.action ? goToSlate : undefined}
+            />
+          )
+        ) : result?.kind === "unavailable" ? (
+          <DashboardEmpty
+            title={LENS_STATE_COPY.unavailable.title}
+            message={result.reason ?? LENS_STATE_COPY.unavailable.message}
+            actionLabel={LENS_STATE_COPY.unavailable.action}
+            onAction={goToSlate}
+          />
         ) : !snapshot || !away || !home ? (
           <DashboardEmpty
-            title="No profile data for this matchup"
-            message="This snapshot has no rows for one of the selected teams, so there is nothing to compare yet. Pick another matchup to continue."
-            actionLabel="Choose another matchup"
-            onAction={() =>
-              commit({
-                awayAbv: DEFAULT_AWAY,
-                homeAbv: DEFAULT_HOME,
-                view: "overview",
-                origin: "overview",
-                selectedLens: null,
-                collisionKey: null,
-                trace: null,
-              })
-            }
+            title={LENS_STATE_COPY.invalidResponse.title}
+            message={LENS_STATE_COPY.invalidResponse.message}
           />
-
         ) : (
-          <>
+          <LensPresentationProvider value={{ suppressLeagueContext }}>
             <MatchupContextBar
               labelA={awayAbv}
               labelB={homeAbv}
