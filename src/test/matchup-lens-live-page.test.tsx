@@ -55,7 +55,7 @@ describe("Matchup Lens live evidence", () => {
   it("shows a controlled invalid state for a malformed game id", async () => {
     fetchMock = installLensFetchMock();
     renderPage("/matchup-lens?game=not-a-game");
-    await screen.findByText("That matchup link isn't valid");
+    await screen.findByText("That matchup link isn’t valid");
     expect(fetchMock.calls()).toHaveLength(0);
   });
 
@@ -117,13 +117,15 @@ describe("Matchup Lens live evidence", () => {
     expect(document.body.textContent).not.toMatch(/counted as zero/i);
   });
 
-  it("offers a retry for a server failure and recovers on retry", async () => {
+  it("offers a retry for a server failure and retries only the current game", async () => {
     const user = userEvent.setup();
     const { makeLensV1Payload } = await import("./matchup-lens-v1-fixture");
+    const urls: string[] = [];
     let attempt = 0;
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => {
+      vi.fn(async (input: RequestInfo | URL) => {
+        urls.push(typeof input === "string" ? input : input.toString());
         attempt += 1;
         if (attempt === 1) return new Response("{}", { status: 500 });
         return new Response(JSON.stringify(makeLensV1Payload()), { status: 200 });
@@ -131,16 +133,19 @@ describe("Matchup Lens live evidence", () => {
     );
 
     renderPage();
-    const retry = await screen.findByRole("button", { name: /retry/i });
+    const retry = await screen.findByRole("button", { name: /try again/i });
     await user.click(retry);
     await waitFor(() => expect(screen.getByTestId("insight-ticker")).toBeTruthy());
+    // Every request — original and retry — targets the same game.
+    expect(urls.length).toBeGreaterThan(1);
+    for (const url of urls) expect(url).toContain("/game/20260917_LAR%40CLE/lens-context");
   });
 
   it("shows a plain-language message for access denied with no retry", async () => {
     fetchMock = installLensFetchMock({ status: 403 });
     renderPage();
-    await screen.findByText("You don't have access to this matchup");
-    expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
+    await screen.findByText("You don’t have access to this matchup");
+    expect(screen.queryByRole("button", { name: /try again/i })).toBeNull();
   });
 
   it("shows a controlled unavailable state and never falls back to baseline data", async () => {
@@ -166,10 +171,12 @@ describe("Matchup Lens live evidence", () => {
     expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
   });
 
-  it("shows a controlled state for a contract-invalid response", async () => {
+  it("shows a controlled state for a contract-invalid response and scores nothing", async () => {
     fetchMock = installLensFetchMock({ body: { schema_version: "matchup_lens_v9" } });
     renderPage();
-    await screen.findByText("This matchup's evidence couldn't be read");
+    await screen.findByText("This matchup’s evidence couldn’t be read");
+    expect(screen.queryByTestId("lens-explorer")).toBeNull();
+    expect(screen.queryByTestId("insight-ticker")).toBeNull();
   });
 
   it("clears the previous game's evidence immediately when the game changes", async () => {
