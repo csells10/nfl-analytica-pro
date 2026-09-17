@@ -70,6 +70,11 @@ export interface StoryInput {
   gaps: LensGap[];
   angle: ProfileAngle | null;
   directions: CollisionDirection[];
+  /**
+   * When true the evidence carries only the two matchup teams, so no league
+   * ordinal can be stated and the rank-identity stories are omitted.
+   */
+  suppressLeagueContext?: boolean;
 }
 
 /**
