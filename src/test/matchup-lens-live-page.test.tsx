@@ -299,24 +299,56 @@ describe("Matchup Lens backend warnings", () => {
     expect(notices.textContent).not.toContain("One team is missing evidence.");
   });
 
-  it("does not repeat a league-suppression warning already shown by the suppression notice", async () => {
-    const notices = await renderWithWarnings([
-      { code: "LEAGUE_RANK_SUPPRESSED", message: "League ranks are suppressed." },
-    ]);
-    expect(notices.textContent).toMatch(/League rankings are hidden/);
-    expect(notices.textContent).not.toContain("League ranks are suppressed.");
+  it("does not repeat an unavailable-evidence warning already shown by readiness", async () => {
+    const notices = await renderWithWarnings(
+      [{ code: "UNAVAILABLE_LENS_EVIDENCE", message: "One lens has no evidence." }],
+      { awayMissing: ["yards_per_play"] },
+    );
+    expect(notices.textContent).toMatch(/Evidence is uneven/);
+    expect(notices.textContent).not.toContain("One lens has no evidence.");
   });
 
-  it("shows a safe backend warning that no existing disclosure represents", async () => {
+  it("does not repeat the league-rank suppression warning already shown by the suppression notice", async () => {
     const notices = await renderWithWarnings([
-      { code: "SOURCE_DATA_LAG", message: "Source data is one day behind." },
+      { code: "LEAGUE_RANK_OUTPUT_SUPPRESSED", message: "League rank output is suppressed." },
     ]);
-    expect(notices.textContent).toContain("Source data is one day behind.");
+    expect(notices.textContent).toMatch(/League rankings are hidden/);
+    expect(notices.textContent).not.toContain("League rank output is suppressed.");
+    expect(occurrences(notices.textContent ?? "", "League rankings are hidden")).toBe(1);
+  });
+
+  it("shows the multiple-source-dates warning once, using the backend message", async () => {
+    const notices = await renderWithWarnings([
+      { code: "MULTIPLE_SOURCE_DATES", message: "Evidence spans more than one source date." },
+      { code: "MULTIPLE_SOURCE_DATES", message: "Evidence spans more than one source date." },
+    ]);
+    expect(notices.textContent).toContain("Evidence spans more than one source date.");
+    expect(
+      occurrences(notices.textContent ?? "", "Evidence spans more than one source date."),
+    ).toBe(1);
+  });
+
+  it("shows the named-metric-gaps warning using the backend message", async () => {
+    const notices = await renderWithWarnings([
+      { code: "NAMED_METRIC_GAPS", message: "Named metrics are missing for one side." },
+    ]);
+    expect(notices.textContent).toContain("Named metrics are missing for one side.");
+  });
+
+  it("ignores an unknown warning code instead of rendering its text", async () => {
+    const notices = await renderWithWarnings([
+      { code: "SOME_UNKNOWN_CODE", message: "Unvalidated backend text." },
+    ]);
+    expect(notices.textContent).not.toContain("Unvalidated backend text.");
+    expect(document.body.textContent).not.toContain("Unvalidated backend text.");
+    expect(document.body.textContent).not.toContain("SOME_UNKNOWN_CODE");
+    // An unknown code changes nothing that is scored.
+    expect(screen.getByTestId("insight-ticker")).toBeTruthy();
   });
 
   it("keeps scoring intact while warnings are displayed", async () => {
     await renderWithWarnings([
-      { code: "SOURCE_DATA_LAG", message: "Source data is one day behind." },
+      { code: "NAMED_METRIC_GAPS", message: "Named metrics are missing for one side." },
     ]);
     expect(screen.getByTestId("insight-ticker")).toBeTruthy();
   });
