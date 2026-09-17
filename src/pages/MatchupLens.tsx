@@ -387,17 +387,29 @@ export default function MatchupLens() {
     [commit],
   );
 
-  const changeTeam = useCallback(
-    (slot: "away" | "home", value: string) => {
-      const current = slot === "away" ? awayAbv : homeAbv;
-      if (current === value) return;
-      resetToOverview({
-        awayAbv: slot === "away" ? value : awayAbv,
-        homeAbv: slot === "home" ? value : homeAbv,
-      });
-    },
-    [awayAbv, homeAbv, resetToOverview],
-  );
+  /**
+   * A new game is a new matchup: clear every focused, hovered or traced state
+   * carried over from the previous one before its evidence can render.
+   */
+  const previousGameId = useRef<string | null>(gameId);
+  useEffect(() => {
+    if (previousGameId.current === gameId) return;
+    previousGameId.current = gameId;
+    setHoveredLens(null);
+    const next = writeUrlState(new URLSearchParams(searchParams), {
+      ...urlState,
+      awayAbv: "",
+      homeAbv: "",
+      view: "overview",
+      origin: "overview",
+      layout: "overlay",
+      selectedLens: null,
+      collisionKey: null,
+      trace: null,
+    });
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+  }, [gameId, searchParams, setSearchParams, urlState]);
+
 
 
   const openStory = useCallback(
