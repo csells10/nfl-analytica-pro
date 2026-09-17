@@ -148,13 +148,19 @@ describe("Matchup Dashboard overview", () => {
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
   });
 
-  it("honours a deep link with teams, view and lens", async () => {
-    renderPage("/matchup-lens?a=KC&b=WAS&view=lens&lens=turnover-balance");
+  it("honours a deep link with game, view and lens, taking teams from the response", async () => {
+    // Replaces the former `a=KC&b=WAS` team-selection deep link: the URL can no
+    // longer choose evidence, so the game identifies the matchup and the
+    // response supplies the canonical teams.
+    fetchMock?.restore();
+    fetchMock = installLensFetchMock({ awayAbv: "KC", homeAbv: "WSH" });
+    renderPage("/matchup-lens?game=20260917_KC%40WSH&view=lens&lens=turnover-balance");
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
     expect(screen.getByTestId("lens-evidence").getAttribute("data-lens-key")).toBe(
       "turnover-balance",
     );
     expect(screen.getAllByText(/Turnover Balance/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("lens-context-label").textContent).toMatch(/KC/);
   });
 
   it("maps legacy mode links forward without breaking", async () => {
