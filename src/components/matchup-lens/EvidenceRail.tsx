@@ -112,7 +112,8 @@ export function EvidenceRail({
                   <span className="flex items-baseline justify-between gap-2 text-[11px]">
                     <span className="text-accent-cool">{labelA}</span>
                     <span className="font-mono text-muted-foreground">
-                      {betterThanText(row.percentile)} · {rankText(rankA.rank, rankA.total)}
+                      {betterThanText(row.percentile)}
+                      {rank(rankA) ? ` · ${rank(rankA)}` : ""}
                     </span>
                   </span>
                   <Bar value={row.percentile} tone="a" />
