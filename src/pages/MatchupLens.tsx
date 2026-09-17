@@ -155,25 +155,41 @@ function writeUrlState(params: URLSearchParams, state: UrlState): URLSearchParam
 }
 
 export default function MatchupLens() {
-  const source = getLensSnapshotSource();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // The game identifier is the evidence identity. There is no fallback
+  // snapshot: without a valid game nothing is requested and nothing is scored.
+  const gameIdState = useMemo(() => classifyGameId(searchParams.get("game")), [searchParams]);
+  const gameId = gameIdState.kind === "valid" ? gameIdState.gameId : null;
+
   const {
-    data: snapshot,
+    data: result,
     isLoading,
     isError,
+    error,
     isFetching,
     refetch,
-  } = useQuery({
-    queryKey: ["lens-snapshot", source.id],
-    queryFn: source.load,
-    staleTime: Infinity,
-  });
+  } = useMatchupLensContext(gameId);
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const context = result?.kind === "available" ? result.context : null;
+  const snapshot = context?.snapshot;
+  const suppressLeagueContext = context?.leagueContext.suppressed ?? false;
+
+  const readinessByLens = useMemo(() => {
+    const map: Record<string, MatchupLensLensReadiness> = {};
+    for (const row of context?.coverage.lensReadiness ?? []) map[row.lensKey] = row;
+    return map;
+  }, [context]);
 
   // The URL is the single source of truth, so browser Back/Forward rehydrates
   // the whole canvas and no local mirror can drift out of sync.
   const urlState = useMemo(() => readUrlState(searchParams), [searchParams]);
-  const { awayAbv, homeAbv, view, origin, layout, selectedLens, collisionKey, trace } = urlState;
+  const { view, origin, layout, selectedLens, collisionKey, trace } = urlState;
+
+  // Canonical identity wins over anything carried in the URL.
+  const awayAbv = context ? snapshotAbbr(context.game.away.teamAbv) : urlState.awayAbv;
+  const homeAbv = context ? snapshotAbbr(context.game.home.teamAbv) : urlState.homeAbv;
 
   /**
    * User-initiated transitions push a history entry; internal normalization
