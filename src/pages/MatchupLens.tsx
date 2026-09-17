@@ -121,8 +121,9 @@ function parseTrace(raw: string | null): TraceTarget | null {
 function readUrlState(params: URLSearchParams): UrlState {
   const parsed = parseView(params.get("view"), params.get("mode"));
   return {
-    awayAbv: snapshotAbbr(params.get("a") ?? DEFAULT_AWAY),
-    homeAbv: snapshotAbbr(params.get("b") ?? DEFAULT_HOME),
+    // Display continuity only. Canonical teams come from the live response.
+    awayAbv: snapshotAbbr(params.get("a") ?? ""),
+    homeAbv: snapshotAbbr(params.get("b") ?? ""),
     view: parsed.view,
     origin: parseOrigin(params.get("from")),
     layout: parseLayout(params.get("layout"), parsed.layout),
