@@ -263,14 +263,10 @@ export default function MatchupLens() {
     if (!snapshot) return;
     const canonical: UrlState = { ...urlState };
 
-    if (teamOptions.length > 0) {
-      if (!teamOptions.includes(canonical.awayAbv)) canonical.awayAbv = DEFAULT_AWAY;
-      if (!teamOptions.includes(canonical.homeAbv)) canonical.homeAbv = DEFAULT_HOME;
-      if (canonical.awayAbv === canonical.homeAbv && teamOptions.length > 1) {
-        canonical.homeAbv =
-          teamOptions.find((abv) => abv !== canonical.awayAbv) ?? canonical.homeAbv;
-      }
-    }
+    // `a` and `b` are display/share continuity only; they are rewritten to the
+    // canonical response teams and can never select different rows.
+    canonical.awayAbv = awayAbv;
+    canonical.homeAbv = homeAbv;
 
     // Momentum needs comparable history; without it the view is unreachable.
     if (canonical.view === "momentum" && !momentum.eligible) {
