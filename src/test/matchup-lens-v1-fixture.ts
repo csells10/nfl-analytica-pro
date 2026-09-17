@@ -1,14 +1,19 @@
 // Test fixtures for the `matchup_lens_v1` wire contract.
 //
-// The evidence values are borrowed from the frozen baseline snapshot purely so
-// adapted scores can be compared against the established engine. Nothing here
-// is reachable from the production page.
+// The envelope shape mirrors the authenticated production response exactly
+// (string metric catalog, evidence under `teams.away` / `teams.home`, metadata
+// on team metric entries, warnings under `coverage`). Evidence values are
+// borrowed from the frozen baseline snapshot purely so adapted scores can be
+// compared against the established engine. Nothing here is reachable from the
+// production page.
 
 import { LENSES } from "@/lib/matchup-lens";
 import { PRESEASON_2026_SNAPSHOT } from "@/lib/matchup-lens-snapshot";
-import type {
-  MatchupLensV1Response,
-  MatchupLensV1TeamEvidence,
+import {
+  MATCHUP_LENS_V1_METHOD_FRONTEND_ROLE,
+  MATCHUP_LENS_V1_METHOD_SELECTION,
+  type MatchupLensV1Response,
+  type MatchupLensV1TeamEvidence,
 } from "@/lib/matchup-lens-api-types";
 
 function teamRow(abv: string) {
@@ -38,6 +43,7 @@ function evidence(abv: string, omitMetrics: string[] = []): MatchupLensV1TeamEvi
     team_id: String(row.teamId),
     team_abv: row.teamAbv,
     games_in_window: row.gamesInWindow,
+    latest_included_game_id: `20260910_${row.teamAbv}@XXX`,
     latest_source_date: row.latestSourceDate,
     data_lag_days: row.dataLagDays,
     metrics,
@@ -52,6 +58,8 @@ export interface FixtureOptions {
   awayMissing?: string[];
   /** Extra `context` metrics that must be transported but never scored. */
   contextMetrics?: string[];
+  /** Extra `supporting` metrics, for exact catalog-count scenarios. */
+  extraScoringMetrics?: string[];
   leagueMode?: "suppressed" | "available";
 }
 
@@ -60,31 +68,38 @@ export function makeLensV1Payload(options: FixtureOptions = {}): MatchupLensV1Re
   const homeAbv = options.homeAbv ?? "CLE";
   const awayMissing = options.awayMissing ?? [];
   const contextMetrics = options.contextMetrics ?? [];
+  const extraScoringMetrics = options.extraScoringMetrics ?? [];
 
   const away = evidence(awayAbv, awayMissing);
   const home = evidence(homeAbv);
 
-  const catalog = PRESEASON_2026_SNAPSHOT.metrics.map((definition) => ({
-    metric: definition.metric,
-    label: definition.label,
-    signal_strength: definition.signalStrength as "strong" | "supporting" | "context",
-    lens_tags: definition.lensTags,
-  }));
+  const catalog = PRESEASON_2026_SNAPSHOT.metrics.map((definition) => definition.metric);
+
+  for (const name of extraScoringMetrics) {
+    catalog.push(name);
+    for (const side of [away, home]) {
+      side.metrics[name] = {
+        metric: name,
+        label: name,
+        signal_strength: "supporting",
+        lens_tags: ["explosiveness"],
+        league_percentile: 50,
+        value: null,
+        league_rank: null,
+        teams_ranked: null,
+      };
+    }
+  }
 
   for (const name of contextMetrics) {
-    catalog.push({
-      metric: name,
-      label: name,
-      signal_strength: "context",
-      // Deliberately carries a real scoring tag: only the signal strength
-      // keeps it out of the lenses.
-      lens_tags: ["explosiveness"],
-    });
+    catalog.push(name);
     for (const side of [away, home]) {
       side.metrics[name] = {
         metric: name,
         label: name,
         signal_strength: "context",
+        // Deliberately carries a real scoring tag: only the signal strength
+        // keeps it out of the lenses.
         lens_tags: ["explosiveness"],
         league_percentile: 99,
         value: 1,
@@ -99,20 +114,21 @@ export function makeLensV1Payload(options: FixtureOptions = {}): MatchupLensV1Re
       const definition = PRESEASON_2026_SNAPSHOT.metrics.find((entry) => entry.metric === metric);
       return definition?.lensTags.some((tag) => lens.tags.includes(tag)) ?? false;
     });
+    const awayStatus = (missing.length > 0 ? "partial" : "complete") as "partial" | "complete";
     return {
       lens_key: lens.key,
-      lens_name: lens.name,
-      status: (missing.length > 0 ? "partial" : "complete") as "partial" | "complete",
+      display_name: lens.name,
+      comparison_status: awayStatus,
       away: {
-        status: (missing.length > 0 ? "partial" : "complete") as "partial" | "complete",
-        metrics_expected: null,
-        metrics_present: null,
+        status: awayStatus,
+        catalog_eligible_metric_count: null,
+        eligible_numeric_metric_count: null,
         missing_metrics: missing,
       },
       home: {
         status: "complete" as const,
-        metrics_expected: null,
-        metrics_present: null,
+        catalog_eligible_metric_count: null,
+        eligible_numeric_metric_count: null,
         missing_metrics: [],
       },
     };
@@ -124,19 +140,21 @@ export function makeLensV1Payload(options: FixtureOptions = {}): MatchupLensV1Re
     reason: null,
     game: {
       game_id: options.gameId ?? `20260917_${awayAbv}@${homeAbv}`,
-      season: "2026",
-      season_type: "regular",
-      week: "3",
       game_date: "2026-09-17",
+      game_time: null,
+      game_status: null,
+      season: "2026",
+      game_week: "3",
+      season_type: "regular",
       away_team: {
         team_id: String(teamRow(awayAbv).teamId),
         team_abv: awayAbv,
-        team_name: null,
+        logo_url: null,
       },
       home_team: {
         team_id: String(teamRow(homeAbv).teamId),
         team_abv: homeAbv,
-        team_name: null,
+        logo_url: null,
       },
     },
     display: {
@@ -145,35 +163,46 @@ export function makeLensV1Payload(options: FixtureOptions = {}): MatchupLensV1Re
       context_label: PRESEASON_2026_SNAPSHOT.contextLabel,
     },
     basis: {
-      window: "regular_season_to_date",
+      window_type: "regular_season_to_date",
       as_of_date: PRESEASON_2026_SNAPSHOT.asOfDate,
-      source_data_date: "2026-08-22",
-      latest_included_game: null,
+      source_data_dates: ["2026-08-22"],
+      max_data_lag_days: 1,
+      pregame_safe: true,
+      comparison_not_forecast: true,
+      rankings_source: "rankings",
+      window_source: "season_to_date",
     },
     metric_catalog: catalog,
-    away,
-    home,
+    teams: { away, home },
     coverage: {
       catalog_metric_count: catalog.length,
       away_metric_count: Object.keys(away.metrics).length,
       home_metric_count: Object.keys(home.metrics).length,
       shared_metric_count: Object.keys(away.metrics).length,
+      missing_away_metrics: awayMissing,
+      missing_home_metrics: [],
       lens_readiness: readiness,
-      named_metric_coverage: [],
+      warnings:
+        awayMissing.length > 0
+          ? [
+              {
+                code: "ASYMMETRIC_LENS_EVIDENCE",
+                message: "One team is missing evidence.",
+                lens_key: null,
+                team_side: "away",
+                metrics: awayMissing,
+              },
+            ]
+          : [],
     },
-    warnings: awayMissing.length > 0
-      ? [{ code: "asymmetric_evidence", message: "One team is missing evidence.", severity: "info" }]
-      : [],
     league_context: {
       mode: options.leagueMode ?? "suppressed",
-      reason: "Only the two matchup teams are included.",
-      teams_in_payload: 2,
+      reason_code: "TWO_TEAM_PAYLOAD",
+      message: "Only the two matchup teams are included.",
     },
     method: {
-      selection:
-        "Latest phase-appropriate ranking snapshot strictly before the scheduled game date.",
-      frontend_role:
-        "Existing Matchup Lens formulas transform this evidence into lens scores and comparison language.",
+      selection: MATCHUP_LENS_V1_METHOD_SELECTION,
+      frontend_role: MATCHUP_LENS_V1_METHOD_FRONTEND_ROLE,
       forecast: false,
     },
   };
