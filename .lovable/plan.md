@@ -1,37 +1,52 @@
-# Repair: adapter rejects the real `method` block
+# Diagnosis: adapter vs. authenticated DET/BUF production response
 
-The authenticated production response for `20260917_DET@BUF` returned HTTP 200, but the page discarded it because the adapter demands two `method` fields that the frozen contract never defined. This is a frontend-only repair.
+Read-only. The captured payload was run through the current production adapter path (`adaptMatchupLensV1`) exactly as the page calls it. Nothing was edited, published, or added to source control.
 
-## What goes wrong today
+## Result
 
-`src/lib/matchup-lens-adapter.ts` validates and maps:
+`adaptMatchupLensV1()` **rejects** the payload.
 
-- `method.percentile_basis` must equal `"league"` (invented)
-- `method.polarity` must equal `"corrected"` (invented)
-- `method.notes` (invented)
+- First rejection: `metric_catalog[0] must be an object`
+- Expected (current code): `{ metric, label, signal_strength, lens_tags }`
+- Actual (production): `"1st_down_rate"` — `metric_catalog` is a flat array of 63 metric-name strings
 
-The frozen contract's `method` is exactly `selection`, `frontend_role`, `forecast`. Production sends those three, so the first check fails and a valid 200 is thrown away.
+Responsible code: `src/lib/matchup-lens-adapter.ts` → `adaptCatalog()` → the `if (!isRecord(entry)) fail(...)` branch, reached from `adaptMatchupLensV1()`.
 
-## Repair
+Failure layer: **adapter validation**. Response parsing is fine (HTTP 200, valid JSON, correct `schema_version` / `available` / `reason`). Query handling is fine (request reached the right URL, single game key). Post-adapter rendering is fine — the safe unreadable-response state is exactly the contracted behaviour when the adapter throws.
 
-1. **Transport type** (`src/lib/matchup-lens-api-types.ts`) — replace `MatchupLensV1Method` with the frozen shape: `selection: string`, `frontend_role: string`, `forecast: boolean`.
-2. **Adapter** (`src/lib/matchup-lens-adapter.ts`) — remove the `percentile_basis` / `polarity` / `notes` checks and mapping. Validate the real fields instead: `method` must be an object, `selection` and `frontend_role` non-empty strings, `forecast` a boolean. `AdaptedMatchupLensContext.method` becomes `{ selection, frontendRole, forecast }`. No other validation is loosened; the percentile 0-100 range check, signal-strength agreement, six-row readiness order, canonical team agreement and league-context mode checks all stay exactly as they are.
-3. **Field-by-field audit** — walk every key the type file and validator touch (`schema_version`, `available`, `reason`, `game`, `display`, `basis`, `metric_catalog`, `away`, `home`, `coverage`, `warnings`, `league_context`, `method`) against the frozen contract and against the shape actually returned by the authenticated call. Anything invented or renamed gets the same treatment as `method`: removed, not synthesised. Anything the contract really declares keeps its current strictness. The audit result is reported in the evidence packet, including a statement that no other invented field was found (or the list, if any).
-4. **Console hygiene** (`src/lib/matchup-lens-live.ts`) — drop the `console.error("[matchup-lens] contract violation:", err.detail)` line. The typed `ApiError` still flows to the page, which keeps showing its safe generic unreadable-response state. Validator detail stays inside the thrown error object, out of browser logs.
-5. **Fixtures** (`src/test/matchup-lens-v1-fixture.ts`) — its `method` block currently carries the invented fields; switch it to the production shape.
+## Additional mismatches (diagnostic-only continuation)
 
-## Tests
+The validator stops at the first error, so the remaining ones were found by inspecting the payload directly. All are shape mismatches between our assumed envelope and the real one — the payload itself is internally consistent.
 
-- Regression test: adapter accepts a payload whose `method` is exactly the production object (`selection`, `frontend_role`, `forecast: false`) with no `percentile_basis`, and produces a scored snapshot.
-- Negative test: a `method` that is malformed in a way the contract does care about (e.g. `forecast` not a boolean, or `method` null) still throws `MatchupLensContractError` and scores nothing.
-- Remove the now-obsolete rejection cases "a non-league percentile basis" and "an uncorrected polarity" from the adapter suite; record both removals in the evidence packet.
-- No other assertion is changed or weakened.
+1. **Team evidence location** — production nests both sides under `teams.away` / `teams.home`. The adapter reads top-level `payload.away` / `payload.home`, which are absent.
+2. **Metric metadata location** — `label`, `signal_strength`, `lens_tags` live on each team metric entry, not in the catalog. Away/home agree on all shared metrics (0 conflicts), so a union of team entries is a safe definition source. Counts: 10 strong, 37 supporting, 16 context.
+3. **Team header** — `away_team`/`home_team` carry `team_id`, `team_abv`, `logo_url`; there is no `team_name`.
+4. **Basis** — `window_type` (not `window`), `source_data_dates` (array, not `source_data_date`), plus `max_data_lag_days`, `pregame_safe`, `comparison_not_forecast`, `rankings_source`, `window_source`. No top-level `latest_included_game`; each team carries `latest_included_game_id`.
+5. **Readiness rows** — six rows, frozen order confirmed (`explosiveness`, `drive-control`, `scoring-finish`, `defensive-resistance`, `disruption-protection`, `turnover-balance`). Fields are `display_name` (not `lens_name`) and `comparison_status` (not `status`); each side has `catalog_eligible_metric_count` / `eligible_numeric_metric_count` / `missing_metrics`. DET Drive Control `partial` missing `fourth_down_pct`, BUF `complete`.
+6. **Warnings** — live under `coverage.warnings` (3 entries: asymmetric, league-rank-suppressed, partial), not top level. The adapter currently silently drops them (it tolerates an absent top-level `warnings`), so disclosure copy would be lost even after the other fixes.
+7. **Coverage** — no `named_metric_coverage`; adds `missing_away_metrics` / `missing_home_metrics`. Counts confirmed 63 / 62 / 63 / 62.
+8. **League context** — `mode: "suppressed"` plus `reason_code` and `message`; no `reason`, no `teams_in_payload`.
+9. **Method** — matches the frozen contract exactly (`selection`, `frontend_role`, `forecast: false`). No `numerator` / `denominator` anywhere.
+10. Percentiles are numeric, in 0–100, with no nulls on either side.
 
-## Verification
+## Smallest proposed repair (not applied)
 
-Adapter tests, live-page tests, full frontend suite, typecheck, build. Then reload the authenticated DET/BUF page in the preview and read the console and rendered state.
+Realign the transport types and adapter reads to the real envelope, keeping every scoring formula, weight, tag rule and exclusion untouched:
 
-- If the page renders, collect the authenticated acceptance evidence (canonical teams and IDs, dates, metric counts, six readiness rows, context metrics excluded, DET Drive Control partial vs BUF complete, warnings, league suppression, absence of numerator/denominator) and update the 21-item packet.
-- If a different contract mismatch appears, stop immediately and report the exact field and expected-vs-actual value before touching anything else.
+- `metric_catalog: string[]`; build scoring `MetricDefinition`s from the union of team metric entries (`label`, `signal_strength`, `lens_tags`), still dropping `context` metrics from scoring while accepting them as transport.
+- Read evidence from `teams.away` / `teams.home`; keep canonical-identity agreement with the game header.
+- Keep cross-side agreement validation for shared metrics (label, signal strength, tags) — this replaces the current catalog-agreement check without weakening it.
+- Basis: `window_type`, `source_data_dates[]`, `max_data_lag_days`; team-level `latest_included_game_id`.
+- Readiness: `display_name`, `comparison_status`, side counts; keep the exactly-six-rows-in-frozen-order check.
+- Warnings: read `coverage.warnings[].message`; `named_metric_coverage` optional.
+- League context: `mode` plus `reason_code` / `message`; keep the suppression behaviour unchanged.
+- Method: unchanged frozen-literal checks.
 
-Nothing is published or deployed.
+## Tests required
+
+- Adapter: accepts a fixture matching the real envelope; produces 47 scoring definitions (16 context excluded); DET omits `fourth_down_pct` with no zero fill; identical lens scores to the current expected values; warnings surfaced from `coverage.warnings`; suppression flag set.
+- Negative: non-string catalog entry, missing `teams`, team header mismatch, shared-metric definition conflict, wrong readiness order or count, wrong method literals, `forecast: true`, out-of-range or non-numeric percentile — each still rejected.
+- Live page: DET/BUF fixture renders scored content, Drive Control partial notice names DET, league standings and ordinals hidden, no static/preseason path.
+- Full suite, typecheck, build, then an authenticated DET/BUF reload for acceptance evidence.
+
+Stopping here as instructed — no repair made.
