@@ -371,6 +371,10 @@ export function adaptMatchupLensV1(payload: MatchupLensV1Response): AdaptedMatch
 
   const methodRaw = payload.method;
   if (!isRecord(methodRaw)) fail("method must be an object");
+  // The frontend applies no polarity or rescaling of its own, so the payload
+  // must state that percentiles are league-based and already direction-correct.
+  if (methodRaw.percentile_basis !== "league") fail("method.percentile_basis must be league");
+  if (methodRaw.polarity !== "corrected") fail("method.polarity must be corrected");
 
   const { definitions, scoringMetrics, catalogSignals } = adaptCatalog(payload.metric_catalog);
   if (definitions.length === 0) fail("metric_catalog contains no scoring metrics");
