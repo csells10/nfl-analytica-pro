@@ -64,6 +64,15 @@ export function briefStatusLine(
   return `${snapshot.windowLabel} · as of ${snapshot.asOfDate} · ${labelA} ${teamA.gamesInWindow} games / ${labelB} ${teamB.gamesInWindow} games`;
 }
 
+export interface GameBriefOptions {
+  /**
+   * When true the payload carries only the two matchup teams, so no league
+   * ordinal can be stated. Rank-dependent observations are omitted rather than
+   * reworded; the ranking helpers themselves are untouched.
+   */
+  suppressLeagueContext?: boolean;
+}
+
 export function buildGameBrief(
   snapshot: LensSnapshot,
   teamA: TeamMetricRow,
@@ -72,6 +81,7 @@ export function buildGameBrief(
   labelB: string,
   nameA: string = labelA,
   nameB: string = labelB,
+  options: GameBriefOptions = {},
 ): GameBrief {
   const gaps = lensGaps(scoreAllLenses(snapshot, teamA), scoreAllLenses(snapshot, teamB));
   const { largest, closest } = comparisonHighlights(gaps);
