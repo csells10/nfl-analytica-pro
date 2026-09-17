@@ -1,11 +1,11 @@
 // Transport types for the frozen `matchup_lens_v1` backend contract.
 //
-// These types describe the wire format only. They are deliberately separate
-// from the frontend scoring types in `matchup-lens-types.ts`: nothing here is
-// ever handed to the scoring engine without passing through the adapter in
-// `matchup-lens-adapter.ts`.
+// These types describe the wire format only, exactly as production serves it.
+// They are deliberately separate from the frontend scoring types in
+// `matchup-lens-types.ts`: nothing here reaches the scoring engine without
+// passing through the adapter in `matchup-lens-adapter.ts`.
 //
-// Nullability mirrors the contract. Keys that the contract declares as always
+// Nullability mirrors the contract. Keys the contract declares as always
 // present are required here even when their value may be null — an optional
 // key would hide a contract violation instead of surfacing it.
 
@@ -27,15 +27,17 @@ export interface MatchupLensV1Team {
   /** Canonical decimal string, e.g. "11". */
   team_id: string;
   team_abv: string;
-  team_name: string | null;
+  logo_url: string | null;
 }
 
 export interface MatchupLensV1Game {
   game_id: string;
-  season: string | null;
-  season_type: string | null;
-  week: string | null;
   game_date: string | null;
+  game_time: string | null;
+  game_status: string | null;
+  season: string | null;
+  game_week: string | null;
+  season_type: string | null;
   away_team: MatchupLensV1Team;
   home_team: MatchupLensV1Team;
 }
@@ -49,24 +51,21 @@ export interface MatchupLensV1Display {
 
 /** Evidence basis and freshness. */
 export interface MatchupLensV1Basis {
-  window: string;
+  window_type: string;
   as_of_date: string;
-  source_data_date: string;
-  latest_included_game: string | null;
-}
-
-/** One entry of the dynamic metric catalog. No fixed metric allowlist. */
-export interface MatchupLensV1CatalogMetric {
-  metric: string;
-  label: string;
-  signal_strength: MatchupLensV1SignalStrength;
-  lens_tags: string[];
+  source_data_dates: string[];
+  max_data_lag_days: number;
+  pregame_safe: boolean;
+  comparison_not_forecast: boolean;
+  rankings_source: string | null;
+  window_source: string | null;
 }
 
 /**
  * One team's reading of one metric. `league_percentile` is already
  * polarity-corrected on a 0-100 scale; `value` is raw source evidence and is
- * never mapped into lens scoring.
+ * never mapped into lens scoring. Additional descriptive fields ride along and
+ * are ignored by the adapter.
  */
 export interface MatchupLensV1TeamMetric {
   metric: string;
@@ -74,41 +73,51 @@ export interface MatchupLensV1TeamMetric {
   signal_strength: MatchupLensV1SignalStrength;
   lens_tags: string[];
   league_percentile: number | null;
-  value: number | null;
-  league_rank: number | null;
-  teams_ranked: number | null;
+  value?: number | null;
+  league_rank?: number | null;
+  teams_ranked?: number | null;
 }
 
 export interface MatchupLensV1TeamEvidence {
   team_id: string;
   team_abv: string;
   games_in_window: number;
+  latest_included_game_id: string | null;
   latest_source_date: string;
   data_lag_days: number;
   /** Keyed by metric name; each record's key must equal its nested `.metric`. */
   metrics: Record<string, MatchupLensV1TeamMetric>;
 }
 
+/** Both sides of the matchup. Evidence is never at the envelope root. */
+export interface MatchupLensV1Teams {
+  away: MatchupLensV1TeamEvidence;
+  home: MatchupLensV1TeamEvidence;
+}
+
 export interface MatchupLensV1SideReadiness {
   status: MatchupLensV1ReadinessStatus;
-  metrics_expected: number | null;
-  metrics_present: number | null;
+  catalog_eligible_metric_count: number | null;
+  eligible_numeric_metric_count: number | null;
   missing_metrics: string[] | null;
 }
 
 /** Six rows, in the frozen lens order. Disclosure metadata, never a score. */
 export interface MatchupLensV1LensReadiness {
   lens_key: string;
-  lens_name: string | null;
-  status: MatchupLensV1ReadinessStatus;
+  display_name: string | null;
+  comparison_status: MatchupLensV1ReadinessStatus;
   away: MatchupLensV1SideReadiness | null;
   home: MatchupLensV1SideReadiness | null;
 }
 
-export interface MatchupLensV1NamedMetricCoverage {
-  name: string;
-  status: MatchupLensV1ReadinessStatus;
-  missing_metrics: string[] | null;
+export interface MatchupLensV1Warning {
+  code: string;
+  /** Safe, user-presentable text. Never an exception or internal detail. */
+  message: string;
+  lens_key?: string | null;
+  team_side?: string | null;
+  metrics?: string[] | null;
 }
 
 export interface MatchupLensV1Coverage {
@@ -116,21 +125,16 @@ export interface MatchupLensV1Coverage {
   away_metric_count: number;
   home_metric_count: number;
   shared_metric_count: number;
+  missing_away_metrics: string[] | null;
+  missing_home_metrics: string[] | null;
   lens_readiness: MatchupLensV1LensReadiness[];
-  named_metric_coverage: MatchupLensV1NamedMetricCoverage[];
-}
-
-export interface MatchupLensV1Warning {
-  code: string;
-  /** Safe, user-presentable text. Never an exception or internal detail. */
-  message: string;
-  severity: string | null;
+  warnings: MatchupLensV1Warning[] | null;
 }
 
 export interface MatchupLensV1LeagueContext {
   mode: MatchupLensV1LeagueContextMode;
-  reason: string | null;
-  teams_in_payload: number | null;
+  reason_code: string | null;
+  message: string | null;
 }
 
 export const MATCHUP_LENS_V1_METHOD_SELECTION =
@@ -157,11 +161,10 @@ export interface MatchupLensV1Response {
   game: MatchupLensV1Game | null;
   display: MatchupLensV1Display | null;
   basis: MatchupLensV1Basis | null;
-  metric_catalog: MatchupLensV1CatalogMetric[] | null;
-  away: MatchupLensV1TeamEvidence | null;
-  home: MatchupLensV1TeamEvidence | null;
+  /** Ordered list of unique metric names. Metadata lives on team metrics. */
+  metric_catalog: string[] | null;
+  teams: MatchupLensV1Teams | null;
   coverage: MatchupLensV1Coverage | null;
-  warnings: MatchupLensV1Warning[] | null;
   league_context: MatchupLensV1LeagueContext | null;
   method: MatchupLensV1Method | null;
 }

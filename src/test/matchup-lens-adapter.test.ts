@@ -9,6 +9,9 @@ function clone(payload: MatchupLensV1Response): MatchupLensV1Response {
   return JSON.parse(JSON.stringify(payload)) as MatchupLensV1Response;
 }
 
+/** Sixteen transported-but-unscored metrics, as production carries. */
+const CONTEXT_METRICS = Array.from({ length: 16 }, (_, index) => `ctx_metric_${index + 1}`);
+
 describe("matchup_lens_v1 adapter", () => {
   it("adapts a valid payload into a two-team snapshot with canonical identities", () => {
     const context = adaptMatchupLensV1(makeLensV1Payload());
@@ -19,6 +22,38 @@ describe("matchup_lens_v1 adapter", () => {
     expect(context.snapshot.teams[0].teamAbv).toBe("LAR");
     expect(context.snapshot.teams[1].teamAbv).toBe("CLE");
     expect(context.basis.asOfDate).toBe(context.snapshot.asOfDate);
+    expect(context.basis.windowType).toBe("regular_season_to_date");
+    expect(context.basis.sourceDataDates).toEqual(["2026-08-22"]);
+    expect(context.game.away.latestIncludedGameId).toBe("20260910_LAR@XXX");
+  });
+
+  it("accepts the production-shaped envelope: 63 catalog entries, 47 scoring definitions", () => {
+    const payload = makeLensV1Payload({
+      awayAbv: "DET",
+      homeAbv: "BUF",
+      awayMissing: ["fourth_down_pct"],
+      extraScoringMetrics: ["extra_supporting_metric"],
+      contextMetrics: CONTEXT_METRICS,
+    });
+
+    expect(payload.metric_catalog).toHaveLength(63);
+    expect(payload.metric_catalog!.every((entry) => typeof entry === "string")).toBe(true);
+
+    const context = adaptMatchupLensV1(payload);
+    expect(context.snapshot.metrics).toHaveLength(47);
+    expect(context.game.away.teamAbv).toBe("DET");
+    expect(context.game.home.teamAbv).toBe("BUF");
+  });
+
+  it("builds definitions in catalog order from the union of the two sides", () => {
+    const payload = makeLensV1Payload({ awayMissing: ["yards_per_play"] });
+    const context = adaptMatchupLensV1(payload);
+    const catalogOrder = payload.metric_catalog!.filter((name) =>
+      context.snapshot.metrics.some((metric) => metric.metric === name),
+    );
+    expect(context.snapshot.metrics.map((metric) => metric.metric)).toEqual(catalogOrder);
+    // Present only on the home side, yet still defined for scoring.
+    expect(context.snapshot.metrics.some((m) => m.metric === "yards_per_play")).toBe(true);
   });
 
   it("excludes context metrics from definitions and from percentile records", () => {
@@ -49,9 +84,9 @@ describe("matchup_lens_v1 adapter", () => {
 
   it("omits null percentiles and keeps zero", () => {
     const payload = makeLensV1Payload();
-    const [firstKey, secondKey] = Object.keys(payload.away!.metrics);
-    payload.away!.metrics[firstKey].league_percentile = null;
-    payload.away!.metrics[secondKey].league_percentile = 0;
+    const [firstKey, secondKey] = Object.keys(payload.teams!.away.metrics);
+    payload.teams!.away.metrics[firstKey].league_percentile = null;
+    payload.teams!.away.metrics[secondKey].league_percentile = 0;
 
     const context = adaptMatchupLensV1(payload);
     expect(context.snapshot.teams[0].percentiles[firstKey]).toBeUndefined();
@@ -60,13 +95,8 @@ describe("matchup_lens_v1 adapter", () => {
 
   it("keeps dynamic metrics that are not in any hardcoded list", () => {
     const payload = makeLensV1Payload();
-    payload.metric_catalog!.push({
-      metric: "brand_new_metric",
-      label: "Brand new metric",
-      signal_strength: "strong",
-      lens_tags: ["explosiveness"],
-    });
-    for (const side of [payload.away!, payload.home!]) {
+    payload.metric_catalog!.push("brand_new_metric");
+    for (const side of [payload.teams!.away, payload.teams!.home]) {
       side.metrics.brand_new_metric = {
         metric: "brand_new_metric",
         label: "Brand new metric",
@@ -92,7 +122,9 @@ describe("matchup_lens_v1 adapter", () => {
   });
 
   it("reports suppressed league context", () => {
-    expect(adaptMatchupLensV1(makeLensV1Payload()).leagueContext.suppressed).toBe(true);
+    const suppressed = adaptMatchupLensV1(makeLensV1Payload()).leagueContext;
+    expect(suppressed.suppressed).toBe(true);
+    expect(suppressed.reasonCode).toBe("TWO_TEAM_PAYLOAD");
     expect(
       adaptMatchupLensV1(makeLensV1Payload({ leagueMode: "available" })).leagueContext.suppressed,
     ).toBe(false);
@@ -112,17 +144,19 @@ describe("matchup_lens_v1 adapter", () => {
   });
 
   it("never fills a missing input with zero", () => {
-    const payload = makeLensV1Payload();
-    const key = Object.keys(payload.away!.metrics)[0];
-    payload.away!.metrics[key].league_percentile = null;
+    const payload = makeLensV1Payload({ awayAbv: "DET", homeAbv: "BUF", awayMissing: ["fourth_down_pct"] });
     const context = adaptMatchupLensV1(payload);
+    expect("fourth_down_pct" in context.snapshot.teams[0].percentiles).toBe(false);
+    expect(context.snapshot.teams[1].percentiles.fourth_down_pct).toBeDefined();
     expect(Object.values(context.snapshot.teams[0].percentiles)).not.toContain(undefined);
-    expect(key in context.snapshot.teams[0].percentiles).toBe(false);
   });
 
-  it("passes backend warnings through as plain messages", () => {
+  it("passes coverage warnings through as structured, safe data", () => {
     const context = adaptMatchupLensV1(makeLensV1Payload({ awayMissing: ["yards_per_play"] }));
-    expect(context.coverage.warnings).toEqual(["One team is missing evidence."]);
+    expect(context.coverage.warningMessages).toEqual(["One team is missing evidence."]);
+    expect(context.coverage.warnings[0].code).toBe("ASYMMETRIC_LENS_EVIDENCE");
+    expect(context.coverage.warnings[0].metrics).toEqual(["yards_per_play"]);
+    expect(context.coverage.missingAwayMetrics).toEqual(["yards_per_play"]);
   });
 
   it("accepts the production method block, which has no percentile_basis", () => {
@@ -152,31 +186,71 @@ describe("matchup_lens_v1 adapter", () => {
     ["a missing coverage block", (p) => (p.coverage = null)],
     ["a missing league context", (p) => (p.league_context = null)],
     ["a missing method block", (p) => (p.method = null)],
+    ["missing team evidence", (p) => (p.teams = null)],
+    ["one missing side of evidence", (p) => (p.teams!.away = null as never)],
     ["a non-canonical team id", (p) => (p.game!.away_team.team_id = "eleven")],
+    ["a non-string catalog entry", (p) => (p.metric_catalog![0] = 7 as never)],
+    ["a duplicate catalog entry", (p) => p.metric_catalog!.push(p.metric_catalog![0])],
+    [
+      "a team metric absent from the catalog",
+      (p) => {
+        p.teams!.away.metrics.rogue_metric = {
+          metric: "rogue_metric",
+          label: "Rogue",
+          signal_strength: "supporting",
+          lens_tags: ["explosiveness"],
+          league_percentile: 10,
+        };
+      },
+    ],
+    [
+      "a catalog metric with no team metadata",
+      (p) => p.metric_catalog!.push("orphan_metric"),
+    ],
     [
       "evidence that disagrees with the canonical header",
-      (p) => (p.away!.team_abv = "XXX"),
+      (p) => (p.teams!.away.team_abv = "XXX"),
     ],
     [
       "a metric key that disagrees with its nested name",
       (p) => {
-        const key = Object.keys(p.away!.metrics)[0];
-        p.away!.metrics[key].metric = "something_else";
+        const key = Object.keys(p.teams!.away.metrics)[0];
+        p.teams!.away.metrics[key].metric = "something_else";
       },
     ],
     [
-      "a signal strength that disagrees with the catalog",
+      "shared metric metadata that disagrees between the two teams",
       (p) => {
-        const key = Object.keys(p.away!.metrics)[0];
-        p.away!.metrics[key].signal_strength = "context";
+        const key = Object.keys(p.teams!.away.metrics)[0];
+        p.teams!.away.metrics[key].signal_strength = "context";
       },
     ],
-    ["an unknown signal strength", (p) => (p.metric_catalog![0].signal_strength = "weak" as never)],
+    [
+      "shared lens tags that disagree between the two teams",
+      (p) => {
+        const key = Object.keys(p.teams!.away.metrics)[0];
+        p.teams!.away.metrics[key].lens_tags = ["made-up-tag"];
+      },
+    ],
+    [
+      "an unknown signal strength",
+      (p) => {
+        const key = Object.keys(p.teams!.away.metrics)[0];
+        p.teams!.away.metrics[key].signal_strength = "weak" as never;
+      },
+    ],
     [
       "a percentile outside 0-100",
       (p) => {
-        const key = Object.keys(p.away!.metrics)[0];
-        p.away!.metrics[key].league_percentile = 140;
+        const key = Object.keys(p.teams!.away.metrics)[0];
+        p.teams!.away.metrics[key].league_percentile = 140;
+      },
+    ],
+    [
+      "a non-finite percentile",
+      (p) => {
+        const key = Object.keys(p.teams!.away.metrics)[0];
+        p.teams!.away.metrics[key].league_percentile = "82" as never;
       },
     ],
     ["fewer than six readiness rows", (p) => p.coverage!.lens_readiness.pop()],
@@ -186,6 +260,10 @@ describe("matchup_lens_v1 adapter", () => {
         const rows = p.coverage!.lens_readiness;
         [rows[0], rows[1]] = [rows[1], rows[0]];
       },
+    ],
+    [
+      "an unknown readiness status",
+      (p) => (p.coverage!.lens_readiness[0].comparison_status = "maybe" as never),
     ],
     ["an unknown league-context mode", (p) => (p.league_context!.mode = "partial" as never)],
     ["an incorrect method.selection", (p) => (p.method!.selection = "Something else" as never)],
