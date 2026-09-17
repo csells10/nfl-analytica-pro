@@ -693,11 +693,15 @@ export default function MatchupLens() {
             />
           )
         ) : result?.kind === "unavailable" ? (
+          // `available: false` is a valid product state, so nothing retries
+          // automatically; the reader decides when to check again.
           <DashboardEmpty
             title={LENS_STATE_COPY.unavailable.title}
             message={result.reason ?? LENS_STATE_COPY.unavailable.message}
             actionLabel={LENS_STATE_COPY.unavailable.action}
             onAction={goToSlate}
+            onRetry={() => void refetch()}
+            isRetrying={isFetching}
           />
         ) : !snapshot || !away || !home ? (
           <DashboardEmpty
