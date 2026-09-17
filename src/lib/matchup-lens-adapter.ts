@@ -285,15 +285,20 @@ function readTeamMetrics(
   return result;
 }
 
+interface SideEvidence {
+  identity: MatchupLensTeamIdentity;
+  gamesInWindow: number;
+  latestSourceDate: string;
+  dataLagDays: number;
+  metrics: Map<string, { meta: MetricMeta; percentile: number | null }>;
+}
+
 function adaptTeamEvidence(
   raw: unknown,
   path: string,
   header: HeaderIdentity,
   catalog: Set<string>,
-): {
-  identity: MatchupLensTeamIdentity;
-  metrics: Map<string, { meta: MetricMeta; percentile: number | null }>;
-} {
+): SideEvidence {
   if (!isRecord(raw)) fail(`${path} must be an object`);
 
   const teamId = safeTeamId(raw.team_id, `${path}.team_id`);
@@ -301,10 +306,6 @@ function adaptTeamEvidence(
   if (teamId !== header.teamId || teamAbv !== header.teamAbv) {
     fail(`${path} does not match the canonical game header`);
   }
-
-  requireFiniteNumber(raw.games_in_window, `${path}.games_in_window`);
-  requireString(raw.latest_source_date, `${path}.latest_source_date`);
-  requireFiniteNumber(raw.data_lag_days, `${path}.data_lag_days`);
 
   return {
     identity: {
@@ -316,31 +317,30 @@ function adaptTeamEvidence(
         `${path}.latest_included_game_id`,
       ),
     },
+    gamesInWindow: requireFiniteNumber(raw.games_in_window, `${path}.games_in_window`),
+    latestSourceDate: requireString(raw.latest_source_date, `${path}.latest_source_date`),
+    dataLagDays: requireFiniteNumber(raw.data_lag_days, `${path}.data_lag_days`),
     metrics: readTeamMetrics(raw.metrics, `${path}.metrics`, catalog),
   };
 }
 
-function buildMetricRow(
-  raw: Record<string, unknown>,
-  identity: MatchupLensTeamIdentity,
-  metrics: Map<string, { meta: MetricMeta; percentile: number | null }>,
-  scoringMetrics: Set<string>,
-): TeamMetricRow {
+function buildMetricRow(side: SideEvidence, scoringMetrics: Set<string>): TeamMetricRow {
   const percentiles: Record<string, number> = {};
-  for (const [name, entry] of metrics) {
+  for (const [name, entry] of side.metrics) {
     // `context` evidence is valid transport but never enters scoring.
     if (!scoringMetrics.has(name)) continue;
     if (entry.percentile !== null) percentiles[name] = entry.percentile;
   }
   return {
-    teamId: identity.teamId,
-    teamAbv: identity.teamAbv,
-    gamesInWindow: raw.games_in_window as number,
-    latestSourceDate: raw.latest_source_date as string,
-    dataLagDays: raw.data_lag_days as number,
+    teamId: side.identity.teamId,
+    teamAbv: side.identity.teamAbv,
+    gamesInWindow: side.gamesInWindow,
+    latestSourceDate: side.latestSourceDate,
+    dataLagDays: side.dataLagDays,
     percentiles,
   };
 }
+
 
 function adaptSideReadiness(value: unknown, path: string): MatchupLensSideReadiness | null {
   if (value === null || value === undefined) return null;
