@@ -68,21 +68,13 @@ function teamName(teamAbv: string): string {
   return getTeam(registryAbbr(teamAbv)).fullName;
 }
 
-function TeamPicker({
-  value,
-  options,
-  onChange,
-  role,
-  tone,
-}: {
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-  role: string;
-  tone: "a" | "b";
-}) {
+/**
+ * Canonical matchup identity. Teams come from the backend game header, so this
+ * is read-only: the URL cannot select or change which teams are compared.
+ */
+function TeamIdentity({ value, role, tone }: { value: string; role: string; tone: "a" | "b" }) {
   return (
-    <div className="min-w-0 flex-1">
+    <div className="min-w-0 flex-1" data-testid={`canonical-team-${tone}`}>
       <p
         className={`mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
           tone === "a" ? "text-accent-cool" : "text-primary"
@@ -90,26 +82,17 @@ function TeamPicker({
       >
         {role}
       </p>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-11 w-full" aria-label={`${role} team`}>
-          <div className="flex min-w-0 items-center gap-2">
-            <img
-              src={teamLogoUrl(registryAbbr(value), 500)}
-              alt=""
-              className="h-5 w-5 shrink-0"
-              loading="lazy"
-            />
-            <SelectValue />
-          </div>
-        </SelectTrigger>
-        <SelectContent className="max-h-72">
-          {options.map((abv) => (
-            <SelectItem key={abv} value={abv}>
-              {abv} · {getTeam(registryAbbr(abv)).shortName}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex min-h-[44px] min-w-0 items-center gap-2 rounded-md border border-border bg-muted/10 px-3">
+        <img
+          src={teamLogoUrl(registryAbbr(value), 500)}
+          alt=""
+          className="h-5 w-5 shrink-0"
+          loading="lazy"
+        />
+        <span className="truncate text-sm font-semibold text-foreground">
+          {value} · {getTeam(registryAbbr(value)).shortName}
+        </span>
+      </div>
     </div>
   );
 }
