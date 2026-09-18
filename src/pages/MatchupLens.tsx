@@ -399,7 +399,7 @@ export default function MatchupLens() {
    */
   const resetToOverview = useCallback(
     (patch: Partial<UrlState> = {}) => {
-      setHoveredLens(null);
+      setActiveAxis(null);
       commit({
         view: "overview",
         origin: "overview",
@@ -420,7 +420,7 @@ export default function MatchupLens() {
   useEffect(() => {
     if (previousGameId.current === gameId) return;
     previousGameId.current = gameId;
-    setHoveredLens(null);
+    setActiveAxis(null);
     const next = writeUrlState(new URLSearchParams(searchParams), {
       ...urlState,
       awayAbv: "",
@@ -497,7 +497,7 @@ export default function MatchupLens() {
 
   // Hover is view-only state: never carry it across a view or matchup change.
   useEffect(() => {
-    setHoveredLens(null);
+    setActiveAxis(null);
   }, [view, awayAbv, homeAbv]);
 
 
