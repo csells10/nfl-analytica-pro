@@ -1,7 +1,7 @@
-import { ArrowRight, Layers, Radar, Swords, TrendingUp } from "lucide-react";
+import { ArrowRight, Layers, Radar, TrendingUp } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export type DestinationId = "constellation" | "biggest-edge" | "collision" | "lenses";
+export type DestinationId = "constellation" | "biggest-edge" | "lenses";
 
 export interface Destination {
   id: DestinationId;
@@ -20,7 +20,6 @@ interface DestinationCardsProps {
 export const DESTINATION_ICONS: Record<DestinationId, LucideIcon> = {
   constellation: Radar,
   "biggest-edge": TrendingUp,
-  collision: Swords,
   lenses: Layers,
 };
 

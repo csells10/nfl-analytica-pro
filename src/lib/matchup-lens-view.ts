@@ -5,14 +5,7 @@
 // `mode=` links from earlier builds are mapped forward so shared URLs keep
 // working.
 
-export type LensView =
-  | "overview"
-  | "constellation"
-  | "lens"
-  | "lenses"
-  | "collision"
-  | "gaps"
-  | "momentum";
+export type LensView = "overview" | "constellation" | "lens" | "lenses" | "gaps" | "momentum";
 
 export type ConstellationLayout = "overlay" | "side";
 
@@ -21,7 +14,6 @@ export const LENS_VIEWS: LensView[] = [
   "constellation",
   "lens",
   "lenses",
-  "collision",
   "gaps",
   "momentum",
 ];
@@ -32,7 +24,8 @@ const LEGACY_MODE_MAP: Record<string, { view: LensView; layout?: ConstellationLa
   constellation: { view: "constellation" },
   fingerprint: { view: "constellation", layout: "side" },
   map: { view: "gaps" },
-  collision: { view: "collision" },
+  // The dedicated collision view was retired; its links land on the Overview.
+  collision: { view: "overview" },
   momentum: { view: "momentum" },
   galaxy: { view: "overview" },
   portrait: { view: "overview" },
