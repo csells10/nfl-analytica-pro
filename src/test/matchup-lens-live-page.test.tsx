@@ -51,7 +51,7 @@ describe("Matchup Lens live evidence", () => {
   it("shows a Slate-directed empty state and makes no request without a game", async () => {
     fetchMock = installLensFetchMock();
     renderPage("/matchup-lens");
-    await screen.findByText("Choose a matchup first");
+    await screen.findByText("Choose a game to open Matchup Lab");
     expect(fetchMock.calls()).toHaveLength(0);
   });
 
