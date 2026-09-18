@@ -15,6 +15,8 @@ vi.mock("@/components/ThemeProvider", () => ({
   useTheme: () => ({ theme: "dark", toggle: vi.fn() }),
 }));
 vi.mock("@/lib/admin-api", () => ({ useMe: () => ({ data: { is_admin: false } }) }));
+vi.mock("@/lib/firebase", () => ({ getAuthToken: async () => "test-token", firebaseAuth: {} }));
+vi.mock("firebase/auth", () => ({ signOut: vi.fn(async () => undefined) }));
 vi.mock("@/lib/nfl-api", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/nfl-api")>();
   return {
