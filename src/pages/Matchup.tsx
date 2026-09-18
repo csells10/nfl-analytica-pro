@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import SectionSpotlightTour, {
 } from "@/components/SectionSpotlightTour";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
+import { buildMatchupLensHref } from "@/lib/matchup-lens-link";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -1407,6 +1408,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
   const awayTeam = teamFromApi(header.away_team);
   const homeTeam = teamFromApi(header.home_team);
   const showStatus = header.game_status && header.game_status !== "Scheduled";
+  const lensGameId = routeId ?? header.game_id;
   // Render final score whenever the API returns it — trust the backend.
   const hasFinalScore = !!final_score;
   const coreAreaContextText = getCoreAreaContextText(matchup_lean?.core_area_context);
@@ -1521,13 +1523,18 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           </span>
           {header.game_week && <Badge variant="warm">{header.game_week}</Badge>}
           {showStatus && <Badge variant="accent">{header.game_status}</Badge>}
-          <Badge variant="muted">ID {routeId ?? header.game_id}</Badge>
+          <Badge variant="muted">ID {lensGameId}</Badge>
+          <Button asChild variant="outline" size="sm" className="ml-auto h-8">
+            <Link to={buildMatchupLensHref(lensGameId, awayTeam.abbr, homeTeam.abbr)}>
+              Open Matchup Lens
+            </Link>
+          </Button>
           {header.espn_link && (
             <a
               href={header.espn_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 transition-colors hover:text-primary"
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 transition-colors hover:text-primary"
             >
               View on ESPN
               <ExternalLink className="h-3 w-3" />

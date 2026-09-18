@@ -13,7 +13,7 @@ import {
   type DestinationId,
 } from "@/components/matchup-lens/DestinationCards";
 import { MatchupContextBar } from "@/components/matchup-lens/MatchupContextBar";
-import { ContinueExploring, JourneyBack, type JourneyStep } from "@/components/matchup-lens/JourneyNav";
+import { ContinueExploring, JourneyLensNav, type JourneyStep } from "@/components/matchup-lens/JourneyNav";
 import {
   DashboardEmpty,
   DashboardError,
@@ -40,7 +40,6 @@ import { buildInsightStories, type InsightStory } from "@/lib/matchup-lens-stori
 import { momentumReadiness } from "@/lib/matchup-lens-momentum";
 import { buildTrace, type TraceTarget } from "@/lib/matchup-lens-trace";
 import {
-  originReturn,
   parseLayout,
   parseOrigin,
   parseView,
@@ -533,15 +532,8 @@ export default function MatchupLens() {
 
   const goOverview = useCallback(() => openView("overview"), [openView]);
 
-  /** One contextual return: back to wherever this view was entered from. */
-  const goBack = useCallback(
-    () => openView(originReturn(origin).view),
-    [openView, origin],
-  );
-
-  // Evidence is per game, so changing matchup means choosing another game.
+  // Evidence is per game; Slate remains the recovery destination for empty states.
   const goToSlate = useCallback(() => navigate("/"), [navigate]);
-  const changeMatchup = goToSlate;
 
   /** Plain-language failure copy per typed error kind. Never raw error text. */
   const failure = useMemo(() => {
@@ -623,28 +615,18 @@ export default function MatchupLens() {
     commit({ selectedLens: LENSES[next].key });
   };
 
-  const backLabel = originReturn(origin).label;
-
-  const journeyBack = (withLensSelector = false) => (
-    <JourneyBack
-      backLabel={backLabel}
-      onBack={goBack}
-      lensSelector={
-        withLensSelector && selectedLens
-          ? {
-              value: selectedLens,
-              options: LENSES.map((lens) => ({
-                key: lens.key,
-                name: LENS_GLOSSARY[lens.key]?.name ?? lens.name,
-              })),
-              onChange: (key) => commit({ selectedLens: key }),
-              onPrev: () => stepLens(-1),
-              onNext: () => stepLens(1),
-            }
-          : undefined
-      }
+  const journeyLensNav = selectedLens ? (
+    <JourneyLensNav
+      value={selectedLens}
+      options={LENSES.map((lens) => ({
+        key: lens.key,
+        name: LENS_GLOSSARY[lens.key]?.name ?? lens.name,
+      }))}
+      onChange={(key) => commit({ selectedLens: key })}
+      onPrev={() => stepLens(-1)}
+      onNext={() => stepLens(1)}
     />
-  );
+  ) : null;
 
   /** One to three meaningful next paths after the evidence on a focused view. */
   const continueSteps = (current: LensView): JourneyStep[] => [
@@ -744,7 +726,6 @@ export default function MatchupLens() {
               isRefreshing={isFetching && !isLoading}
               notices={contextNotices}
               onBack={goOverview}
-              onChangeMatchup={changeMatchup}
             />
 
 
@@ -799,7 +780,6 @@ export default function MatchupLens() {
 
               {view === "constellation" && (
                 <div className="space-y-3">
-                  {journeyBack()}
                   <Card className="border-border bg-card">
                     <CardContent className="p-4 sm:p-5">
                       <LensConstellation
@@ -822,7 +802,7 @@ export default function MatchupLens() {
 
               {view === "lens" && (
                 <div className="space-y-3">
-                  {journeyBack(true)}
+                  {journeyLensNav}
                   {evidence ?? (
                     <DashboardEmpty
                       title="No lens selected"
@@ -837,7 +817,6 @@ export default function MatchupLens() {
 
               {view === "lenses" && (
                 <div className="space-y-3">
-                  {journeyBack()}
                   <LensExplorer
                     gaps={gaps}
                     snapshot={snapshot}
@@ -855,7 +834,6 @@ export default function MatchupLens() {
 
               {view === "collision" && (
                 <div className="space-y-3">
-                  {journeyBack()}
                   <MatchupCollision
                     directions={directions}
                     selectedKey={collisionKey}
@@ -868,7 +846,6 @@ export default function MatchupLens() {
 
               {view === "gaps" && (
                 <div className="space-y-3">
-                  {journeyBack()}
                   <TopProfileGaps
                     gaps={gaps}
                     snapshot={snapshot}
@@ -887,7 +864,6 @@ export default function MatchupLens() {
 
               {view === "momentum" && momentum.eligible && (
                 <div className="space-y-3">
-                  {journeyBack()}
                   <MomentumShift snapshots={[snapshot]} />
                 </div>
               )}

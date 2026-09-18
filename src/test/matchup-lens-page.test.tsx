@@ -133,17 +133,17 @@ describe("Matchup Dashboard overview", () => {
     await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
     expect(screen.queryByTestId("destination-cards")).toBeNull();
 
-    await user.click(screen.getByTestId("journey-back"));
+    await user.click(screen.getByTestId("context-back"));
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
 
     await user.click(screen.getByTestId("destination-open-lenses"));
     await waitFor(() => expect(screen.getByTestId("lens-explorer")).toBeTruthy());
 
-    await user.click(screen.getByTestId("journey-back"));
+    await user.click(screen.getByTestId("context-back"));
     await user.click(screen.getByTestId("destination-open-collision"));
     await waitFor(() => expect(screen.getByTestId("matchup-collision")).toBeTruthy());
 
-    await user.click(screen.getByTestId("journey-back"));
+    await user.click(screen.getByTestId("context-back"));
     await user.click(screen.getByTestId("destination-open-biggest-edge"));
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
   });

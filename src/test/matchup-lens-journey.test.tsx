@@ -46,7 +46,7 @@ describe("origin state", () => {
 });
 
 describe("Matchup Dashboard journey", () => {
-  it("returns to the constellation when the lens was opened from it", async () => {
+  it("keeps one sticky Overview action after a lens opens from the constellation", async () => {
     const user = userEvent.setup();
     renderPage("/matchup-lens?view=constellation");
     await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
@@ -57,12 +57,11 @@ describe("Matchup Dashboard journey", () => {
     await user.click(tile);
 
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
-    expect(screen.getByTestId("journey-back").textContent).toMatch(/Back to Constellation/);
-    // Exactly one contextual back action inside the canvas.
-    expect(screen.queryAllByTestId("journey-back").length).toBe(1);
+    expect(screen.queryByTestId("journey-back")).toBeNull();
+    expect(screen.getByTestId("context-back")).toHaveAccessibleName("Back to Overview");
 
-    await user.click(screen.getByTestId("journey-back"));
-    await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
+    await user.click(screen.getByTestId("context-back"));
+    await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
   });
 
   it("keeps the Overview escape in the sticky bar only on focused views", async () => {
@@ -74,6 +73,7 @@ describe("Matchup Dashboard journey", () => {
     await user.click(screen.getByTestId("destination-open-lenses"));
     await waitFor(() => expect(screen.getByTestId("lens-explorer")).toBeTruthy());
     expect(screen.getByTestId("context-back")).toBeTruthy();
+    expect(screen.queryByTestId("context-change-matchup")).toBeNull();
   });
 
   it("switches lenses in place from the focused lens detail", async () => {

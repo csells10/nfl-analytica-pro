@@ -108,15 +108,13 @@ Implementation:
 - Add the selected-game Matchup Lens action to game details.
 - Remove Change matchup and duplicate contextual Back controls; keep one sticky Overview action on child views and preserve lens stepping.
 
-#### Pass 2 — Simplify destinations
+#### Pass 2A — Collision destination and view removal
 
 Modify:
 - `src/pages/MatchupLens.tsx`
 - `src/components/matchup-lens/DestinationCards.tsx`
 - `src/components/matchup-lens/GameBrief.tsx`
 - `src/components/matchup-lens/InsightTicker.tsx`
-- `src/components/matchup-lens/LensDetail.tsx`
-- `src/components/matchup-lens/TraceDrawer.tsx`
 - `src/lib/matchup-lens-view.ts`
 - `src/lib/matchup-lens-brief.ts`
 - `src/lib/matchup-lens-stories.ts`
@@ -128,14 +126,29 @@ Modify:
 
 Delete only isolated UI/layout code:
 - `src/components/matchup-lens/MatchupCollision.tsx`
-- `src/components/matchup-lens/TraceGraphs.tsx`
-- `src/lib/matchup-lens-trace-graph.ts`
 
 Implementation:
 - Retain only Compare, Biggest Edge, and All Six Lenses destinations.
 - Remove collision view/origin/query handling and normalize stale collision URLs to Overview with replace.
 - Keep `matchup-lens-collision.ts` unchanged for overview calculations; render its brief/ticker observations as read-only rows without a dead action.
+
+Save and verify Pass 2A independently before continuing.
+
+#### Pass 2B — Technical Map removal
+
+Modify:
+- `src/components/matchup-lens/LensDetail.tsx`
+- `src/components/matchup-lens/TraceDrawer.tsx`
+- `src/test/matchup-lens-page.test.tsx`
+- `src/test/matchup-lens-new-features.test.tsx`
+
+Delete only isolated graph UI/layout code:
+- `src/components/matchup-lens/TraceGraphs.tsx`
+- `src/lib/matchup-lens-trace-graph.ts`
+
+Implementation:
 - Remove Technical Map entry points, visual modes, lazy graph UI, and isolated graph layout helper; retain the useful list-based trace drawer and all scoring/trace relationships.
+- Save and verify Pass 2B independently before continuing.
 
 #### Pass 3 — Interaction polish
 
@@ -151,7 +164,7 @@ Modify:
 - `src/test/matchup-lens-page.test.tsx`
 
 Implementation:
-- Use one active-axis state for mouse hover, keyboard focus, click, and tap in both constellation layouts; add keyboard semantics to SVG hit targets while retaining score-tile controls.
+- Use one active-axis state for hover, keyboard focus, click, and tap. Keep score tiles as the primary keyboard-accessible controls; equivalent SVG/chart targets support pointer and tap without creating duplicate tab stops.
 - Measure the evidence rail on mount, resize, content expansion, and scroll; show arrows only when overflow exists and disable/hide the direction that cannot move.
 - Change expansion copy to `Show N more` and `Show key evidence only`.
 - Give the selected All Six Lenses tile a semantic primary/accent state rather than the current gray secondary state.

@@ -178,13 +178,11 @@ describe("matchup changes", () => {
     expect(screen.getByTestId("lens-context-label").textContent).not.toMatch(/LAR/);
   });
 
-  it("sends Change matchup back to the Slate, where a game is chosen", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
+  it("does not offer an in-dashboard Change matchup shortcut", async () => {
     renderPage("/matchup-lens?view=lens&lens=turnover-balance&from=all-lenses");
     await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
-
-    await user.click(screen.getByTestId("context-change-matchup"));
-    await waitFor(() => expect(screen.getByTestId("slate-page")).toBeTruthy());
+    expect(screen.queryByTestId("context-change-matchup")).toBeNull();
+    expect(screen.getByTestId("context-back")).toHaveAccessibleName("Back to Overview");
   });
 });
 
