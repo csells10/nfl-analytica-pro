@@ -38,7 +38,7 @@ import { ContinueExploring, JourneyLensNav, type JourneyStep } from "@/component
 import {
   DashboardEmpty,
   DashboardError,
-  DashboardSkeleton,
+  MatchupLabLoading,
   LENS_STATE_COPY,
 } from "@/components/matchup-lens/DashboardStates";
 import { TopProfileGaps } from "@/components/matchup-lens/TopProfileGaps";
@@ -678,7 +678,7 @@ export default function MatchupLens() {
             onAction={goToSlate}
           />
         ) : isLoading ? (
-          <DashboardSkeleton />
+          <MatchupLabLoading awayAbbr={urlState.awayAbv} homeAbbr={urlState.homeAbv} />
         ) : isError ? (
           failure.retryable ? (
             <DashboardError
@@ -711,8 +711,9 @@ export default function MatchupLens() {
             message={LENS_STATE_COPY.invalidResponse.message}
           />
         ) : (
-          <LensPresentationProvider value={{ suppressLeagueContext }}>
-            <MatchupContextBar
+          <div className="animate-matchup-reveal motion-reduce:animate-none" data-testid="matchup-lab-content">
+            <LensPresentationProvider value={{ suppressLeagueContext }}>
+              <MatchupContextBar
               labelA={awayAbv}
               labelB={homeAbv}
               nameA={teamName(awayAbv)}
@@ -854,7 +855,7 @@ export default function MatchupLens() {
 
             </div>
 
-            <TraceDrawer
+              <TraceDrawer
               trace={traceData}
               open={trace !== null}
               onOpenChange={(open) => !open && closeTrace()}
@@ -866,8 +867,9 @@ export default function MatchupLens() {
                 activeLens ? LENS_GLOSSARY[activeLens.key]?.name ?? activeLens.name : "no selected lens"
               }
               matchupLabel={`${awayAbv} vs ${homeAbv}`}
-            />
-          </LensPresentationProvider>
+              />
+            </LensPresentationProvider>
+          </div>
         )}
       </div>
     </AppShell>

@@ -6,10 +6,19 @@ import {
 } from "@/lib/matchup-lens-link";
 
 describe("game details Matchup Lens link", () => {
-  it("opens the selected game with its away and home teams in Overview", () => {
-    expect(buildMatchupLensHref("20260917_DET@BUF", "DET", "BUF")).toBe(
-      "/matchup-lens?a=DET&b=BUF&view=overview&game=20260917_DET%40BUF",
-    );
+  it.each(["Matchups date page", "team-versus-team game details"])(
+    "sends the %s entry through the shared Lab route and loading context",
+    () => {
+      expect(buildMatchupLensHref("20260917_DET@BUF", "DET", "BUF")).toBe(
+        "/matchup-lens?a=DET&b=BUF&view=overview&game=20260917_DET%40BUF",
+      );
+    },
+  );
+
+  it("keeps a valid direct Lab link neutral when team context is omitted", () => {
+    const direct = `/matchup-lens?view=overview&game=${encodeURIComponent("20260917_DET@BUF")}`;
+    expect(new URLSearchParams(direct.split("?")[1]).has("a")).toBe(false);
+    expect(new URLSearchParams(direct.split("?")[1]).has("b")).toBe(false);
   });
 
   it.each(["Scheduled", "In Progress", "Halftime"])(

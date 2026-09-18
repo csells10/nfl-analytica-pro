@@ -103,6 +103,10 @@ export default {
           "0%": { opacity: "0", transform: "translateY(6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "matchup-reveal": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
         "shimmer-slide": {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" },
@@ -112,6 +116,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.4s ease-out",
+        "matchup-reveal": "matchup-reveal 0.24s ease-out both",
         "shimmer-slide": "shimmer-slide 1.6s ease-in-out infinite",
       },
     },

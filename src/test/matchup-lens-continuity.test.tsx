@@ -277,9 +277,10 @@ describe("deep-link normalisation", () => {
 });
 
 describe("lifecycle states", () => {
-  it("shows the loading skeleton before live evidence arrives", async () => {
+  it("shows the neutral loading state before live evidence arrives", async () => {
     renderPage();
-    expect(screen.getByTestId("dashboard-skeleton")).toBeTruthy();
+    expect(screen.getByTestId("matchup-lab-loading")).toBeTruthy();
+    expect(screen.getByText("Loading matchup evidence…")).toBeTruthy();
     // Nothing from the retired baseline can appear while the request is open.
     expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());

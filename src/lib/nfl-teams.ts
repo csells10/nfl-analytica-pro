@@ -56,6 +56,12 @@ export function getTeam(abbr: string | undefined | null): TeamMeta {
   );
 }
 
+/** Registry-only lookup for UI that must not invent identity for unknown teams. */
+export function getKnownTeam(abbr: string | undefined | null): TeamMeta | null {
+  const key = (abbr ?? "").toUpperCase();
+  return TEAMS[key] ?? null;
+}
+
 export function teamLogoUrl(abbr: string | undefined | null, size = 500): string {
   const team = getTeam(abbr);
   return `https://a.espncdn.com/i/teamlogos/nfl/${size}/${team.espnId}.png`;
