@@ -95,10 +95,12 @@ describe("Matchup Dashboard journey", () => {
     renderPage("/matchup-lens?view=lens&lens=turnover-balance");
     await waitFor(() => expect(screen.getByTestId("continue-exploring")).toBeTruthy());
 
-    await user.click(screen.getByTestId("continue-collision"));
-    await waitFor(() => expect(screen.getByTestId("matchup-collision")).toBeTruthy());
-    // The current view is never offered as its own next step.
     expect(screen.queryByTestId("continue-collision")).toBeNull();
+
+    await user.click(screen.getByTestId("continue-constellation"));
+    await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
+    // The current view is never offered as its own next step.
+    expect(screen.queryByTestId("continue-constellation")).toBeNull();
   });
 });
 

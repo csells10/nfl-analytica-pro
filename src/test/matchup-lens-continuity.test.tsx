@@ -109,7 +109,7 @@ describe("browser history continuity", () => {
     expect(params(router).get("view") ?? "overview").toBe("overview");
   });
 
-  it("rehydrates lens, origin and collision state from a forward navigation", async () => {
+  it("rehydrates lens and origin state from a forward navigation", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const router = renderPage();
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
@@ -232,10 +232,12 @@ describe("biggest edge", () => {
 });
 
 describe("deep-link normalisation", () => {
-  it("drops a collision lane that does not exist and does not add history", async () => {
+  it("normalises the retired collision view to the Overview by replacing", async () => {
     const router = renderPage("/matchup-lens?view=collision&collision=not-a-lane");
-    await waitFor(() => expect(screen.getByTestId("matchup-collision")).toBeTruthy());
-    await waitFor(() => expect(params(router).get("collision")).toBeNull());
+    await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
+    await waitFor(() => expect(params(router).get("view")).toBe("overview"));
+    expect(params(router).get("collision")).toBeNull();
+    expect(screen.queryByTestId("matchup-collision")).toBeNull();
     expect(router.state.historyAction).toBe("REPLACE");
   });
 

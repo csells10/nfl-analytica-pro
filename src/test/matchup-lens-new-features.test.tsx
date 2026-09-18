@@ -134,7 +134,8 @@ describe("game brief", () => {
 
 describe("view parsing", () => {
   it("defaults to overview and maps legacy modes forward", () => {
-    expect(parseView("collision", null).view).toBe("collision");
+    expect(parseView("collision", null).view).toBe("overview");
+    expect(parseView(null, "collision").view).toBe("overview");
     expect(parseView(null, "brief").view).toBe("overview");
     expect(parseView(null, "fingerprint")).toEqual({ view: "constellation", layout: "side" });
     expect(parseView(null, "map").view).toBe("gaps");

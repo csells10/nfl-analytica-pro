@@ -22,7 +22,6 @@ import {
 } from "@/components/matchup-lens/DashboardStates";
 import { TopProfileGaps } from "@/components/matchup-lens/TopProfileGaps";
 import { GameBrief } from "@/components/matchup-lens/GameBrief";
-import { MatchupCollision } from "@/components/matchup-lens/MatchupCollision";
 import { MomentumShift } from "@/components/matchup-lens/MomentumShift";
 import { TraceDrawer } from "@/components/matchup-lens/TraceDrawer";
 import { classifyGameId, useMatchupLensContext } from "@/lib/matchup-lens-live";
@@ -33,7 +32,8 @@ import {
 } from "@/lib/matchup-lens-presentation";
 import { ApiError } from "@/lib/nfl-api";
 import { lensGaps } from "@/lib/matchup-lens-compare";
-import { collisionDirections, collisionHighlights } from "@/lib/matchup-lens-collision";
+// Collision calculations still feed the read-only Overview observations.
+import { collisionDirections } from "@/lib/matchup-lens-collision";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
 import { buildProfileAngle } from "@/lib/matchup-lens-angle";
 import { buildInsightStories, type InsightStory } from "@/lib/matchup-lens-stories";
@@ -127,7 +127,6 @@ interface UrlState {
   origin: LensOrigin;
   layout: ConstellationLayout;
   selectedLens: string | null;
-  collisionKey: string | null;
   trace: TraceTarget | null;
 }
 
@@ -151,7 +150,6 @@ function readUrlState(params: URLSearchParams): UrlState {
     origin: parseOrigin(params.get("from")),
     layout: parseLayout(params.get("layout"), parsed.layout),
     selectedLens: LENSES.find((lens) => lens.key === params.get("lens"))?.key ?? null,
-    collisionKey: params.get("collision"),
     trace: parseTrace(params.get("trace")),
   };
 }
@@ -170,8 +168,8 @@ function writeUrlState(params: URLSearchParams, state: UrlState): URLSearchParam
   else params.delete("layout");
   if (state.selectedLens) params.set("lens", state.selectedLens);
   else params.delete("lens");
-  if (state.collisionKey) params.set("collision", state.collisionKey);
-  else params.delete("collision");
+  // Retired dedicated collision view: its lane parameter is always dropped.
+  params.delete("collision");
   if (state.trace) params.set("trace", `${state.trace.type}:${state.trace.id}`);
   else params.delete("trace");
   return params;
@@ -208,7 +206,7 @@ export default function MatchupLens() {
   // The URL is the single source of truth, so browser Back/Forward rehydrates
   // the whole canvas and no local mirror can drift out of sync.
   const urlState = useMemo(() => readUrlState(searchParams), [searchParams]);
-  const { view, origin, layout, selectedLens, collisionKey, trace } = urlState;
+  const { view, origin, layout, selectedLens, trace } = urlState;
 
   // Canonical identity wins over anything carried in the URL.
   const awayAbv = context ? snapshotAbbr(context.game.away.teamAbv) : urlState.awayAbv;
@@ -265,10 +263,6 @@ export default function MatchupLens() {
 
   const momentum = useMemo(() => momentumReadiness(snapshot ? [snapshot] : []), [snapshot]);
 
-  const laneKeys = useMemo(
-    () => new Set(directions.flatMap((direction) => direction.lanes.map((lane) => lane.key))),
-    [directions],
-  );
 
   const traceData = useMemo(
     () =>
@@ -297,10 +291,6 @@ export default function MatchupLens() {
       canonical.origin = "overview";
     }
 
-    // A collision lane that does not exist for this matchup is dropped.
-    if (canonical.collisionKey && laneKeys.size > 0 && !laneKeys.has(canonical.collisionKey)) {
-      canonical.collisionKey = null;
-    }
 
     // A trace whose metric or tag has no evidence in this snapshot would open
     // an empty drawer, so the parameter is dropped rather than rendered.
@@ -318,11 +308,28 @@ export default function MatchupLens() {
     awayAbv,
     homeAbv,
     momentum.eligible,
-    laneKeys,
     traceData,
     searchParams,
     setSearchParams,
   ]);
+
+  /**
+   * Retired views. A stale `view=collision` link (or its leftover lane
+   * parameter) is rewritten to the Overview with `replace`, independently of
+   * whether evidence has arrived, so the link never lands on a blank canvas.
+   */
+  useEffect(() => {
+    const rawView = searchParams.get("view");
+    const staleView = rawView !== null && rawView !== view;
+    const staleLane = searchParams.get("collision") !== null;
+    if (!staleView && !staleLane) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("view", view);
+    next.delete("collision");
+    if (view === "overview") next.delete("from");
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, view]);
+
 
   const brief = useMemo(
     () =>
@@ -379,11 +386,6 @@ export default function MatchupLens() {
     [commit],
   );
 
-  const openCollision = useCallback(
-    (key: string | null, from: LensOrigin = "overview") =>
-      commit({ collisionKey: key, origin: from, view: "collision" }),
-    [commit],
-  );
 
   const openView = useCallback(
     (next: LensView, from: LensOrigin = "overview") => commit({ view: next, origin: from }),
@@ -402,7 +404,6 @@ export default function MatchupLens() {
         origin: "overview",
         layout: "overlay",
         selectedLens: null,
-        collisionKey: null,
         trace: null,
         ...patch,
       });
@@ -427,7 +428,6 @@ export default function MatchupLens() {
       origin: "overview",
       layout: "overlay",
       selectedLens: null,
-      collisionKey: null,
       trace: null,
     });
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
@@ -437,17 +437,12 @@ export default function MatchupLens() {
 
   const openStory = useCallback(
     (story: InsightStory) => {
-      if (story.target.kind === "collision") openCollision(story.target.collisionKey, "ticker");
-      else openLens(story.target.lensKey, "ticker");
+      // Read-only stories carry no target and expose no action.
+      if (story.target) openLens(story.target.lensKey, "ticker");
     },
-    [openCollision, openLens],
-
+    [openLens],
   );
 
-  const strongestCollision = useMemo(
-    () => collisionHighlights(directions).strongest,
-    [directions],
-  );
   const largestGapKey = brief?.largest?.key ?? null;
 
   const destinations: Destination[] = [
@@ -465,12 +460,6 @@ export default function MatchupLens() {
       disabled: largestGapKey === null,
     },
     {
-      id: "collision",
-      title: "See where profiles collide",
-      helper: "Compare one team's behaviour with the opponent's counter-profile.",
-      icon: DESTINATION_ICONS.collision,
-    },
-    {
       id: "lenses",
       title: "Browse all six lenses",
       helper: "Choose a football question, then inspect its evidence.",
@@ -483,23 +472,18 @@ export default function MatchupLens() {
       if (id === "constellation") openView("constellation");
       else if (id === "lenses") openView("lenses");
       else if (id === "biggest-edge" && largestGapKey) openLens(largestGapKey, "biggest-edge");
-      else if (id === "collision") openCollision(strongestCollision?.lane.key ?? null, "overview");
     },
-    [largestGapKey, openCollision, openLens, openView, strongestCollision],
+    [largestGapKey, openLens, openView],
   );
-
-
 
   const activeDestination: DestinationId | null =
     view === "constellation"
       ? "constellation"
       : view === "lenses"
         ? "lenses"
-        : view === "collision"
-          ? "collision"
-          : view === "lens" && selectedLens === largestGapKey
-            ? "biggest-edge"
-            : null;
+        : view === "lens" && selectedLens === largestGapKey
+          ? "biggest-edge"
+          : null;
 
   const viewingLabel = useMemo(() => {
     if (view === "overview") return "Overview";
@@ -507,14 +491,8 @@ export default function MatchupLens() {
     if (view === "lenses") return "All six lenses";
     if (view === "gaps") return "Top profile gaps";
     if (view === "momentum") return "Momentum";
-    if (view === "collision") {
-      const lane = directions
-        .flatMap((direction) => direction.lanes)
-        .find((entry) => entry.key === collisionKey);
-      return lane ? `${lane.definition.name} collision` : "Where profiles collide";
-    }
     return activeLens?.name ?? "Lens detail";
-  }, [view, directions, collisionKey, activeLens]);
+  }, [view, activeLens]);
 
   // Hover is view-only state: never carry it across a view or matchup change.
   useEffect(() => {
@@ -639,14 +617,6 @@ export default function MatchupLens() {
       disabled: current === "constellation",
     },
     {
-      id: "collision",
-      label: "See where profiles collide",
-      helper: "Behaviour against the opponent's counter-profile.",
-      icon: DESTINATION_ICONS.collision,
-      onSelect: () => openCollision(strongestCollision?.lane.key ?? null, "overview"),
-      disabled: current === "collision",
-    },
-    {
       id: "lenses",
       label: "Browse all six lenses",
       helper: "Pick another football question.",
@@ -767,7 +737,6 @@ export default function MatchupLens() {
                   <GameBrief
                     brief={brief}
                     onSelectLens={(key) => openLens(key, "brief")}
-                    onOpenCollision={(key) => openCollision(key, "brief")}
                   />
 
                   <DestinationCards
@@ -832,17 +801,6 @@ export default function MatchupLens() {
                 </div>
               )}
 
-              {view === "collision" && (
-                <div className="space-y-3">
-                  <MatchupCollision
-                    directions={directions}
-                    selectedKey={collisionKey}
-                    onSelect={(key) => commit({ collisionKey: key })}
-                    onOpenTrace={openTrace}
-                  />
-                  <ContinueExploring steps={continueSteps("collision")} />
-                </div>
-              )}
 
               {view === "gaps" && (
                 <div className="space-y-3">

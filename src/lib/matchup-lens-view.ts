@@ -5,14 +5,7 @@
 // `mode=` links from earlier builds are mapped forward so shared URLs keep
 // working.
 
-export type LensView =
-  | "overview"
-  | "constellation"
-  | "lens"
-  | "lenses"
-  | "collision"
-  | "gaps"
-  | "momentum";
+export type LensView = "overview" | "constellation" | "lens" | "lenses" | "gaps" | "momentum";
 
 export type ConstellationLayout = "overlay" | "side";
 
@@ -21,7 +14,6 @@ export const LENS_VIEWS: LensView[] = [
   "constellation",
   "lens",
   "lenses",
-  "collision",
   "gaps",
   "momentum",
 ];
@@ -32,7 +24,8 @@ const LEGACY_MODE_MAP: Record<string, { view: LensView; layout?: ConstellationLa
   constellation: { view: "constellation" },
   fingerprint: { view: "constellation", layout: "side" },
   map: { view: "gaps" },
-  collision: { view: "collision" },
+  // The dedicated collision view was retired; its links land on the Overview.
+  collision: { view: "overview" },
   momentum: { view: "momentum" },
   galaxy: { view: "overview" },
   portrait: { view: "overview" },
@@ -61,7 +54,6 @@ export const VIEW_TITLES: Record<LensView, string> = {
   constellation: "Constellation",
   lens: "Lens detail",
   lenses: "All six lenses",
-  collision: "Where profiles collide",
   gaps: "Top profile gaps",
   momentum: "Momentum",
 };
@@ -78,8 +70,7 @@ export type LensOrigin =
   | "all-lenses"
   | "ticker"
   | "brief"
-  | "biggest-edge"
-  | "collision";
+  | "biggest-edge";
 
 export const LENS_ORIGINS: LensOrigin[] = [
   "overview",
@@ -88,7 +79,6 @@ export const LENS_ORIGINS: LensOrigin[] = [
   "ticker",
   "brief",
   "biggest-edge",
-  "collision",
 ];
 
 /** Unknown / stale origins fail safely to the Overview. */
@@ -108,8 +98,6 @@ export function originReturn(origin: LensOrigin): OriginReturn {
       return { view: "constellation", label: "Back to Constellation", shortLabel: "Constellation" };
     case "all-lenses":
       return { view: "lenses", label: "Back to all lenses", shortLabel: "All lenses" };
-    case "collision":
-      return { view: "collision", label: "Back to collisions", shortLabel: "Collisions" };
     default:
       return { view: "overview", label: "Back to Overview", shortLabel: "Overview" };
   }
