@@ -2,7 +2,7 @@ import { forwardRef, lazy, Suspense } from "react";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,7 +19,6 @@ const SettingsPage = lazy(() => import("@/pages/Settings"));
 
 const MatchupLens = lazy(() => import("@/pages/MatchupLens"));
 const AdminClaimHealth = lazy(() => import("@/pages/AdminClaimHealth"));
-const AdminRunVisibility = lazy(() => import("@/pages/AdminRunVisibility"));
 
 // Persist React Query cache so revisits/refreshes hydrate instantly
 // from the previous successful response and only re-fetch in the
@@ -84,8 +83,8 @@ const App = () => (
               <Route path="/matchup-lens" element={<ProtectedRoute><MatchupLens /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/admin/claim-health" element={<ProtectedRoute><AdminClaimHealth /></ProtectedRoute>} />
-              <Route path="/admin/run-visibility" element={<ProtectedRoute><AdminRunVisibility /></ProtectedRoute>} />
-
+              {/* Unknown paths (including the retired run-visibility page) return to the slate. */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
         </BrowserRouter>
