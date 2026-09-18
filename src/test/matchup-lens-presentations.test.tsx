@@ -234,7 +234,7 @@ describe("interaction polish", () => {
       expect(tile.getAttribute("aria-pressed")).toBeNull();
       expect(tile.className).not.toContain("border-primary");
       expect(tile.className).not.toContain("bg-primary/10");
-ec      expect(tile.className).toContain("hover:border-primary/40");
+expect(tile.className).toContain("hover:border-primary/40");
     }
 
     await user.click(
