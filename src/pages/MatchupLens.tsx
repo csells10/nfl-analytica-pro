@@ -460,12 +460,6 @@ export default function MatchupLens() {
       disabled: largestGapKey === null,
     },
     {
-      id: "collision",
-      title: "See where profiles collide",
-      helper: "Compare one team's behaviour with the opponent's counter-profile.",
-      icon: DESTINATION_ICONS.collision,
-    },
-    {
       id: "lenses",
       title: "Browse all six lenses",
       helper: "Choose a football question, then inspect its evidence.",
