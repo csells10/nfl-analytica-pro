@@ -1,4 +1,4 @@
-import { ArrowLeft, Loader2, Repeat } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 interface MatchupContextBarProps {
   labelA: string;
@@ -18,7 +18,6 @@ interface MatchupContextBarProps {
    */
   notices?: string[];
   onBack: () => void;
-  onChangeMatchup: () => void;
 }
 
 /**
@@ -37,7 +36,6 @@ export function MatchupContextBar({
   isRefreshing = false,
   notices = [],
   onBack,
-  onChangeMatchup,
 }: MatchupContextBarProps) {
   return (
     <div
@@ -86,16 +84,6 @@ export function MatchupContextBar({
               <span className="hidden sm:inline">Overview</span>
             </button>
           )}
-          <button
-            type="button"
-            data-testid="context-change-matchup"
-            onClick={onChangeMatchup}
-            aria-label="Change matchup"
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[32px] sm:min-w-0"
-          >
-            <Repeat className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="hidden sm:inline">Change matchup</span>
-          </button>
         </div>
       </div>
       {notices.length > 0 && (
