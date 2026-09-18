@@ -801,17 +801,6 @@ export default function MatchupLens() {
                 </div>
               )}
 
-              {view === "collision" && (
-                <div className="space-y-3">
-                  <MatchupCollision
-                    directions={directions}
-                    selectedKey={collisionKey}
-                    onSelect={(key) => commit({ collisionKey: key })}
-                    onOpenTrace={openTrace}
-                  />
-                  <ContinueExploring steps={continueSteps("collision")} />
-                </div>
-              )}
 
               {view === "gaps" && (
                 <div className="space-y-3">
