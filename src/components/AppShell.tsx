@@ -7,7 +7,7 @@ import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/lib/admin-api";
-import { buildMatchupLensHref } from "@/lib/matchup-lens-link";
+import { buildMatchupLensHref, matchupsHref } from "@/lib/matchup-lens-link";
 import { guideIdForPath, openGuide } from "@/lib/guides";
 import {
   DropdownMenu,
@@ -26,14 +26,16 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   const { theme, toggle } = useTheme();
   const location = useLocation();
   const isMatchupLens = location.pathname === "/matchup-lens";
-  const labOverviewHref = (() => {
-    const params = new URLSearchParams(location.search);
-    return buildMatchupLensHref(
-      params.get("game") ?? "",
-      params.get("a") ?? "",
-      params.get("b") ?? "",
-    );
-  })();
+  const labParams = new URLSearchParams(location.search);
+  const labFromDate = isMatchupLens ? labParams.get("fromDate") : null;
+  const labOverviewHref = buildMatchupLensHref(
+    labParams.get("game") ?? "",
+    labParams.get("a") ?? "",
+    labParams.get("b") ?? "",
+    labFromDate,
+  );
+  // Navigation context only: returns to the Matchups date the user came from.
+  const matchupsDestination = matchupsHref(labFromDate);
   // Frontend-only UX gate. Backend remains source of truth for admin auth.
   const { data: me } = useMe(Boolean(user));
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
