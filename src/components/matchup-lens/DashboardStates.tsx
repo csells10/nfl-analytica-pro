@@ -70,7 +70,7 @@ export const LENS_STATE_COPY = {
   unknownGame: {
     title: "We don’t have this game",
     message:
-      "No lens evidence exists for this game. Pick another matchup on the Slate to continue.",
+      "No lens evidence exists for this game. Pick another matchup to continue.",
     action: "View Matchups",
   },
   unavailable: {
