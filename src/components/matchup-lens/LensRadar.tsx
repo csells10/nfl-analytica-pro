@@ -23,13 +23,24 @@ interface LensRadarProps {
   tone: "a" | "b";
   selectedKey: string;
   onSelect: (key: string) => void;
+  /** Shared active axis: pointer hover, tap, or keyboard focus on a score tile. */
+  activeKey?: string | null;
+  onActiveAxisChange?: (key: string | null) => void;
 }
 
 /**
  * Single-team small-multiple radar. Fixed 0-100 scale, identical geometry and
  * axis order regardless of which team it renders, so shapes stay comparable.
  */
-export function LensRadar({ axes, title, tone, selectedKey, onSelect }: LensRadarProps) {
+export function LensRadar({
+  axes,
+  title,
+  tone,
+  selectedKey,
+  onSelect,
+  activeKey = null,
+  onActiveAxisChange,
+}: LensRadarProps) {
   const count = axes.length;
   const stroke = tone === "a" ? "stroke-accent-cool" : "stroke-primary";
   const fill = tone === "a" ? "fill-accent-cool/20" : "fill-primary/20";
@@ -84,8 +95,12 @@ export function LensRadar({ axes, title, tone, selectedKey, onSelect }: LensRada
               y1={CENTER}
               x2={p.x}
               y2={p.y}
-              className={axis.key === selectedKey ? "stroke-foreground/40" : "stroke-border"}
-              strokeWidth={axis.key === selectedKey ? 1.4 : 0.7}
+              className={
+                axis.key === selectedKey || axis.key === activeKey
+                  ? "stroke-foreground/40"
+                  : "stroke-border"
+              }
+              strokeWidth={axis.key === selectedKey || axis.key === activeKey ? 1.4 : 0.7}
             />
           );
         })}
@@ -99,7 +114,7 @@ export function LensRadar({ axes, title, tone, selectedKey, onSelect }: LensRada
           const labelPoint = radarPoint(index, count, 1.34);
           const anchor =
             Math.abs(labelPoint.x - CENTER) < 8 ? "middle" : labelPoint.x > CENTER ? "start" : "end";
-          const isSelected = axis.key === selectedKey;
+          const isSelected = axis.key === selectedKey || axis.key === activeKey;
           return (
             <g key={axis.key}>
               <circle cx={p.x} cy={p.y} r={3} className={dot} />
@@ -122,12 +137,20 @@ export function LensRadar({ axes, title, tone, selectedKey, onSelect }: LensRada
                   </tspan>
                 ))}
               </text>
+              {/* Pointer-only affordance: the score tiles remain the keyboard path. */}
               <circle
                 cx={hit.x}
                 cy={hit.y}
                 r={22}
+                data-axis-hit={axis.key}
+                focusable="false"
+                tabIndex={-1}
                 className="cursor-pointer fill-transparent"
                 onClick={() => onSelect(axis.key)}
+                onPointerDown={() => onActiveAxisChange?.(axis.key)}
+                onPointerEnter={() => onActiveAxisChange?.(axis.key)}
+                onMouseEnter={() => onActiveAxisChange?.(axis.key)}
+                onMouseLeave={() => onActiveAxisChange?.(null)}
               />
             </g>
           );

@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { LensContribution } from "@/lib/matchup-lens";
 import type { LensSnapshot } from "@/lib/matchup-lens-types";
@@ -20,6 +20,9 @@ interface EvidenceRailProps extends TraceHandlers {
   labelA: string;
   labelB: string;
 }
+
+/** Sub-pixel layout rounding should not count as scrollable overflow. */
+const OVERFLOW_TOLERANCE = 1;
 
 function Bar({ value, tone }: { value: number | null; tone: "a" | "b" }) {
   return (
@@ -48,6 +51,36 @@ export function EvidenceRail({
 }: EvidenceRailProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const rank = useRankText();
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  /** One measurement path for mount, scroll, resize and row-count changes. */
+  const measure = useCallback(() => {
+    const node = scroller.current;
+    if (!node) return;
+    const maxScroll = node.scrollWidth - node.clientWidth;
+    setCanScrollLeft(node.scrollLeft > OVERFLOW_TOLERANCE);
+    setCanScrollRight(maxScroll - node.scrollLeft > OVERFLOW_TOLERANCE);
+  }, []);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure, rows]);
+
+  useEffect(() => {
+    const node = scroller.current;
+    if (!node) return;
+    node.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
+    const observer =
+      typeof ResizeObserver === "function" ? new ResizeObserver(() => measure()) : null;
+    observer?.observe(node);
+    return () => {
+      node.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, [measure]);
 
   const nudge = useCallback((direction: -1 | 1) => {
     const node = scroller.current;
@@ -56,34 +89,42 @@ export function EvidenceRail({
     node.scrollBy({ left: direction * 240, behavior: reduced ? "auto" : "smooth" });
   }, []);
 
+  const overflows = canScrollLeft || canScrollRight;
+
+
   return (
     <div className="min-w-0" data-testid="evidence-rail">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Supporting evidence
         </p>
-        <div className="flex shrink-0 gap-1">
-          <button
-            type="button"
-            aria-label="Scroll evidence left"
-            onClick={() => nudge(-1)}
-            className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Scroll evidence right"
-            onClick={() => nudge(1)}
-            className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
+        {overflows && (
+          <div className="flex shrink-0 gap-1" data-testid="evidence-rail-arrows">
+            <button
+              type="button"
+              aria-label="Scroll evidence left"
+              onClick={() => nudge(-1)}
+              disabled={!canScrollLeft}
+              className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Scroll evidence right"
+              onClick={() => nudge(1)}
+              disabled={!canScrollRight}
+              className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div
         ref={scroller}
+        data-testid="evidence-rail-scroller"
         className="mt-2 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {rows.map((row) => {

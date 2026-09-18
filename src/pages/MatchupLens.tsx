@@ -225,7 +225,8 @@ export default function MatchupLens() {
     [searchParams, setSearchParams, urlState],
   );
 
-  const [hoveredLens, setHoveredLens] = useState<string | null>(null);
+  /** Shared active axis for the constellation: pointer hover, tap, or tile focus. */
+  const [activeAxis, setActiveAxis] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
@@ -251,7 +252,7 @@ export default function MatchupLens() {
     scoreB: scoresB[index]?.score ?? null,
   }));
 
-  const activeKey = view === "constellation" ? (hoveredLens ?? selectedLens) : selectedLens;
+  const activeKey = view === "constellation" ? (activeAxis ?? selectedLens) : selectedLens;
   const activeLens = LENSES.find((lens) => lens.key === activeKey) ?? null;
   const activeA = activeLens ? scoresA.find((score) => score.lensKey === activeLens.key) : undefined;
   const activeB = activeLens ? scoresB.find((score) => score.lensKey === activeLens.key) : undefined;
@@ -398,7 +399,7 @@ export default function MatchupLens() {
    */
   const resetToOverview = useCallback(
     (patch: Partial<UrlState> = {}) => {
-      setHoveredLens(null);
+      setActiveAxis(null);
       commit({
         view: "overview",
         origin: "overview",
@@ -419,7 +420,7 @@ export default function MatchupLens() {
   useEffect(() => {
     if (previousGameId.current === gameId) return;
     previousGameId.current = gameId;
-    setHoveredLens(null);
+    setActiveAxis(null);
     const next = writeUrlState(new URLSearchParams(searchParams), {
       ...urlState,
       awayAbv: "",
@@ -496,7 +497,7 @@ export default function MatchupLens() {
 
   // Hover is view-only state: never carry it across a view or matchup change.
   useEffect(() => {
-    setHoveredLens(null);
+    setActiveAxis(null);
   }, [view, awayAbv, homeAbv]);
 
 
@@ -759,7 +760,8 @@ export default function MatchupLens() {
                         nameB={teamName(homeAbv)}
                         selectedKey={selectedLens}
                         onSelect={(key) => openLens(key, "constellation")}
-                        onHover={setHoveredLens}
+                        activeKey={activeAxis}
+                        onActiveAxisChange={setActiveAxis}
                         layout={layout}
                         onLayoutChange={(next) => commit({ layout: next })}
                       />

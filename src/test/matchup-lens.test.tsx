@@ -132,7 +132,8 @@ describe("rendering", () => {
             nameB="Cleveland Browns"
             selectedKey="explosiveness"
             onSelect={() => undefined}
-            onHover={() => undefined}
+            activeKey={null}
+            onActiveAxisChange={() => undefined}
             layout="overlay"
             onLayoutChange={() => undefined}
 

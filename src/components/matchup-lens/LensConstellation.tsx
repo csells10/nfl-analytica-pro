@@ -17,7 +17,9 @@ interface LensConstellationProps {
   nameB: string;
   selectedKey: string | null;
   onSelect: (key: string) => void;
-  onHover: (key: string | null) => void;
+  /** Shared active axis, set by pointer hover, tap or score-tile keyboard focus. */
+  activeKey: string | null;
+  onActiveAxisChange: (key: string | null) => void;
   layout: ConstellationLayout;
   onLayoutChange: (layout: ConstellationLayout) => void;
 }
@@ -59,7 +61,8 @@ export function LensConstellation({
   nameB,
   selectedKey,
   onSelect,
-  onHover,
+  activeKey,
+  onActiveAxisChange,
   layout,
   onLayoutChange,
 }: LensConstellationProps) {
@@ -128,6 +131,8 @@ export function LensConstellation({
               tone="a"
               selectedKey={selectedKey ?? ""}
               onSelect={onSelect}
+              activeKey={activeKey}
+              onActiveAxisChange={onActiveAxisChange}
             />
           </div>
           <div className="min-w-0">
@@ -138,6 +143,8 @@ export function LensConstellation({
               tone="b"
               selectedKey={selectedKey ?? ""}
               onSelect={onSelect}
+              activeKey={activeKey}
+              onActiveAxisChange={onActiveAxisChange}
             />
           </div>
         </div>
@@ -178,7 +185,7 @@ export function LensConstellation({
 
           {axes.map((axis, index) => {
             const p = point(index, count, 1);
-            const isSelected = axis.key === selectedKey;
+            const isSelected = axis.key === selectedKey || axis.key === activeKey;
             return (
               <line
                 key={axis.key}
@@ -205,7 +212,7 @@ export function LensConstellation({
           />
 
           {axes.map((axis, index) => {
-            const isSelected = axis.key === selectedKey;
+            const isSelected = axis.key === selectedKey || axis.key === activeKey;
             const a = point(index, count, (axis.scoreA ?? 0) / 100);
             const b = point(index, count, (axis.scoreB ?? 0) / 100);
             const hit = point(index, count, 1);
@@ -242,14 +249,20 @@ export function LensConstellation({
                     </tspan>
                   ))}
                 </text>
+                {/* Pointer-only affordance: the score tiles remain the keyboard path. */}
                 <circle
                   cx={hit.x}
                   cy={hit.y}
                   r={26}
+                  data-axis-hit={axis.key}
+                  focusable="false"
+                  tabIndex={-1}
                   className="cursor-pointer fill-transparent"
                   onClick={() => onSelect(axis.key)}
-                  onMouseEnter={() => onHover(axis.key)}
-                  onMouseLeave={() => onHover(null)}
+                  onPointerDown={() => onActiveAxisChange(axis.key)}
+                  onPointerEnter={() => onActiveAxisChange(axis.key)}
+                  onMouseEnter={() => onActiveAxisChange(axis.key)}
+                  onMouseLeave={() => onActiveAxisChange(null)}
                 />
               </g>
             );
@@ -261,19 +274,22 @@ export function LensConstellation({
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {axes.map((axis) => {
           const isSelected = axis.key === selectedKey;
+          const isActive = axis.key === activeKey;
           return (
             <button
               key={axis.key}
               type="button"
               data-lens-key={axis.key}
+              data-axis-active={isActive || isSelected ? "true" : undefined}
               onClick={() => onSelect(axis.key)}
-              onMouseEnter={() => onHover(axis.key)}
-              onMouseLeave={() => onHover(null)}
-              onFocus={() => onHover(axis.key)}
-              onBlur={() => onHover(null)}
+              onMouseEnter={() => onActiveAxisChange(axis.key)}
+              onMouseLeave={() => onActiveAxisChange(null)}
+              onPointerDown={() => onActiveAxisChange(axis.key)}
+              onFocus={() => onActiveAxisChange(axis.key)}
+              onBlur={() => onActiveAxisChange(null)}
               aria-pressed={isSelected}
               className={`min-h-[44px] cursor-pointer rounded-md border px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                isSelected
+                isSelected || isActive
                   ? "border-foreground/30 bg-secondary"
                   : "border-border bg-card hover:border-muted-foreground/40"
               }`}
