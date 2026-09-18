@@ -41,7 +41,7 @@ import SectionSpotlightTour, {
 } from "@/components/SectionSpotlightTour";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
-import { buildMatchupLensHref } from "@/lib/matchup-lens-link";
+import { buildMatchupLensHref, matchupLabActionLabel } from "@/lib/matchup-lens-link";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -104,10 +104,6 @@ function formatNumber(n: number, label: string): string {
   // values that look like rates (|n| < 2) => 3 decimals; else 2
   if (Math.abs(n) < 2) return n.toFixed(3);
   return n.toFixed(2);
-}
-
-function isFinal(status?: string) {
-  return !!status && /final/i.test(status);
 }
 
 function teamFromApi(t: GameDetails["header"]["away_team"]): TeamMeta {
@@ -1526,7 +1522,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           <Badge variant="muted">ID {lensGameId}</Badge>
           <Button asChild variant="outline" size="sm" className="ml-auto h-8">
             <Link to={buildMatchupLensHref(lensGameId, awayTeam.abbr, homeTeam.abbr)}>
-              Open Matchup Lens
+              {matchupLabActionLabel(header.game_status)}
             </Link>
           </Button>
           {header.espn_link && (

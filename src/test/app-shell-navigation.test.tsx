@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 const mocks = vi.hoisted(() => ({
   isAdmin: false,
@@ -33,6 +33,11 @@ function renderShell(entry = "/") {
   );
 }
 
+function CurrentLocation() {
+  const location = useLocation();
+  return <output data-testid="current-location">{`${location.pathname}${location.search}`}</output>;
+}
+
 describe("AppShell navigation and account menu", () => {
   beforeEach(() => {
     mocks.isAdmin = false;
@@ -50,17 +55,43 @@ describe("AppShell navigation and account menu", () => {
     expect(screen.getByRole("button", { name: "Switch to light theme" })).toBeTruthy();
   });
 
-  it("shows Lab once as the non-interactive page heading on Matchup Lens only", () => {
+  it("shows the centered Lab heading only on the exact Matchup Lens route", () => {
     const view = renderShell("/matchup-lens?view=overview");
-    const lab = screen.getByRole("heading", { level: 1, name: "Lab" });
+    const lab = screen.getByTestId("lab-context");
+    expect(lab.tagName).toBe("H1");
+    expect(screen.getByRole("heading", { level: 1, name: "Lab" })).toBe(lab);
     expect(lab.closest("header")).toBeTruthy();
-    expect(lab.closest("a,button")).toBeNull();
+    expect(lab.parentElement?.className).toContain("grid-cols-[1fr_auto_1fr]");
     expect(screen.getAllByText("Lab")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Return to Matchup Lab overview" })).toBeTruthy();
 
     view.unmount();
-    renderShell();
-    expect(screen.queryByText("Lab")).toBeNull();
+    for (const route of ["/", "/matchup/123", "/settings", "/admin/claim-health", "/login", "/other"]) {
+      const standard = renderShell(route);
+      expect(screen.queryByText("Lab")).toBeNull();
+      expect(standard.container.querySelector("header > div")?.className).toContain("flex justify-between");
+      standard.unmount();
+    }
   });
+
+  it.each(["constellation", "gaps", "lenses", "lens"])(
+    "returns the %s view to the same matchup Overview without child state",
+    async (viewName) => {
+      const user = userEvent.setup();
+      const rendered = render(
+        <MemoryRouter initialEntries={[`/matchup-lens?a=DET&b=BUF&view=${viewName}&game=20260917_DET%40BUF&lens=drive-control&from=constellation&layout=side&trace=tag%3Aearly_down&mode=collision&collision=run`]}>
+          <AppShell><CurrentLocation /></AppShell>
+        </MemoryRouter>,
+      );
+      expect(screen.getByRole("link", { name: "GameLens GameLens" })).toHaveAttribute("href", "/");
+      expect(screen.getAllByRole("link", { name: "Matchups" })[0]).toHaveAttribute("href", "/");
+      await user.click(screen.getByRole("link", { name: "Return to Matchup Lab overview" }));
+      expect(screen.getByTestId("current-location").textContent).toBe(
+        "/matchup-lens?a=DET&b=BUF&view=overview&game=20260917_DET%40BUF",
+      );
+      rendered.unmount();
+    },
+  );
 
   it("opens the non-admin account menu from the keyboard and signs out", async () => {
     const user = userEvent.setup();

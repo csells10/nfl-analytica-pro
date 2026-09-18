@@ -7,6 +7,7 @@ import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/lib/admin-api";
+import { buildMatchupLensHref } from "@/lib/matchup-lens-link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,14 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   const { theme, toggle } = useTheme();
   const location = useLocation();
   const isMatchupLens = location.pathname === "/matchup-lens";
+  const labOverviewHref = (() => {
+    const params = new URLSearchParams(location.search);
+    return buildMatchupLensHref(
+      params.get("game") ?? "",
+      params.get("a") ?? "",
+      params.get("b") ?? "",
+    );
+  })();
   // Frontend-only UX gate. Backend remains source of truth for admin auth.
   const { data: me } = useMe(Boolean(user));
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
@@ -55,11 +64,15 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   return (
     <div ref={ref} className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+        <div
+          className={`mx-auto h-14 max-w-7xl items-center px-4 ${
+            isMatchupLens ? "grid grid-cols-[1fr_auto_1fr]" : "flex justify-between"
+          }`}
+        >
           <div className="flex min-w-0 items-center gap-2 lg:gap-6">
-            <Link to="/" className="flex items-center gap-2">
-              <img src={gamelensHorizontalLight} alt="GameLens" className="h-9 w-auto dark:hidden" />
-              <img src={gamelensHorizontalDark} alt="GameLens" className="hidden h-9 w-auto dark:block" />
+            <Link to="/" className="flex min-w-0 items-center gap-2">
+              <img src={gamelensHorizontalLight} alt="GameLens" className={`h-9 w-auto dark:hidden ${isMatchupLens ? "max-w-[6.5rem] sm:max-w-none" : ""}`} />
+              <img src={gamelensHorizontalDark} alt="GameLens" className={`hidden h-9 w-auto dark:block ${isMatchupLens ? "max-w-[6.5rem] sm:max-w-none" : ""}`} />
             </Link>
             <nav className="hidden items-center gap-1 md:flex">
               {primaryNavItems.map((item) => {
@@ -80,14 +93,23 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
                 );
               })}
             </nav>
-            {isMatchupLens && (
-              <div className="flex shrink-0 items-center gap-2" data-testid="lab-context">
-                <span className="h-5 w-px bg-border" aria-hidden="true" />
-                <h1 className="text-sm font-semibold text-muted-foreground">Lab</h1>
-              </div>
-            )}
           </div>
-          <div className="flex items-center gap-2">
+          {isMatchupLens && (
+            <h1
+              aria-label="Lab"
+              className="justify-self-center text-sm font-semibold text-muted-foreground"
+              data-testid="lab-context"
+            >
+              <Link
+                to={labOverviewHref}
+                aria-label="Return to Matchup Lab overview"
+                className="whitespace-nowrap rounded-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Lab
+              </Link>
+            </h1>
+          )}
+          <div className="flex min-w-0 items-center justify-end gap-2">
             {showGuide && (
               <Button
                 variant="ghost"
@@ -121,10 +143,12 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-9 max-w-[10rem] gap-1 px-2 text-primary hover:bg-primary/10 hover:text-primary sm:max-w-[14rem]"
+                  className={`h-9 gap-1 px-2 text-primary hover:bg-primary/10 hover:text-primary ${
+                    isMatchupLens ? "max-w-8 sm:max-w-[10rem]" : "max-w-[10rem] sm:max-w-[14rem]"
+                  }`}
                   aria-label={`Open account menu for ${displayName}`}
                 >
-                  <span className="truncate text-sm font-semibold">{displayName}</span>
+                  <span className={`truncate text-sm font-semibold ${isMatchupLens ? "hidden sm:inline" : ""}`}>{displayName}</span>
                   <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
