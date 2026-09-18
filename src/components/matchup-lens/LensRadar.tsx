@@ -95,8 +95,12 @@ export function LensRadar({
               y1={CENTER}
               x2={p.x}
               y2={p.y}
-              className={axis.key === selectedKey ? "stroke-foreground/40" : "stroke-border"}
-              strokeWidth={axis.key === selectedKey ? 1.4 : 0.7}
+              className={
+                axis.key === selectedKey || axis.key === activeKey
+                  ? "stroke-foreground/40"
+                  : "stroke-border"
+              }
+              strokeWidth={axis.key === selectedKey || axis.key === activeKey ? 1.4 : 0.7}
             />
           );
         })}
