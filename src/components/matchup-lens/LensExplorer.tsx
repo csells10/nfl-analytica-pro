@@ -60,7 +60,7 @@ export function LensExplorer({
                   onClick={() => onSelect(gap.key)}
                   className={`flex min-h-[44px] w-full cursor-pointer flex-col rounded-md border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     isSelected
-                      ? "border-primary/60 bg-secondary"
+                      ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/40 hover:border-primary"
                       : "border-border bg-muted/10 hover:border-primary/40"
                   }`}
                 >

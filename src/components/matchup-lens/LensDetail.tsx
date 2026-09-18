@@ -170,7 +170,9 @@ export function LensDetail({
               onClick={() => setShowAll((value) => !value)}
               className="mt-2 min-h-[44px] rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {showAll ? "Show key evidence only" : `View all evidence (${ordered.length})`}
+              {showAll
+                ? "Show key evidence only"
+                : `Show ${ordered.length - FIRST_CARDS} more`}
             </button>
           )}
         </div>
