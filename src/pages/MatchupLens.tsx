@@ -1,6 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "@/components/AppShell";
+import StepGuide, { type StepGuideStep } from "@/components/StepGuide";
+import { useGuide } from "@/lib/guides";
+
+const MATCHUP_LAB_GUIDE_STEPS: StepGuideStep[] = [
+  {
+    title: "Where you are",
+    body: "The header shows the matchup, the evidence window and as-of date, and the view you are currently reading.",
+  },
+  {
+    title: "Start here",
+    body: "The Biggest Edge is the clearest separation between these two teams for this window.",
+  },
+  {
+    title: "Three ways to go deeper",
+    body: "Compare the teams side by side, explore the biggest edge on its own, or browse all six lenses.",
+  },
+  {
+    title: "Supporting evidence",
+    body: "Each read lists the evidence behind it. Select a signal or metric to open its trace details.",
+  },
+];
 import { Card, CardContent } from "@/components/ui/card";
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
 import { LensDetail } from "@/components/matchup-lens/LensDetail";
@@ -628,8 +649,19 @@ export default function MatchupLens() {
 
 
 
+  // Orientation guide opens only once valid live evidence is on screen.
+  const hasLiveEvidence = !isLoading && !isError && result?.kind !== "unavailable" && !!snapshot && !!away && !!home;
+  const labGuide = useGuide("matchup-lab", hasLiveEvidence);
+
   return (
-    <AppShell showGuide={false}>
+    <AppShell>
+      <StepGuide
+        open={labGuide.open}
+        eyebrow="Matchup Lab"
+        steps={MATCHUP_LAB_GUIDE_STEPS}
+        onDismiss={labGuide.dismiss}
+        testId="matchup-lab-guide"
+      />
       <div className="space-y-3">
         {gameIdState.kind === "missing" ? (
           <DashboardEmpty

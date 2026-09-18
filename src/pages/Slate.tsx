@@ -1,5 +1,5 @@
 import { forwardRef, useState, useMemo, useEffect, useRef } from "react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarIcon, ChevronRight } from "lucide-react";
 import AppShell from "@/components/AppShell";
@@ -12,14 +12,41 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useNflSchedule, userMessageForError, type NflGame } from "@/lib/nfl-api";
-import DateSelectionModal from "@/components/DateSelectionModal";
+import StepGuide, { type StepGuideStep } from "@/components/StepGuide";
+import { useGuide } from "@/lib/guides";
+import { useScheduleScan } from "@/lib/use-schedule-scan";
 import { perfMark } from "@/lib/perf";
 import { buildMatchupLensHref, matchupLabActionLabel } from "@/lib/matchup-lens-link";
 
-const ONBOARDING_KEY = "hasSeenDateTutorial";
-const GUIDE_EVENT = "gamelens:open-guide";
 // Module-eval marker — fires when the lazy Slate chunk finishes parsing.
 perfMark("Slate module evaluated");
+
+const MATCHUPS_GUIDE_STEPS: StepGuideStep[] = [
+  {
+    title: "Choose a game date",
+    body: "Pick a date to see the NFL games scheduled that day. GameLens opens on the next date with games.",
+  },
+  {
+    title: "Choose a matchup",
+    body: "Each row is one game. Away team first, home team second, with kickoff time and week.",
+  },
+  {
+    title: "Open the game details",
+    body: "Select a matchup to see its profile, core-area advantages and the overall lean.",
+  },
+  {
+    title: "Open or review in Matchup Lab",
+    body: "Matchup Lab compares both teams across six lenses, with the supporting evidence behind each read.",
+  },
+];
+
+function parseDateParam(raw: string | null): Date | null {
+  if (!raw) return null;
+  const [y, m, d] = raw.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const parsed = new Date(y, m - 1, d);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
 
 const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: string }>(
   function MatchupCard({ game, dateParam }, ref) {
@@ -91,42 +118,23 @@ MatchupCard.displayName = "MatchupCard";
 export default function Slate() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Initialize selected date from `?date=YYYY-MM-DD` URL param so deep links
-  // and back-navigation from the Matchup page restore the previous filter.
   // Resolve the initial date once on mount:
-  //   1. `?date=YYYY-MM-DD` URL param (deep links / back-nav) wins.
-  //   2. Otherwise default to today so the slate loads immediately.
+  //   1. `?date=YYYY-MM-DD` URL param (deep links / back-nav) wins and is
+  //      never automatically replaced.
+  //   2. Otherwise start on today; the seven-day scan may move the selection
+  //      forward exactly once.
   const { initialDate, dateFromUrl } = useMemo(() => {
-    const raw = searchParams.get("date");
-    if (raw) {
-      const [y, m, d] = raw.split("-").map(Number);
-      if (y && m && d) {
-        const parsed = new Date(y, m - 1, d);
-        if (!isNaN(parsed.getTime())) {
-          return { initialDate: parsed, dateFromUrl: true };
-        }
-      }
-    }
+    const parsed = parseDateParam(searchParams.get("date"));
+    if (parsed) return { initialDate: parsed, dateFromUrl: true };
     return { initialDate: new Date(), dateFromUrl: false };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate);
-  const [overlayOpen, setOverlayOpen] = useState(() => {
-    if (typeof window === "undefined") return false;
-    if (dateFromUrl) return false;
-    return localStorage.getItem(ONBOARDING_KEY) !== "true";
-  });
+  const guide = useGuide("matchups");
 
   // Controls the date-picker popover so we can auto-close it on selection.
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-
-  // Listen for the global "open guide" event from the AppShell button.
-  useEffect(() => {
-    const handler = () => setOverlayOpen(true);
-    window.addEventListener(GUIDE_EVENT, handler);
-    return () => window.removeEventListener(GUIDE_EVENT, handler);
-  }, []);
 
   const {
     data: games,
@@ -140,6 +148,9 @@ export default function Slate() {
   const isBackgroundRefresh = isFetching && !isColdLoad && !!games;
   const showStaleWarning = isError && !!games;
 
+  // Seven-day lookup anchored on the mount date so it never re-scans in a loop.
+  const scan = useScheduleScan(initialDate, true);
+  const autoSelectedRef = useRef(false);
 
   // Render-time mount marker (fires on the first render, before effects).
   const renderLoggedRef = useRef(false);
@@ -156,40 +167,57 @@ export default function Slate() {
   }, [games]);
 
   const dateParam = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
+  const todayParam = format(initialDate, "yyyy-MM-dd");
 
-  const completeOnboarding = () => {
-    try {
-      localStorage.setItem(ONBOARDING_KEY, "true");
-    } catch {
-      /* ignore */
-    }
-    setOverlayOpen(false);
-  };
-
-  const handleSelectDate = (date: Date | undefined) => {
+  const selectDate = (date: Date | undefined) => {
     setSelectedDate(date);
     if (date) {
       setSearchParams({ date: format(date, "yyyy-MM-dd") }, { replace: true });
-      // Auto-close the calendar once a date is picked.
-      setDatePickerOpen(false);
-      // Picking a date implicitly satisfies the tutorial for first-time users,
-      // but we no longer auto-close it mid-flow if they manually opened it.
-      try {
-        localStorage.setItem(ONBOARDING_KEY, "true");
-      } catch {
-        /* ignore */
-      }
     } else {
       setSearchParams({}, { replace: true });
     }
   };
 
+  const handleSelectDate = (date: Date | undefined) => {
+    selectDate(date);
+    if (date) setDatePickerOpen(false);
+  };
+
+  // One-time auto-selection of the earliest discovered date with games.
+  useEffect(() => {
+    if (dateFromUrl || autoSelectedRef.current || scan.isResolving) return;
+    autoSelectedRef.current = true;
+    const earliest = scan.datesWithGames[0];
+    if (!earliest || earliest === todayParam) return;
+    selectDate(parse(earliest, "yyyy-MM-dd", new Date()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFromUrl, scan.isResolving, scan.datesWithGames, todayParam]);
+
+  const isFindingUpcoming = !dateFromUrl && !autoSelectedRef.current && scan.isResolving;
+
+  const highlightedDates = useMemo(
+    () => scan.datesWithGames.map((d) => parse(d, "yyyy-MM-dd", new Date())),
+    [scan.datesWithGames],
+  );
+
+  // A different scanned date that does have games, offered when this one is empty.
+  const suggestion = useMemo(() => {
+    const next = scan.datesWithGames.find((d) => d !== dateParam);
+    return next ? parse(next, "yyyy-MM-dd", new Date()) : null;
+  }, [scan.datesWithGames, dateParam]);
+
+  // Only claim the whole window is empty when all seven requests succeeded.
+  const wholeWindowEmpty =
+    scan.allSucceeded && !scan.hasFailures && scan.datesWithGames.length === 0;
+
   return (
     <AppShell>
-      <DateSelectionModal
-        open={overlayOpen}
-        onDismiss={completeOnboarding}
-        targetSelector="[data-onboarding='game-date']"
+      <StepGuide
+        open={guide.open}
+        eyebrow="Matchups"
+        steps={MATCHUPS_GUIDE_STEPS}
+        onDismiss={guide.dismiss}
+        testId="matchups-guide"
       />
 
       <div className="mx-auto max-w-2xl py-8">
@@ -208,13 +236,7 @@ export default function Slate() {
             <label className="block mb-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Game date
             </label>
-            <Popover
-              open={datePickerOpen}
-              onOpenChange={(open) => {
-                setDatePickerOpen(open);
-                if (open && overlayOpen) completeOnboarding();
-              }}
-            >
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
                   data-onboarding="game-date"
@@ -237,6 +259,10 @@ export default function Slate() {
                   defaultMonth={selectedDate ?? new Date()}
                   onSelect={handleSelectDate}
                   initialFocus
+                  modifiers={{ hasGames: highlightedDates }}
+                  modifiersClassNames={{
+                    hasGames: "font-semibold text-primary underline underline-offset-4",
+                  }}
                   className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
@@ -247,19 +273,25 @@ export default function Slate() {
         {/* Content states */}
         {!selectedDate && (
           <p className="py-16 text-center text-sm text-muted-foreground">
-            Select a game date to load matchups.
+            Choose a date to see scheduled matchups.
           </p>
         )}
         {selectedDate && (
           <>
+            {isFindingUpcoming && (
+              <p className="py-20 text-center text-sm text-muted-foreground" data-testid="finding-upcoming">
+                Finding upcoming games…
+              </p>
+            )}
+
             {/* True cold load only — refreshes reuse cached data below. */}
-            {isColdLoad && (
+            {!isFindingUpcoming && isColdLoad && (
               <p className="py-20 text-center text-sm text-muted-foreground">
                 Loading schedule…
               </p>
             )}
 
-            {isError && !games && (
+            {!isFindingUpcoming && isError && !games && (
               <div className="py-16 text-center">
                 <p className="text-sm text-destructive">
                   Unable to load the schedule.
@@ -270,10 +302,24 @@ export default function Slate() {
               </div>
             )}
 
-            {!isColdLoad && !isError && games && games.length === 0 && (
-              <p className="py-16 text-center text-sm text-muted-foreground">
-                No games scheduled for this date.
-              </p>
+            {!isFindingUpcoming && !isColdLoad && !isError && games && games.length === 0 && (
+              <div className="py-16 text-center" data-testid="slate-empty">
+                <p className="text-sm text-muted-foreground">
+                  {wholeWindowEmpty
+                    ? "No games found in the next seven days. Choose another date."
+                    : "No NFL games are scheduled for this date."}
+                </p>
+                {suggestion && (
+                  <button
+                    type="button"
+                    data-testid="slate-suggestion"
+                    onClick={() => selectDate(suggestion)}
+                    className="mt-3 rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10"
+                  >
+                    View games on {format(suggestion, "EEEE, MMMM d")}
+                  </button>
+                )}
+              </div>
             )}
 
             {games && games.length > 0 && (

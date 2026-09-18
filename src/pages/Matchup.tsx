@@ -34,7 +34,8 @@ import { TeamComparisonEmptyState } from "@/components/TeamComparisonEmptyState"
 
 import { SectionGuide } from "@/components/SectionGuide";
 
-const SECTION_SPOTLIGHT_TOUR_SEEN_KEY = "hasSeenMatchupSectionSpotlightTour";
+import { GUIDE_EVENT, GUIDE_STORAGE_KEYS } from "@/lib/guides";
+const SECTION_SPOTLIGHT_TOUR_SEEN_KEY = GUIDE_STORAGE_KEYS["game-detail"];
 import { Layers, Compass, Columns } from "lucide-react";
 import SectionSpotlightTour, {
   type SpotlightTourStep,
@@ -1423,9 +1424,13 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
     } catch {
       setTourOpen(true);
     }
-    const onOpenGuide = () => setTourOpen(true);
-    window.addEventListener("gamelens:open-guide", onOpenGuide);
-    return () => window.removeEventListener("gamelens:open-guide", onOpenGuide);
+    // Route-aware Help: only this page's guide id opens the tour.
+    const onOpenGuide = (event: Event) => {
+      const detail = (event as CustomEvent<{ guide?: string }>).detail;
+      if (detail?.guide === "game-detail") setTourOpen(true);
+    };
+    window.addEventListener(GUIDE_EVENT, onOpenGuide);
+    return () => window.removeEventListener(GUIDE_EVENT, onOpenGuide);
   }, []);
 
   const markTourSeenAndClose = () => {

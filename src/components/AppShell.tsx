@@ -8,6 +8,7 @@ import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/lib/admin-api";
 import { buildMatchupLensHref } from "@/lib/matchup-lens-link";
+import { guideIdForPath, openGuide } from "@/lib/guides";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +19,7 @@ import {
 
 const primaryNavItems = [{ label: "Matchups", path: "/", icon: CalendarDays }];
 
-const GUIDE_EVENT = "gamelens:open-guide";
 const GUIDE_HINT_KEY = "gamelens_guide_hint_views";
-
-export function openGuideTutorial() {
-  window.dispatchEvent(new CustomEvent(GUIDE_EVENT));
-}
 
 const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGuide?: boolean }>(function AppShell({ children, showGuide = true }, ref) {
   const { user, signOut } = useAuth();
@@ -56,9 +52,12 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
     }
   }, []);
 
+  // Route-aware Help: only the guide belonging to this route can respond.
+  const guideId = guideIdForPath(location.pathname);
+
   const handleGuideClick = () => {
     setPulseGuide(false);
-    openGuideTutorial();
+    if (guideId) openGuide(guideId);
   };
 
   return (
@@ -110,7 +109,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
             </h1>
           )}
           <div className="flex min-w-0 items-center justify-end gap-2">
-            {showGuide && (
+            {showGuide && guideId && (
               <Button
                 variant="ghost"
                 size="icon"

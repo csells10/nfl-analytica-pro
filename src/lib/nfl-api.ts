@@ -150,7 +150,7 @@ function mapBackendGame(game: BackendGame, dateStr: string): NflGame {
   };
 }
 
-async function fetchNflSchedule(dateStr: string): Promise<NflGame[]> {
+export async function fetchNflSchedule(dateStr: string): Promise<NflGame[]> {
   const url = `${API_BASE}/games?date=${dateStr}`;
   console.log("[nfl-api] GET", url);
 

@@ -56,27 +56,27 @@ interface DashboardErrorProps {
  */
 export const LENS_STATE_COPY = {
   noGame: {
-    title: "Choose a matchup first",
+    title: "Choose a game to open Matchup Lab",
     message:
-      "Matchup Lens opens from a specific game. Pick a matchup on the Slate to load its evidence.",
-    action: "Go to the Slate",
+      "Matchup Lab opens from a specific game. Pick a matchup to load its evidence.",
+    action: "View Matchups",
   },
   malformedGame: {
     title: "That matchup link isn’t valid",
     message:
-      "The game in this link isn’t in a form we recognise, so no evidence was requested. Pick a matchup on the Slate to continue.",
-    action: "Go to the Slate",
+      "The game in this link isn’t in a form we recognise, so no evidence was requested. Pick another matchup to continue.",
+    action: "View Matchups",
   },
   unknownGame: {
     title: "We don’t have this game",
     message:
-      "No lens evidence exists for this game. Pick another matchup on the Slate to continue.",
-    action: "Go to the Slate",
+      "No lens evidence exists for this game. Pick another matchup to continue.",
+    action: "View Matchups",
   },
   unavailable: {
-    title: "Lens evidence isn’t ready for this game",
+    title: "Matchup Lab isn’t ready for this game yet",
     message: "Nothing is calculated until the evidence is complete enough to compare.",
-    action: "Go to the Slate",
+    action: "View Matchups",
   },
   accessDenied: {
     title: "You don’t have access to this matchup",
@@ -85,8 +85,8 @@ export const LENS_STATE_COPY = {
   conflict: {
     title: "This game’s evidence can’t be used",
     message:
-      "The evidence behind this matchup didn’t pass its safety checks, so nothing is scored. Try another matchup on the Slate.",
-    action: "Go to the Slate",
+      "The evidence behind this matchup didn’t pass its safety checks, so nothing is scored. Try another matchup.",
+    action: "View Matchups",
   },
   invalidResponse: {
     title: "This matchup’s evidence couldn’t be read",
@@ -114,7 +114,7 @@ export function DashboardError({ onRetry, title, message }: DashboardErrorProps)
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">
-              {title ?? "Matchup data didn’t load"}
+              {title ?? "Matchup Lab didn’t load"}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {message ?? DASHBOARD_ERROR_MESSAGE}
