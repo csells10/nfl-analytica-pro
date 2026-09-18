@@ -16,9 +16,9 @@
 - [x] Phase G3 CLOSED — pending independent Phase G4 verification (Christian's decision)
 - [x] Remove Run Visibility (nav, route, isolated files, tests); verify + no publish
 - [x] Pass 1: simplify header/account navigation and selected-game Matchup Lens journey; verified and saved unpublished version
-- [ ] Pass 2A: remove Collision destination/view while preserving read-only overview observations
-- [ ] Pass 2B: remove Technical Map and isolated graph layout
-- [ ] Pass 3: interaction polish without duplicate chart/tile keyboard stops
-- [ ] Pass 3C: cohesive Lab header, neutral lens choices, and three-card Overview row
+- [x] Pass 2A: remove Collision destination/view while preserving read-only overview observations
+- [x] Pass 2B: remove Technical Map and isolated graph layout
+- [x] Pass 3: interaction polish without duplicate chart/tile keyboard stops
+- [x] Pass 3C: cohesive Lab header, neutral lens choices, and three-card Overview row
 - [ ] Pass 4: versioned guides and clearer empty states
 - [ ] Pass 5: complete verification and bookmark unpublished release candidate
