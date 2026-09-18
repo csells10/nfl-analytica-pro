@@ -224,13 +224,20 @@ describe("interaction polish", () => {
   });
 
   it("marks the selected All Six Lenses tile as active rather than muted", async () => {
-    renderPage("/matchup-lens?view=lenses");
+    const user = userEvent.setup();
+    renderPage(`/matchup-lens?view=lenses&lens=${LENSES[1].key}`);
     await waitFor(() => expect(document.querySelector("button[data-lens-key]")).toBeTruthy());
 
-    const selected = Array.from(document.querySelectorAll("button[data-lens-key]")).find(
-      (button) => button.getAttribute("aria-pressed") === "true",
-    );
-    expect(selected?.className).toContain("border-primary");
-    expect(selected?.className).toContain("bg-primary/10");
+    const tile = document.querySelector(
+      `button[data-lens-key="${LENSES[1].key}"]`,
+    ) as HTMLButtonElement;
+    await user.click(tile);
+
+    const selected = document.querySelector(
+      `button[data-lens-key="${LENSES[1].key}"]`,
+    ) as HTMLButtonElement;
+    expect(selected.getAttribute("aria-pressed")).toBe("true");
+    expect(selected.className).toContain("border-primary");
+    expect(selected.className).toContain("bg-primary/10");
   });
 });
