@@ -98,24 +98,28 @@ export function EvidenceRail({
         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Supporting evidence
         </p>
-        <div className="flex shrink-0 gap-1">
-          <button
-            type="button"
-            aria-label="Scroll evidence left"
-            onClick={() => nudge(-1)}
-            className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Scroll evidence right"
-            onClick={() => nudge(1)}
-            className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
+        {overflows && (
+          <div className="flex shrink-0 gap-1" data-testid="evidence-rail-arrows">
+            <button
+              type="button"
+              aria-label="Scroll evidence left"
+              onClick={() => nudge(-1)}
+              disabled={!canScrollLeft}
+              className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Scroll evidence right"
+              onClick={() => nudge(1)}
+              disabled={!canScrollRight}
+              className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div
