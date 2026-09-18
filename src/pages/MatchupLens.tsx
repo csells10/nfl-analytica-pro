@@ -437,17 +437,12 @@ export default function MatchupLens() {
 
   const openStory = useCallback(
     (story: InsightStory) => {
-      if (story.target.kind === "collision") openCollision(story.target.collisionKey, "ticker");
-      else openLens(story.target.lensKey, "ticker");
+      // Read-only stories carry no target and expose no action.
+      if (story.target) openLens(story.target.lensKey, "ticker");
     },
-    [openCollision, openLens],
-
+    [openLens],
   );
 
-  const strongestCollision = useMemo(
-    () => collisionHighlights(directions).strongest,
-    [directions],
-  );
   const largestGapKey = brief?.largest?.key ?? null;
 
   const destinations: Destination[] = [
