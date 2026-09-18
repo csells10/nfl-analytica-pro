@@ -15,7 +15,7 @@
       clean typecheck, build OK in 9.9s; nothing published or deployed
 - [x] Phase G3 CLOSED — pending independent Phase G4 verification (Christian's decision)
 - [x] Remove Run Visibility (nav, route, isolated files, tests); verify + no publish
-- [ ] Pass 1: simplify header/account navigation and selected-game Matchup Lens journey; verify and save unpublished version
+- [x] Pass 1: simplify header/account navigation and selected-game Matchup Lens journey; verified and saved unpublished version
 - [ ] Pass 2A: remove Collision destination/view while preserving read-only overview observations
 - [ ] Pass 2B: remove Technical Map and isolated graph layout
 - [ ] Pass 3: interaction polish without duplicate chart/tile keyboard stops
