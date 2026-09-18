@@ -308,11 +308,28 @@ export default function MatchupLens() {
     awayAbv,
     homeAbv,
     momentum.eligible,
-    laneKeys,
     traceData,
     searchParams,
     setSearchParams,
   ]);
+
+  /**
+   * Retired views. A stale `view=collision` link (or its leftover lane
+   * parameter) is rewritten to the Overview with `replace`, independently of
+   * whether evidence has arrived, so the link never lands on a blank canvas.
+   */
+  useEffect(() => {
+    const rawView = searchParams.get("view");
+    const staleView = rawView !== null && rawView !== view;
+    const staleLane = searchParams.get("collision") !== null;
+    if (!staleView && !staleLane) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("view", view);
+    next.delete("collision");
+    if (view === "overview") next.delete("from");
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, view]);
+
 
   const brief = useMemo(
     () =>
