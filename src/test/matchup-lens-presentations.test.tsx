@@ -231,10 +231,11 @@ describe("interaction polish", () => {
     for (const tile of Array.from(
       explorer.querySelectorAll("button[data-lens-key]"),
     ) as HTMLButtonElement[]) {
+      const tokens = tile.className.split(/\s+/);
       expect(tile.getAttribute("aria-pressed")).toBeNull();
-      expect(tile.className).not.toContain("border-primary");
-      expect(tile.className).not.toContain("bg-primary/10");
-expect(tile.className).toContain("hover:border-primary/40");
+      expect(tokens).not.toContain("border-primary");
+      expect(tokens).not.toContain("bg-primary/10");
+      expect(tokens).toContain("hover:border-primary/40");
     }
 
     await user.click(
