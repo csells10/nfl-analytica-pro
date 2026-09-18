@@ -57,10 +57,12 @@ describe("AppShell navigation and account menu", () => {
 
   it("shows the centered Lab heading only on the exact Matchup Lens route", () => {
     const view = renderShell("/matchup-lens?view=overview");
-    const lab = screen.getByRole("heading", { level: 1, name: "Lab" });
+    const lab = screen.getByTestId("lab-context");
+    expect(lab.tagName).toBe("H1");
     expect(lab.closest("header")).toBeTruthy();
     expect(lab.parentElement?.className).toContain("grid-cols-[1fr_auto_1fr]");
     expect(screen.getAllByText("Lab")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Return to Matchup Lab overview" })).toBeTruthy();
 
     view.unmount();
     for (const route of ["/", "/matchup/123", "/settings", "/admin/claim-health", "/login", "/other"]) {
