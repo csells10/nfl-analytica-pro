@@ -21,6 +21,9 @@ interface EvidenceRailProps extends TraceHandlers {
   labelB: string;
 }
 
+/** Sub-pixel layout rounding should not count as scrollable overflow. */
+const OVERFLOW_TOLERANCE = 1;
+
 function Bar({ value, tone }: { value: number | null; tone: "a" | "b" }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -48,6 +51,36 @@ export function EvidenceRail({
 }: EvidenceRailProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const rank = useRankText();
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  /** One measurement path for mount, scroll, resize and row-count changes. */
+  const measure = useCallback(() => {
+    const node = scroller.current;
+    if (!node) return;
+    const maxScroll = node.scrollWidth - node.clientWidth;
+    setCanScrollLeft(node.scrollLeft > OVERFLOW_TOLERANCE);
+    setCanScrollRight(maxScroll - node.scrollLeft > OVERFLOW_TOLERANCE);
+  }, []);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure, rows]);
+
+  useEffect(() => {
+    const node = scroller.current;
+    if (!node) return;
+    node.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
+    const observer =
+      typeof ResizeObserver === "function" ? new ResizeObserver(() => measure()) : null;
+    observer?.observe(node);
+    return () => {
+      node.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, [measure]);
 
   const nudge = useCallback((direction: -1 | 1) => {
     const node = scroller.current;
@@ -55,6 +88,9 @@ export function EvidenceRail({
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     node.scrollBy({ left: direction * 240, behavior: reduced ? "auto" : "smooth" });
   }, []);
+
+  const overflows = canScrollLeft || canScrollRight;
+
 
   return (
     <div className="min-w-0" data-testid="evidence-rail">
