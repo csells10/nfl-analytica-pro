@@ -1,67 +1,67 @@
-# Pass 4 — Guides, route-aware Help, clearer states, seven-day lookup
+# Matchup Lab loading experience
 
-Baseline: `5ec70e655849bea3afdde52a222a06640fdd16d0`. Frontend only. No backend, API base, auth, or retry changes. Nothing published.
+## Goal
 
-## 1. Shared step-guide component
+Replace the current pulsing dashboard skeleton with a calm, matchup-specific loading screen. Keep the URL useful only for temporary team identity while the authenticated response remains the sole source of evidence, scores, analysis, canonical teams, warnings, and availability state.
 
-One small reusable dialog (`src/components/StepGuide.tsx`) used by both new guides: title, step body, step counter, Next / Finish, Close (X) and Skip, Escape to close, focus moved into the dialog and returned on close, animations suppressed under reduced motion. No remote state; each guide passes its own localStorage key.
+## Loading screen
 
-## 2. Matchups first-visit guide
+When both `a` and `b` URL values resolve to known NFL teams:
 
-Four steps: choose a game date, choose a matchup, open game details, open or review in Matchup Lab.
+- Show the away and home logos and full team names in a clear `Away at Home` composition.
+- Show **Preparing Matchup Lab**.
+- Show **Loading live evidence for this game…**.
+- Treat this identity as temporary display context only; do not pass it into calculations or retain it after the response resolves.
 
-- Key `gamelens.guide.matchups.v1`, opens once per browser.
-- `hasSeenDateTutorial` is no longer read or written; no migration, so the new guide shows once for everyone.
-- Old `DateSelectionModal` spotlight is retired from Slate.
-- Help reopens it any time, including after completion.
+When either URL team is absent or unrecognized:
 
-## 3. Matchup Lab first-visit guide
+- Show the neutral fallback **Loading matchup evidence…**.
+- Do not render guessed logos, fallback abbreviations, or invented team names.
 
-Four steps: matchup / evidence window / current view context; Start here and Biggest Edge; the three choices (compare teams, explore the biggest edge, browse all six lenses); supporting evidence and how signal or metric controls open trace details.
+The loading view will be responsive, use the existing slate/graphite and muted-teal tokens, and expose a polite loading status to assistive technology.
 
-- Key `gamelens.guide.matchup-lab.v1`.
-- Auto-opens only once live evidence has actually rendered (adapted available context present) — never on loading, unavailable, or error states.
-- Help reopens it while in Matchup Lab.
-- Uses the current post-Pass-3C layout; no removed features return.
+## Motion direction
 
-Game-detail guide and its existing key stay exactly as they are.
+### Recommended: Quiet matchup reveal
 
-## 4. Route-aware Help
+Render the matchup lockup fully composed and still. On arrival, use one short opacity fade for the whole loading view. When live evidence resolves, replace it with one short opacity fade for the completed Lab. Under reduced-motion preferences, both transitions become immediate.
 
-`gamelens:open-guide` stays the event, but now carries a guide id (`matchups`, `game-detail`, `matchup-lab`) derived in `AppShell` from the current route. Each page listens only for its own id, so one Help click opens exactly one guide. On routes with no guide (Settings, Admin, unknown), the Help button is hidden.
+This is the recommended implementation because it is calm, readable, and closest to the explicit no-repeated-motion requirement.
 
-## 5. Seven-day schedule lookup
+### Three professional alternatives
 
-On a Matchups visit with no `?date=`:
+1. **Broadcast introductions** — the two team groups fade once with a very small inward movement, then remain completely still. The completed Lab uses the same brief fade.
+2. **Evidence line** — team identity appears immediately while a thin, solid divider draws once between away and home; no glow or gradient. The completed Lab then fades in once.
+3. **Focus settle** — the complete matchup lockup enters once at slightly reduced opacity and scale, settles in under 250ms, and remains static until the completed Lab fades in.
 
-- Fire today plus the next six days in parallel through the existing `useNflSchedule` / `["nfl-schedule", date]` query convention, reusing cache.
-- While resolving: "Finding upcoming games…".
-- Select the earliest successfully loaded date that has games; apply it through the existing date-selection handler (URL update included). Today wins if today has games.
-- If all seven succeed with no games: keep today selected and show "No games found in the next seven days. Choose another date."
-- Failed dates are ignored for selection and highlighting and are never described as "no games".
+All four directions prohibit pulsing, shimmer, bounce, spin, sweeping gradients, looping indicators, and changing loading phrases. Approval of this plan selects **Quiet matchup reveal** unless Christian requests one of the alternatives.
 
-With `?date=` present: that date is respected and never auto-replaced; the scan still runs from that date for highlights only.
+## Implementation
 
-Calendar highlights: only dates with a successful response containing games get a modifier dot/emphasis. When the selected date is empty but another scanned date has games, one action appears — "View games on Sunday, September 20" — reusing the existing date-selection path.
+- Replace the Lab-only `DashboardSkeleton` with a focused loading component in the existing dashboard-state module.
+- Add an explicit known-team lookup so only registry-backed abbreviations qualify for the matchup display; preserve the existing general-purpose team fallback everywhere else.
+- Build temporary loading identity only from the existing Lab URL parameters. The game id and authenticated request flow remain unchanged.
+- Swap the loading branch in `MatchupLens` to the new view and add the brief completion entrance without delaying, caching, or transforming live evidence.
+- Leave the separate Game Details loading experience unchanged.
 
-No sequential probing, no window beyond seven days, no weekday guessing, no static schedule data.
+## Safeguards
 
-## 6. Clearer states
-
-- No date: "Choose a date to see scheduled matchups."
-- Empty selected date: "No NFL games are scheduled for this date."
-- Missing Lab game: "Choose a game to open Matchup Lab" with a "View Matchups" action.
-- Unavailable Lab evidence: "Matchup Lab isn't ready for this game yet", keeping the controlled backend reason when present, existing Try Again, plus "View Matchups".
-- Retryable Lab failure: "Matchup Lab didn't load", same retry callback.
-
-Real errors stay visible; raw backend bodies still never render.
-
-## Technical notes
-
-Files expected to change: `src/components/AppShell.tsx`, `src/pages/Slate.tsx`, `src/pages/MatchupLens.tsx`, `src/pages/Matchup.tsx` (event id only), `src/components/matchup-lens/DashboardStates.tsx`, new `src/components/StepGuide.tsx`, new `src/lib/guides.ts` (ids, keys, open helper), new `src/lib/use-schedule-scan.ts`. `DateSelectionModal.tsx` removed from use.
+- No evidence, score, analysis, readiness message, or backend-derived claim appears during loading.
+- The backend payload continues to replace URL identity and remains canonical after loading.
+- No static or prior-game fallback is introduced.
+- Authentication, endpoint, API base, request key, validation, retry behavior, controlled errors, unavailable handling, guide timing, and scoring/presentation formulas remain unchanged.
+- Collision, Technical Map, Run Visibility, and removed navigation remain absent.
 
 ## Verification
 
-New/updated tests covering: each guide auto-opens once for its own versioned key; Help opens the correct route's guide; Matchups and Lab guides never open together; game-detail guide unchanged; normal visit selects the earliest date with games in the window; a URL date is never auto-replaced; highlights come only from successful responses; a failed date is not treated as empty; retry actions still work; Collision and Technical Map remain absent.
+Add focused tests proving:
 
-Then full suite, typecheck, production build. Report files changed, test counts, and behavior summary. No publish, no Pass 5.
+- recognized URL teams show both correct full names, logos, and the away-at-home relationship while the request is pending;
+- missing or unrecognized URL identity shows only **Loading matchup evidence…**;
+- no evidence, scores, analysis, or preseason/static content appears before the authenticated response resolves;
+- the backend response still supplies canonical team identity even when URL teams differ;
+- the old pulsing skeleton and prohibited repeating-motion classes are absent from the Lab loading path;
+- reduced-motion users receive an immediate transition;
+- existing success, unavailable, error, retry, and first-visit-guide behavior still works.
+
+Then run the focused tests, full test suite, typecheck, and production build. Verify desktop and mobile layouts where authentication access permits. Do not publish or deploy, and do not begin Pass 5.
