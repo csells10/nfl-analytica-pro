@@ -274,16 +274,19 @@ export function LensConstellation({
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {axes.map((axis) => {
           const isSelected = axis.key === selectedKey;
+          const isActive = axis.key === activeKey;
           return (
             <button
               key={axis.key}
               type="button"
               data-lens-key={axis.key}
+              data-axis-active={isActive || isSelected ? "true" : undefined}
               onClick={() => onSelect(axis.key)}
-              onMouseEnter={() => onHover(axis.key)}
-              onMouseLeave={() => onHover(null)}
-              onFocus={() => onHover(axis.key)}
-              onBlur={() => onHover(null)}
+              onMouseEnter={() => onActiveAxisChange(axis.key)}
+              onMouseLeave={() => onActiveAxisChange(null)}
+              onPointerDown={() => onActiveAxisChange(axis.key)}
+              onFocus={() => onActiveAxisChange(axis.key)}
+              onBlur={() => onActiveAxisChange(null)}
               aria-pressed={isSelected}
               className={`min-h-[44px] cursor-pointer rounded-md border px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isSelected
