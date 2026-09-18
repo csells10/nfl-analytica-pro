@@ -61,7 +61,8 @@ export function LensConstellation({
   nameB,
   selectedKey,
   onSelect,
-  onHover,
+  activeKey,
+  onActiveAxisChange,
   layout,
   onLayoutChange,
 }: LensConstellationProps) {
