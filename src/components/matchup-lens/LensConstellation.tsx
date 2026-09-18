@@ -17,7 +17,9 @@ interface LensConstellationProps {
   nameB: string;
   selectedKey: string | null;
   onSelect: (key: string) => void;
-  onHover: (key: string | null) => void;
+  /** Shared active axis, set by pointer hover, tap or score-tile keyboard focus. */
+  activeKey: string | null;
+  onActiveAxisChange: (key: string | null) => void;
   layout: ConstellationLayout;
   onLayoutChange: (layout: ConstellationLayout) => void;
 }
