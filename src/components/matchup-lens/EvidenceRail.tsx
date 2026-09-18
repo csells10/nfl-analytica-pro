@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { LensContribution } from "@/lib/matchup-lens";
 import type { LensSnapshot } from "@/lib/matchup-lens-types";
