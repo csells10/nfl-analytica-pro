@@ -185,7 +185,7 @@ export function LensConstellation({
 
           {axes.map((axis, index) => {
             const p = point(index, count, 1);
-            const isSelected = axis.key === selectedKey;
+            const isSelected = axis.key === selectedKey || axis.key === activeKey;
             return (
               <line
                 key={axis.key}
@@ -212,7 +212,7 @@ export function LensConstellation({
           />
 
           {axes.map((axis, index) => {
-            const isSelected = axis.key === selectedKey;
+            const isSelected = axis.key === selectedKey || axis.key === activeKey;
             const a = point(index, count, (axis.scoreA ?? 0) / 100);
             const b = point(index, count, (axis.scoreB ?? 0) / 100);
             const hit = point(index, count, 1);
@@ -249,14 +249,20 @@ export function LensConstellation({
                     </tspan>
                   ))}
                 </text>
+                {/* Pointer-only affordance: the score tiles remain the keyboard path. */}
                 <circle
                   cx={hit.x}
                   cy={hit.y}
                   r={26}
+                  data-axis-hit={axis.key}
+                  focusable="false"
+                  tabIndex={-1}
                   className="cursor-pointer fill-transparent"
                   onClick={() => onSelect(axis.key)}
-                  onMouseEnter={() => onHover(axis.key)}
-                  onMouseLeave={() => onHover(null)}
+                  onPointerDown={() => onActiveAxisChange(axis.key)}
+                  onPointerEnter={() => onActiveAxisChange(axis.key)}
+                  onMouseEnter={() => onActiveAxisChange(axis.key)}
+                  onMouseLeave={() => onActiveAxisChange(null)}
                 />
               </g>
             );
