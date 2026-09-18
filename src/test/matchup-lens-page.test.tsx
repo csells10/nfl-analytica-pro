@@ -105,7 +105,9 @@ describe("Matchup Dashboard overview", () => {
     renderPage();
     await overview();
 
-    const rows = screen.getByTestId("brief-observations").querySelectorAll("button");
+    const rows = screen
+      .getByTestId("brief-observations")
+      .querySelectorAll("button[data-observation]");
     expect(rows.length).toBeGreaterThan(0);
     await user.click(rows[0] as HTMLButtonElement);
 

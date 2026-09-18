@@ -100,7 +100,7 @@ describe("Matchup Dashboard journey", () => {
     await user.click(screen.getByTestId("continue-constellation"));
     await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
     // The current view is never offered as its own next step.
-    expect(screen.getByTestId("continue-constellation")).toHaveAttribute("disabled");
+    expect(screen.queryByTestId("continue-constellation")).toBeNull();
   });
 });
 
