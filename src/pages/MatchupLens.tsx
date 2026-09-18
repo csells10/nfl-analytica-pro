@@ -291,10 +291,6 @@ export default function MatchupLens() {
       canonical.origin = "overview";
     }
 
-    // A collision lane that does not exist for this matchup is dropped.
-    if (canonical.collisionKey && laneKeys.size > 0 && !laneKeys.has(canonical.collisionKey)) {
-      canonical.collisionKey = null;
-    }
 
     // A trace whose metric or tag has no evidence in this snapshot would open
     // an empty drawer, so the parameter is dropped rather than rendered.
