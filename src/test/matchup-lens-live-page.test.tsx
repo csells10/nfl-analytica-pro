@@ -39,6 +39,22 @@ afterEach(() => {
 });
 
 describe("Matchup Lens live evidence", () => {
+  async function holdLensRequest() {
+    let releaseRequest: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      releaseRequest = resolve;
+    });
+    const { makeLensV1Payload } = await import("./matchup-lens-v1-fixture");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        await gate;
+        return new Response(JSON.stringify(makeLensV1Payload()), { status: 200 });
+      }),
+    );
+    return () => releaseRequest?.();
+  }
+
   it("requests the lens-context endpoint for the game in the URL", async () => {
     fetchMock = installLensFetchMock();
     renderPage();
@@ -62,24 +78,52 @@ describe("Matchup Lens live evidence", () => {
     expect(fetchMock.calls()).toHaveLength(0);
   });
 
-  it("never shows preseason baseline evidence while loading", async () => {
-    let release: (() => void) | null = null;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const { makeLensV1Payload } = await import("./matchup-lens-v1-fixture");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        await gate;
-        return new Response(JSON.stringify(makeLensV1Payload()), { status: 200 });
-      }),
-    );
+  it("shows a still matchup-specific loading view for recognized URL teams", async () => {
+    const release = await holdLensRequest();
+    renderPage(withGame("/matchup-lens?a=NYG&b=DET"));
 
-    renderPage();
+    const loading = screen.getByTestId("matchup-lab-loading");
+    expect(screen.getByText("New York Giants")).toBeTruthy();
+    expect(screen.getByText("Detroit Lions")).toBeTruthy();
+    expect(screen.getByText("at")).toBeTruthy();
+    expect(screen.getByText("Preparing Matchup Lab")).toBeTruthy();
+    expect(screen.getByText("Loading live evidence for this game…")).toBeTruthy();
+    expect(screen.getByAltText("New York Giants logo").getAttribute("src")).toContain("/nyg.png");
+    expect(screen.getByAltText("Detroit Lions logo").getAttribute("src")).toContain("/det.png");
+    expect(loading.getAttribute("role")).toBe("status");
+    expect(loading.getAttribute("aria-live")).toBe("polite");
+    expect(loading.className).toContain("animate-matchup-reveal");
+    expect(loading.className).toContain("motion-reduce:animate-none");
+    expect(loading.className).not.toMatch(/pulse|shimmer|bounce|spin/);
+    release();
+  });
+
+  it.each([
+    "/matchup-lens?a=ZZZ&b=DET",
+    "/matchup-lens?a=NYG",
+    "/matchup-lens",
+  ])("uses only the neutral loading fallback for incomplete identity: %s", async (entry) => {
+    const release = await holdLensRequest();
+    renderPage(withGame(entry));
+
+    const loading = screen.getByTestId("matchup-lab-loading");
+    expect(loading.textContent).toBe("Loading matchup evidence…");
+    expect(loading.querySelector("img")).toBeNull();
+    expect(screen.queryByText("Preparing Matchup Lab")).toBeNull();
+    release();
+  });
+
+  it("never shows evidence, scores, analysis, or static content while loading", async () => {
+    const release = await holdLensRequest();
+    renderPage(withGame("/matchup-lens?a=NYG&b=DET"));
+
     expect(screen.queryByText(/Preseason-to-date/)).toBeNull();
     expect(screen.queryByText(/2026-08-23/)).toBeNull();
-    release?.();
+    expect(screen.queryByTestId("insight-ticker")).toBeNull();
+    expect(screen.queryByTestId("lens-context-label")).toBeNull();
+    expect(screen.queryByTestId("matchup-context-bar")).toBeNull();
+    expect(screen.queryByTestId("matchup-lab-guide")).toBeNull();
+    release();
   });
 
   it("takes canonical teams from the payload, not from the URL", async () => {
@@ -91,6 +135,20 @@ describe("Matchup Lens live evidence", () => {
     expect(label).toContain("LAR");
     expect(label).toContain("CLE");
     expect(label).not.toContain("ZZZ");
+  });
+
+  it("replaces recognized temporary URL teams with canonical backend teams", async () => {
+    fetchMock = installLensFetchMock({ awayAbv: "LAR", homeAbv: "CLE" });
+    renderPage(withGame("/matchup-lens?a=NYG&b=DET"));
+    await waitFor(() => expect(screen.getByTestId("insight-ticker")).toBeTruthy());
+
+    const label = screen.getByTestId("lens-context-label").textContent ?? "";
+    expect(label).toContain("LAR");
+    expect(label).toContain("CLE");
+    expect(label).not.toContain("NYG");
+    expect(label).not.toContain("DET");
+    expect(screen.getByTestId("matchup-lab-content").className).toContain("animate-matchup-reveal");
+    expect(screen.getByTestId("matchup-lab-content").className).toContain("motion-reduce:animate-none");
   });
 
   it("hides league standings and 'out of' text when league context is suppressed", async () => {

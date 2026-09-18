@@ -1,43 +1,70 @@
 import { AlertTriangle, RefreshCcw, SearchX } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { getKnownTeam, teamLogoUrl } from "@/lib/nfl-teams";
+
+interface MatchupLabLoadingProps {
+  awayAbbr: string;
+  homeAbbr: string;
+}
 
 /**
- * Loading keeps the page shape so nothing jumps when data arrives.
+ * URL identity is temporary presentation context only. An explicit registry
+ * lookup prevents unknown abbreviations from becoming guessed team identity.
  */
-export function DashboardSkeleton() {
+export function MatchupLabLoading({ awayAbbr, homeAbbr }: MatchupLabLoadingProps) {
+  const away = getKnownTeam(awayAbbr);
+  const home = getKnownTeam(homeAbbr);
+
+  if (!away || !home) {
+    return (
+      <div
+        className="flex min-h-[50vh] animate-matchup-reveal items-center justify-center motion-reduce:animate-none"
+        data-testid="matchup-lab-loading"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <p className="text-sm text-muted-foreground">Loading matchup evidence…</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-3" data-testid="dashboard-skeleton" aria-busy="true">
-      <p className="sr-only" role="status">
-        Loading matchup data
-      </p>
-      <Card className="border-border bg-card">
-        <CardContent className="p-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
-            <div className="h-11 w-full animate-pulse rounded-md bg-muted/50 sm:w-56" />
-            <div className="h-11 w-full animate-pulse rounded-md bg-muted/50 sm:w-56" />
+    <div
+      className="flex min-h-[50vh] animate-matchup-reveal items-center justify-center motion-reduce:animate-none"
+      data-testid="matchup-lab-loading"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="w-full max-w-2xl text-center">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-8">
+          <div className="flex min-w-0 flex-col items-center gap-3">
+            <img
+              src={teamLogoUrl(away.abbr, 500)}
+              alt={`${away.fullName} logo`}
+              className="h-16 w-16 object-contain sm:h-24 sm:w-24"
+            />
+            <p className="text-sm font-semibold leading-snug text-foreground sm:text-base">
+              {away.fullName}
+            </p>
           </div>
-        </CardContent>
-      </Card>
-      <Card className="border-border bg-card">
-        <CardContent className="space-y-2 p-4">
-          <div className="h-3 w-24 animate-pulse rounded bg-muted/50" />
-          <div className="h-4 w-3/4 animate-pulse rounded bg-muted/50" />
-          <div className="h-3 w-1/2 animate-pulse rounded bg-muted/50" />
-          <div className="h-9 w-40 animate-pulse rounded-md bg-muted/50" />
-        </CardContent>
-      </Card>
-      <Card className="border-border bg-card">
-        <CardContent className="space-y-2 p-4">
-          <div className="h-3 w-28 animate-pulse rounded bg-muted/50" />
-          {[0, 1, 2].map((row) => (
-            <div key={row} className="h-4 w-full animate-pulse rounded bg-muted/40" />
-          ))}
-        </CardContent>
-      </Card>
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {[0, 1, 2, 3].map((card) => (
-          <div key={card} className="h-28 animate-pulse rounded-lg border border-border bg-muted/30" />
-        ))}
+          <span className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            at
+          </span>
+          <div className="flex min-w-0 flex-col items-center gap-3">
+            <img
+              src={teamLogoUrl(home.abbr, 500)}
+              alt={`${home.fullName} logo`}
+              className="h-16 w-16 object-contain sm:h-24 sm:w-24"
+            />
+            <p className="text-sm font-semibold leading-snug text-foreground sm:text-base">
+              {home.fullName}
+            </p>
+          </div>
+        </div>
+        <h1 className="mt-10 text-xl font-bold text-foreground sm:text-2xl">Preparing Matchup Lab</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Loading live evidence for this game…</p>
       </div>
     </div>
   );
