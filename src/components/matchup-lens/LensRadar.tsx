@@ -21,7 +21,6 @@ interface LensRadarProps {
   axes: RadarAxis[];
   title: string;
   tone: "a" | "b";
-  selectedKey: string;
   onSelect: (key: string) => void;
   /** Shared active axis: pointer hover, tap, or keyboard focus on a score tile. */
   activeKey?: string | null;
@@ -36,7 +35,6 @@ export function LensRadar({
   axes,
   title,
   tone,
-  selectedKey,
   onSelect,
   activeKey = null,
   onActiveAxisChange,
@@ -96,11 +94,9 @@ export function LensRadar({
               x2={p.x}
               y2={p.y}
               className={
-                axis.key === selectedKey || axis.key === activeKey
-                  ? "stroke-foreground/40"
-                  : "stroke-border"
+                axis.key === activeKey ? "stroke-foreground/40" : "stroke-border"
               }
-              strokeWidth={axis.key === selectedKey || axis.key === activeKey ? 1.4 : 0.7}
+              strokeWidth={axis.key === activeKey ? 1.4 : 0.7}
             />
           );
         })}
@@ -114,7 +110,7 @@ export function LensRadar({
           const labelPoint = radarPoint(index, count, 1.34);
           const anchor =
             Math.abs(labelPoint.x - CENTER) < 8 ? "middle" : labelPoint.x > CENTER ? "start" : "end";
-          const isSelected = axis.key === selectedKey || axis.key === activeKey;
+          const isActive = axis.key === activeKey;
           return (
             <g key={axis.key}>
               <circle cx={p.x} cy={p.y} r={3} className={dot} />
@@ -124,7 +120,7 @@ export function LensRadar({
                 textAnchor={anchor}
                 dominantBaseline="middle"
                 className={`text-[9px] font-semibold uppercase tracking-[0.06em] ${
-                  isSelected ? "fill-foreground" : "fill-muted-foreground"
+                  isActive ? "fill-foreground" : "fill-muted-foreground"
                 }`}
               >
                 {axis.name.split(" ").map((word, wordIndex, words) => (

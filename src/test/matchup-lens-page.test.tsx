@@ -49,6 +49,8 @@ describe("Matchup Dashboard overview", () => {
     expect(screen.getByTestId("insight-ticker")).toBeTruthy();
     expect(screen.getByTestId("game-brief")).toBeTruthy();
     expect(screen.getByTestId("destination-cards")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Lab" })).toBeTruthy();
+    expect(screen.queryByText("Matchup Dashboard")).toBeNull();
 
     // Deep analysis stays behind explicit choices.
     expect(screen.queryByTestId("lens-constellation")).toBeNull();
@@ -60,6 +62,16 @@ describe("Matchup Dashboard overview", () => {
     expect(screen.queryByTestId("trace-packed")).toBeNull();
     expect(screen.queryByTestId("lens-rail")).toBeNull();
     expect(screen.queryByTestId("insight-cards")).toBeNull();
+  });
+
+  it("fills the Overview desktop grid with the three retained destinations", async () => {
+    renderPage();
+    await overview();
+
+    const destinations = screen.getByTestId("destination-cards");
+    expect(destinations.querySelectorAll("[data-destination]")).toHaveLength(3);
+    expect(destinations.querySelector(".sm\\:grid-cols-3")).toBeTruthy();
+    expect(destinations.querySelector(".xl\\:grid-cols-4")).toBeNull();
   });
 
   it("drops the retired experiences and keeps Momentum gated", async () => {

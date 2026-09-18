@@ -28,6 +28,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
+  const isMatchupLens = location.pathname === "/matchup-lens";
   // Frontend-only UX gate. Backend remains source of truth for admin auth.
   const { data: me } = useMe(Boolean(user));
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
@@ -55,7 +56,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
     <div ref={ref} className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-          <div className="flex items-center gap-3 lg:gap-6">
+          <div className="flex min-w-0 items-center gap-2 lg:gap-6">
             <Link to="/" className="flex items-center gap-2">
               <img src={gamelensHorizontalLight} alt="GameLens" className="h-9 w-auto dark:hidden" />
               <img src={gamelensHorizontalDark} alt="GameLens" className="hidden h-9 w-auto dark:block" />
@@ -79,6 +80,12 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
                 );
               })}
             </nav>
+            {isMatchupLens && (
+              <div className="flex shrink-0 items-center gap-2" data-testid="lab-context">
+                <span className="h-5 w-px bg-border" aria-hidden="true" />
+                <h1 className="text-sm font-semibold text-muted-foreground">Lab</h1>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {showGuide && (
@@ -167,7 +174,9 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
           })}
         </nav>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+      <main className={`mx-auto max-w-7xl px-4 ${isMatchupLens ? "pb-6" : "py-6"}`}>
+        {children}
+      </main>
 
     </div>
   );

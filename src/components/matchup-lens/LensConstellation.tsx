@@ -15,7 +15,6 @@ interface LensConstellationProps {
   labelB: string;
   nameA: string;
   nameB: string;
-  selectedKey: string | null;
   onSelect: (key: string) => void;
   /** Shared active axis, set by pointer hover, tap or score-tile keyboard focus. */
   activeKey: string | null;
@@ -59,7 +58,6 @@ export function LensConstellation({
   labelB,
   nameA,
   nameB,
-  selectedKey,
   onSelect,
   activeKey,
   onActiveAxisChange,
@@ -129,7 +127,6 @@ export function LensConstellation({
               axes={axesA}
               title={labelA}
               tone="a"
-              selectedKey={selectedKey ?? ""}
               onSelect={onSelect}
               activeKey={activeKey}
               onActiveAxisChange={onActiveAxisChange}
@@ -141,7 +138,6 @@ export function LensConstellation({
               axes={axesB}
               title={labelB}
               tone="b"
-              selectedKey={selectedKey ?? ""}
               onSelect={onSelect}
               activeKey={activeKey}
               onActiveAxisChange={onActiveAxisChange}
@@ -185,7 +181,7 @@ export function LensConstellation({
 
           {axes.map((axis, index) => {
             const p = point(index, count, 1);
-            const isSelected = axis.key === selectedKey || axis.key === activeKey;
+            const isActive = axis.key === activeKey;
             return (
               <line
                 key={axis.key}
@@ -193,8 +189,8 @@ export function LensConstellation({
                 y1={CENTER}
                 x2={p.x}
                 y2={p.y}
-                className={isSelected ? "stroke-foreground/40" : "stroke-border"}
-                strokeWidth={isSelected ? 1.4 : 0.7}
+                className={isActive ? "stroke-foreground/40" : "stroke-border"}
+                strokeWidth={isActive ? 1.4 : 0.7}
               />
             );
           })}
@@ -212,7 +208,7 @@ export function LensConstellation({
           />
 
           {axes.map((axis, index) => {
-            const isSelected = axis.key === selectedKey || axis.key === activeKey;
+            const isActive = axis.key === activeKey;
             const a = point(index, count, (axis.scoreA ?? 0) / 100);
             const b = point(index, count, (axis.scoreB ?? 0) / 100);
             const hit = point(index, count, 1);
@@ -236,7 +232,7 @@ export function LensConstellation({
                   textAnchor={anchor}
                   dominantBaseline="middle"
                   className={`text-[9px] font-semibold uppercase tracking-[0.08em] ${
-                    isSelected ? "fill-foreground" : "fill-muted-foreground"
+                    isActive ? "fill-foreground" : "fill-muted-foreground"
                   }`}
                 >
                   {axis.name.split(" ").map((word, wordIndex, words) => (
@@ -273,23 +269,21 @@ export function LensConstellation({
       {/* Score tiles — keyboard-accessible and the primary control on touch. */}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {axes.map((axis) => {
-          const isSelected = axis.key === selectedKey;
           const isActive = axis.key === activeKey;
           return (
             <button
               key={axis.key}
               type="button"
               data-lens-key={axis.key}
-              data-axis-active={isActive || isSelected ? "true" : undefined}
+              data-axis-active={isActive ? "true" : undefined}
               onClick={() => onSelect(axis.key)}
               onMouseEnter={() => onActiveAxisChange(axis.key)}
               onMouseLeave={() => onActiveAxisChange(null)}
               onPointerDown={() => onActiveAxisChange(axis.key)}
               onFocus={() => onActiveAxisChange(axis.key)}
               onBlur={() => onActiveAxisChange(null)}
-              aria-pressed={isSelected}
               className={`min-h-[44px] cursor-pointer rounded-md border px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                isSelected || isActive
+                isActive
                   ? "border-foreground/30 bg-secondary"
                   : "border-border bg-card hover:border-muted-foreground/40"
               }`}
