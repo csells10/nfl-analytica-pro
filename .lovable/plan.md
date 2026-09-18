@@ -1,54 +1,88 @@
-# Pass 2B — Remove the Technical Map, keep the list trace
+# Pass 3 — Matchup Lens interaction polish
 
-Baseline: 88d8ff844d25f56ee7ec2b42117e8fdd858be64d (Pass 2A). Nothing published.
+Baseline: 6348242637fd20ce216279327be9f924784537e7 (Pass 2B). Nothing published.
 
 ## What changes for you
 
-The trace panel keeps its readable list of related signals, metrics and lenses. The
-graphical "Technical map" (Network and Packed groups) and the "Open technical map"
-button disappear. Nothing else in Matchup Lens changes.
+- Pointing at, tapping, or keyboard-focusing a lens score tile highlights the same
+  lens on the chart, in both the overlay and side-by-side layouts.
+- The evidence arrows appear only when the evidence row actually scrolls, and the
+  arrow at either end is disabled once you reach it.
+- The evidence expander says "Show 4 more" instead of "View all evidence (7)".
+- The selected tile under All six lenses reads as active instead of grayed out.
 
-## Changes
+Scores, wording of the evidence itself, chart geometry, lens order and every backend
+behaviour stay exactly as they are.
 
-1. `src/components/matchup-lens/LensDetail.tsx` — remove the "Open technical map"
-   button (`data-testid="open-technical-map"`) and its now-unused block. `onOpenTrace`
-   stays; tag chips still open the trace drawer.
-2. `src/components/matchup-lens/TraceDrawer.tsx` — remove the lazy `TraceGraphs`
-   import, the `Suspense` graph block, the `TraceVisual` type, the `visual` state, and
-   the whole `VisualSwitch` component including the `technical-map` disclosure and the
-   Network / Packed buttons. The drawer renders the list content directly. `snapshot`
-   and `target` props become unused inputs to the graph only — keep the props in the
-   interface only if still referenced; otherwise remove them from the component and
-   its single call site in `src/pages/MatchupLens.tsx`.
-3. Delete `src/components/matchup-lens/TraceGraphs.tsx` and
-   `src/lib/matchup-lens-trace-graph.ts`.
+## A. Shared active axis
 
-Preserved unchanged: `src/lib/matchup-lens-trace.ts`, `TraceChips.tsx`, rank and
-presentation helpers, trace chips, all evidence relationships, Constellation, Compare,
-Biggest Edge, All Six Lenses, Turnover Watch, formulas, warnings, auth, API_BASE,
-retry and no-fallback behaviour.
+`src/pages/MatchupLens.tsx`: rename the existing `hoveredLens` state to a single
+`activeAxis` state used as the shared active-axis source. It keeps its current reset
+behaviour on game or view change and still feeds `activeKey`
+(`activeAxis ?? selectedLens` on the constellation view) so no derived reading,
+score or label changes. Pass `activeKey={activeAxis}` and
+`onActiveAxisChange={setActiveAxis}` into `LensConstellation` in place of `onHover`.
+
+`LensConstellation.tsx`:
+- Accept `activeKey: string | null` and `onActiveAxisChange`. Highlight an axis when
+  it matches `activeKey` or `selectedKey` (selection highlighting stays as today).
+- Overlay SVG hit circles: keep `onClick` selection, keep mouse enter/leave, add
+  `onPointerDown`/`onPointerEnter` so touch taps set the active axis too. They stay
+  `focusable={false}` with no `tabIndex`, so no second tab stop is created.
+- Score tiles stay the keyboard controls: `onFocus`/`onBlur`, `onMouseEnter`/
+  `onMouseLeave` and `onClick` all report through `onActiveAxisChange`, and click
+  still selects the lens.
+- Forward the active key into both `LensRadar` instances so side-by-side highlights
+  match the overlay.
+
+`LensRadar.tsx`: add an optional `activeKey` prop and an optional
+`onActiveAxisChange`; the axis line and label highlight when the axis is selected or
+active. The hit circle gains pointer enter/leave/down handlers; it remains
+non-focusable. Geometry, ring values, axis order and `data-*` attributes unchanged.
+
+## B. Evidence rail overflow
+
+`EvidenceRail.tsx`: add `canScrollLeft` / `canScrollRight` state derived from a single
+`measure()` reading `scrollLeft`, `clientWidth`, `scrollWidth` with a 1px tolerance.
+Run it on mount, on the scroller's `scroll` event, on a `ResizeObserver` attached to
+the scroller, on a `window` resize listener, and whenever the `rows` prop changes
+(expansion/collapse). All listeners and the observer are cleaned up on unmount.
+Render the arrow group only when either direction can scroll; each button gets
+`disabled` at its end plus `disabled:opacity-40 disabled:cursor-not-allowed`. Labels,
+keyboard operation, snap classes and touch scrolling are untouched.
+
+## C. Expansion wording
+
+`LensDetail.tsx`: the collapsed label becomes `Show ${ordered.length - FIRST_CARDS} more`;
+the expanded label stays `Show key evidence only`. Row selection and ordering unchanged.
+
+## D. Selected lens tile
+
+`LensExplorer.tsx`: the selected tile uses `border-primary bg-primary/10 text-foreground`
+with a `ring-1 ring-primary/40` instead of `bg-secondary`, keeping `aria-pressed`,
+hover, focus ring and click/keyboard behaviour. Existing semantic tokens only.
 
 ## Tests
 
-- `src/test/matchup-lens-new-features.test.tsx` — drop the
-  `technical-map` / `trace-network` / `trace-packed` assertions in the trace-drawer test
-  and the stale comment; add an assertion that the list trace content
-  (`tag-trace-lenses`, `tag-trace-metrics`) still renders and that
-  `technical-map` is absent.
-- `src/test/matchup-lens-page.test.tsx` — keep the existing `trace-network` /
-  `trace-packed` absence assertions (now permanently true).
-- No other test files reference these ids.
+Directly affected Matchup Lens tests only:
+- Constellation: focusing a score tile marks the matching axis active; hovering a tile
+  and an SVG hit area produce the same highlight; SVG hit areas add no tab stop.
+- Evidence rail: with no overflow (jsdom default metrics) the arrows are absent; with
+  stubbed `scrollWidth`/`clientWidth` the arrows appear and the start/end button is
+  disabled.
+- Evidence toggle: asserts the hidden-row count in `Show N more` and the unchanged
+  collapse label.
+- Explorer: the selected tile carries the primary selected styling and stays clickable.
 
 ## Verification
 
-- Focused: `matchup-lens-new-features`, `matchup-lens-page`, `matchup-lens-presentations`.
-- Full suite with exact totals, `tsgo --noEmit`, production build.
-- Search for `TraceGraphs`, `buildTraceGraph`, `buildPackedGroups`, `trace-graph`,
-  `technical map`, `trace-network`, `trace-packed` and report the results.
-- Browser: the trace drawer still opens with readable list relationships, no Technical
-  Map / Network / Packed controls, and Overview, Compare, Biggest Edge and All Six
-  Lenses still work. Authenticated preview checks remain limited to what the sandbox
-  session allows; any gap is reported.
+Focused tests, full suite with exact totals, `tsgo --noEmit`, production build, and
+browser checks at 1280px and 390px covering tile focus/hover/tap highlighting in both
+layouts, arrow states at start/middle/end plus after expansion and resize, touch
+scrolling, the `Show N more` count, and the selected explorer tile.
 
-Stop after Pass 2B with changed/deleted files, search results, verification results and
-the new immutable version. Nothing published; Pass 3 not started.
+Known limitation to report rather than work around: the sandbox cannot create a
+signed-in preview session (Google Sign-In injection is blocked), so authenticated
+browser evidence depends on your manual preview; automated coverage carries the rest.
+
+Stop after Pass 3. Nothing published; Pass 4 not started.
