@@ -151,10 +151,10 @@ describe("Insight ticker auto-advance", () => {
 });
 
 describe("Matchup Dashboard lifecycle states", () => {
-  it("shows a page-shaped skeleton before data arrives", async () => {
+  it("shows the calm loading view before data arrives", async () => {
     renderPage();
-    expect(screen.getByTestId("dashboard-skeleton")).toBeTruthy();
+    expect(screen.getByTestId("matchup-lab-loading")).toBeTruthy();
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
-    expect(screen.queryByTestId("dashboard-skeleton")).toBeNull();
+    expect(screen.queryByTestId("matchup-lab-loading")).toBeNull();
   });
 });
