@@ -138,3 +138,99 @@ describe("Matchup Dashboard focused views", () => {
   });
 
 });
+
+describe("interaction polish", () => {
+  const axisLabel = (name: string) => name.split(" ").join("");
+
+  it("activates the same chart axis from keyboard focus and pointer hover on a score tile", async () => {
+    const user = userEvent.setup();
+    renderPage("/matchup-lens?view=constellation");
+    await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
+
+    const target = LENSES[2];
+    const tile = document.querySelector(
+      `button[data-lens-key="${target.key}"]`,
+    ) as HTMLButtonElement;
+
+    tile.focus();
+    await waitFor(() => expect(tile.getAttribute("data-axis-active")).toBe("true"));
+    const overlay = screen.getByTestId("constellation-overlay");
+    const label = Array.from(overlay.querySelectorAll("text")).find(
+      (node) => node.textContent === axisLabel(target.name),
+    );
+    expect(label?.getAttribute("class")).toContain("fill-foreground");
+
+    tile.blur();
+    await waitFor(() => expect(tile.getAttribute("data-axis-active")).toBeNull());
+
+    await user.hover(tile);
+    await waitFor(() => expect(tile.getAttribute("data-axis-active")).toBe("true"));
+  });
+
+  it("keeps chart hit areas out of the keyboard tab order in both layouts", async () => {
+    const user = userEvent.setup();
+    renderPage("/matchup-lens?view=constellation");
+    await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
+
+    const hits = () => Array.from(document.querySelectorAll("[data-axis-hit]"));
+    expect(hits().length).toBeGreaterThan(0);
+    for (const hit of hits()) expect(hit.getAttribute("tabindex")).toBe("-1");
+
+    await user.click(
+      document.querySelector('button[data-layout-option="side"]') as HTMLButtonElement,
+    );
+    expect(hits().length).toBeGreaterThan(0);
+    for (const hit of hits()) expect(hit.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("shows evidence arrows only when the rail actually overflows", async () => {
+    renderPage(`/matchup-lens?view=lens&lens=${LENSES[0].key}`);
+    await waitFor(() => expect(screen.getByTestId("evidence-rail")).toBeTruthy());
+
+    // jsdom reports no measurable overflow, so no arrows are offered.
+    expect(screen.queryByTestId("evidence-rail-arrows")).toBeNull();
+
+    const scroller = screen.getByTestId("evidence-rail-scroller");
+    Object.defineProperty(scroller, "clientWidth", { value: 300, configurable: true });
+    Object.defineProperty(scroller, "scrollWidth", { value: 900, configurable: true });
+    window.dispatchEvent(new Event("resize"));
+
+    await waitFor(() => expect(screen.getByTestId("evidence-rail-arrows")).toBeTruthy());
+    const left = screen.getByLabelText("Scroll evidence left") as HTMLButtonElement;
+    const right = screen.getByLabelText("Scroll evidence right") as HTMLButtonElement;
+    expect(left.disabled).toBe(true);
+    expect(right.disabled).toBe(false);
+
+    Object.defineProperty(scroller, "scrollLeft", { value: 600, configurable: true });
+    scroller.dispatchEvent(new Event("scroll"));
+    await waitFor(() =>
+      expect((screen.getByLabelText("Scroll evidence right") as HTMLButtonElement).disabled).toBe(
+        true,
+      ),
+    );
+    expect((screen.getByLabelText("Scroll evidence left") as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it("labels the evidence toggle with the number of hidden rows", async () => {
+    const user = userEvent.setup();
+    renderPage(`/matchup-lens?view=lens&lens=${LENSES[0].key}`);
+    const toggle = await screen.findByTestId("toggle-all-evidence");
+
+    expect(toggle.textContent).toMatch(/^Show \d+ more$/);
+    await user.click(toggle);
+    expect(screen.getByTestId("toggle-all-evidence").textContent).toBe("Show key evidence only");
+  });
+
+  it("marks the selected All Six Lenses tile as active rather than muted", async () => {
+    renderPage("/matchup-lens?view=lenses");
+    await waitFor(() => expect(document.querySelector("button[data-lens-key]")).toBeTruthy());
+
+    const selected = Array.from(document.querySelectorAll("button[data-lens-key]")).find(
+      (button) => button.getAttribute("aria-pressed") === "true",
+    );
+    expect(selected?.className).toContain("border-primary");
+    expect(selected?.className).toContain("bg-primary/10");
+  });
+});
