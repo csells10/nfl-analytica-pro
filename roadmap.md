@@ -24,5 +24,5 @@
 - [x] Pass 4: versioned guides and clearer empty states
 - [x] Matchup Lab: replace the pulsing skeleton with the quiet matchup reveal and verify both entry paths
 - [x] Pass 4 finish: contextual Matchup Lab Help and Matchup Briefing Game Details transition
-- [ ] Pass 5: preserve the Matchups date context (fromDate navigation parameter)
+- [x] Pass 5: preserve the Matchups date context (fromDate navigation parameter)
 - [ ] Pass 5: complete verification and bookmark unpublished release candidate
