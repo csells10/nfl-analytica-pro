@@ -117,23 +117,6 @@ export function TraceDrawer({
               In this matchup: {matchupLabel}
             </p>
 
-            <VisualSwitch value={visual} onChange={setVisual} />
-
-            {visual !== "list" && snapshot && target && (
-              <div className="mt-3">
-                <Suspense
-                  fallback={<p className="text-[11px] text-muted-foreground">Loading view…</p>}
-                >
-                  <TraceGraphs
-                    snapshot={snapshot}
-                    target={target}
-                    mode={visual}
-                    onOpenTrace={onOpenTrace}
-                    onSelectLens={onSelectLens}
-                  />
-                </Suspense>
-              </div>
-            )}
 
             {trace.type === "tag" ? (
               <div data-testid="tag-trace" data-trace-id={trace.tag}>
