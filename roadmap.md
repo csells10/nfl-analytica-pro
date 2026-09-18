@@ -20,6 +20,6 @@
 - [x] Pass 2B: remove Technical Map and isolated graph layout
 - [x] Pass 3: interaction polish without duplicate chart/tile keyboard stops
 - [x] Pass 3C: cohesive Lab header, neutral lens choices, and three-card Overview row
-- [ ] Pass 3C finishing correction: centered Overview-linked Lab header and status-aware Lab entry labels
+- [x] Pass 3C finishing correction: centered Overview-linked Lab header and status-aware Lab entry labels
 - [ ] Pass 4: versioned guides and clearer empty states
 - [ ] Pass 5: complete verification and bookmark unpublished release candidate
