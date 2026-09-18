@@ -617,14 +617,6 @@ export default function MatchupLens() {
       disabled: current === "constellation",
     },
     {
-      id: "collision",
-      label: "See where profiles collide",
-      helper: "Behaviour against the opponent's counter-profile.",
-      icon: DESTINATION_ICONS.collision,
-      onSelect: () => openCollision(strongestCollision?.lane.key ?? null, "overview"),
-      disabled: current === "collision",
-    },
-    {
       id: "lenses",
       label: "Browse all six lenses",
       helper: "Pick another football question.",
