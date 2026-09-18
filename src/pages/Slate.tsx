@@ -103,7 +103,9 @@ const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: s
           <button
             type="button"
             data-testid="open-in-matchup-lens"
-            onClick={() => navigate(buildMatchupLensHref(game.id, game.awayTeam, game.homeTeam))}
+            onClick={() =>
+              navigate(buildMatchupLensHref(game.id, game.awayTeam, game.homeTeam, dateParam))
+            }
             className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
           >
             {matchupLabActionLabel(game.status)}
