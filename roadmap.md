@@ -19,5 +19,6 @@
 - [ ] Pass 2A: remove Collision destination/view while preserving read-only overview observations
 - [ ] Pass 2B: remove Technical Map and isolated graph layout
 - [ ] Pass 3: interaction polish without duplicate chart/tile keyboard stops
+- [ ] Pass 3C: cohesive Lab header, neutral lens choices, and three-card Overview row
 - [ ] Pass 4: versioned guides and clearer empty states
 - [ ] Pass 5: complete verification and bookmark unpublished release candidate

@@ -37,7 +37,7 @@ export function DestinationCards({ destinations, activeId, onOpen }: Destination
         <p className="text-[11px] text-muted-foreground sm:hidden">Swipe for more</p>
       </div>
       {/* Mobile: one-handed horizontal snap carousel. Desktop: static grid. */}
-      <div className="mt-2 -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
+      <div className="mt-2 -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0">
         {destinations.map((destination) => {
           const Icon = destination.icon;
           const isActive = destination.id === activeId;
@@ -72,7 +72,7 @@ export function DestinationCards({ destinations, activeId, onOpen }: Destination
                 data-testid={`destination-open-${destination.id}`}
                 disabled={destination.disabled}
                 onClick={() => onOpen(destination.id)}
-                className="mt-2.5 inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 self-start rounded-md border border-border px-3 py-2 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[36px]"
+                className="mt-auto inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 self-start rounded-md border border-border px-3 py-2 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[36px]"
               >
                 Open
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

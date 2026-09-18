@@ -130,7 +130,6 @@ describe("rendering", () => {
             labelB="CLE"
             nameA="Los Angeles Rams"
             nameB="Cleveland Browns"
-            selectedKey="explosiveness"
             onSelect={() => undefined}
             activeKey={null}
             onActiveAxisChange={() => undefined}

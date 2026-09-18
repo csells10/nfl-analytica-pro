@@ -72,7 +72,7 @@ describe("comparison arithmetic", () => {
 });
 
 describe("Matchup Dashboard focused views", () => {
-  it("keeps the selected lens shared between the explorer, radar and evidence", async () => {
+  it("keeps constellation neutral after returning from a selected lens", async () => {
     const user = userEvent.setup();
     renderPage("/matchup-lens?view=lenses");
     await waitFor(() => expect(screen.getByTestId("lens-explorer")).toBeTruthy());
@@ -98,8 +98,8 @@ describe("Matchup Dashboard focused views", () => {
     const tiles = Array.from(
       screen.getByTestId("lens-constellation").querySelectorAll("button[data-lens-key]"),
     );
-    const pressed = tiles.find((button) => button.getAttribute("aria-pressed") === "true");
-    expect(pressed?.getAttribute("data-lens-key")).toBe("turnover-balance");
+    expect(tiles.every((button) => button.getAttribute("aria-pressed") === null)).toBe(true);
+    expect(tiles.every((button) => button.getAttribute("data-axis-active") === null)).toBe(true);
   });
 
   it("lists the profile gaps ordered by separation in the focused gaps view", async () => {
@@ -165,6 +165,11 @@ describe("interaction polish", () => {
 
     await user.hover(tile);
     await waitFor(() => expect(tile.getAttribute("data-axis-active")).toBe("true"));
+    expect(
+      document.querySelectorAll('button[data-lens-key][data-axis-active="true"]'),
+    ).toHaveLength(1);
+    await user.unhover(tile);
+    await waitFor(() => expect(tile.getAttribute("data-axis-active")).toBeNull());
   });
 
   it("keeps chart hit areas out of the keyboard tab order in both layouts", async () => {

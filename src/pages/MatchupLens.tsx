@@ -47,7 +47,6 @@ import {
   type LensOrigin,
   type LensView,
 } from "@/lib/matchup-lens-view";
-import { DASHBOARD_PURPOSE } from "@/lib/matchup-lens-language";
 import { LENS_GLOSSARY } from "@/lib/matchup-lens-glossary";
 import { LENSES, findTeam, scoreAllLenses } from "@/lib/matchup-lens";
 
@@ -252,7 +251,7 @@ export default function MatchupLens() {
     scoreB: scoresB[index]?.score ?? null,
   }));
 
-  const activeKey = view === "constellation" ? (activeAxis ?? selectedLens) : selectedLens;
+  const activeKey = view === "constellation" ? activeAxis : selectedLens;
   const activeLens = LENSES.find((lens) => lens.key === activeKey) ?? null;
   const activeA = activeLens ? scoresA.find((score) => score.lensKey === activeLens.key) : undefined;
   const activeB = activeLens ? scoresB.find((score) => score.lensKey === activeLens.key) : undefined;
@@ -632,11 +631,6 @@ export default function MatchupLens() {
   return (
     <AppShell showGuide={false}>
       <div className="space-y-3">
-        <header>
-          <h1 className="text-lg font-bold tracking-tight text-foreground">Matchup Dashboard</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">{DASHBOARD_PURPOSE}</p>
-        </header>
-
         {gameIdState.kind === "missing" ? (
           <DashboardEmpty
             title={LENS_STATE_COPY.noGame.title}
@@ -758,7 +752,6 @@ export default function MatchupLens() {
                         labelB={homeAbv}
                         nameA={teamName(awayAbv)}
                         nameB={teamName(homeAbv)}
-                        selectedKey={selectedLens}
                         onSelect={(key) => openLens(key, "constellation")}
                         activeKey={activeAxis}
                         onActiveAxisChange={setActiveAxis}

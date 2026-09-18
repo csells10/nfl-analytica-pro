@@ -23,9 +23,9 @@ vi.mock("@/lib/admin-api", () => ({
 
 import AppShell from "@/components/AppShell";
 
-function renderShell() {
+function renderShell(entry = "/") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[entry]}>
       <AppShell>
         <p>Page</p>
       </AppShell>
@@ -48,6 +48,18 @@ describe("AppShell navigation and account menu", () => {
     expect(screen.queryByRole("link", { name: "Admin" })).toBeNull();
     expect(screen.getByRole("button", { name: "Open guide" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Switch to light theme" })).toBeTruthy();
+  });
+
+  it("shows Lab once as the non-interactive page heading on Matchup Lens only", () => {
+    const view = renderShell("/matchup-lens?view=overview");
+    const lab = screen.getByRole("heading", { level: 1, name: "Lab" });
+    expect(lab.closest("header")).toBeTruthy();
+    expect(lab.closest("a,button")).toBeNull();
+    expect(screen.getAllByText("Lab")).toHaveLength(1);
+
+    view.unmount();
+    renderShell();
+    expect(screen.queryByText("Lab")).toBeNull();
   });
 
   it("opens the non-admin account menu from the keyboard and signs out", async () => {
