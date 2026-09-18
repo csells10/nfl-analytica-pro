@@ -795,7 +795,6 @@ export default function MatchupLens() {
                     teamAbvB={homeAbv}
                     labelA={awayAbv}
                     labelB={homeAbv}
-                    selectedKey={selectedLens}
                     onSelect={(key) => openLens(key, "all-lenses")}
                     readiness={readinessByLens}
                   />
