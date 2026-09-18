@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { matchupsHref } from "@/lib/matchup-lens-link";
 import AppShell from "@/components/AppShell";
 import StepGuide, { type StepGuideStep } from "@/components/StepGuide";
 import { useGuide } from "@/lib/guides";
