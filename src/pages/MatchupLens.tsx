@@ -22,7 +22,6 @@ import {
 } from "@/components/matchup-lens/DashboardStates";
 import { TopProfileGaps } from "@/components/matchup-lens/TopProfileGaps";
 import { GameBrief } from "@/components/matchup-lens/GameBrief";
-import { MatchupCollision } from "@/components/matchup-lens/MatchupCollision";
 import { MomentumShift } from "@/components/matchup-lens/MomentumShift";
 import { TraceDrawer } from "@/components/matchup-lens/TraceDrawer";
 import { classifyGameId, useMatchupLensContext } from "@/lib/matchup-lens-live";
@@ -33,7 +32,8 @@ import {
 } from "@/lib/matchup-lens-presentation";
 import { ApiError } from "@/lib/nfl-api";
 import { lensGaps } from "@/lib/matchup-lens-compare";
-import { collisionDirections, collisionHighlights } from "@/lib/matchup-lens-collision";
+// Collision calculations still feed the read-only Overview observations.
+import { collisionDirections } from "@/lib/matchup-lens-collision";
 import { buildGameBrief } from "@/lib/matchup-lens-brief";
 import { buildProfileAngle } from "@/lib/matchup-lens-angle";
 import { buildInsightStories, type InsightStory } from "@/lib/matchup-lens-stories";
@@ -127,7 +127,6 @@ interface UrlState {
   origin: LensOrigin;
   layout: ConstellationLayout;
   selectedLens: string | null;
-  collisionKey: string | null;
   trace: TraceTarget | null;
 }
 
@@ -151,7 +150,6 @@ function readUrlState(params: URLSearchParams): UrlState {
     origin: parseOrigin(params.get("from")),
     layout: parseLayout(params.get("layout"), parsed.layout),
     selectedLens: LENSES.find((lens) => lens.key === params.get("lens"))?.key ?? null,
-    collisionKey: params.get("collision"),
     trace: parseTrace(params.get("trace")),
   };
 }
@@ -170,8 +168,8 @@ function writeUrlState(params: URLSearchParams, state: UrlState): URLSearchParam
   else params.delete("layout");
   if (state.selectedLens) params.set("lens", state.selectedLens);
   else params.delete("lens");
-  if (state.collisionKey) params.set("collision", state.collisionKey);
-  else params.delete("collision");
+  // Retired dedicated collision view: its lane parameter is always dropped.
+  params.delete("collision");
   if (state.trace) params.set("trace", `${state.trace.type}:${state.trace.id}`);
   else params.delete("trace");
   return params;
@@ -208,7 +206,7 @@ export default function MatchupLens() {
   // The URL is the single source of truth, so browser Back/Forward rehydrates
   // the whole canvas and no local mirror can drift out of sync.
   const urlState = useMemo(() => readUrlState(searchParams), [searchParams]);
-  const { view, origin, layout, selectedLens, collisionKey, trace } = urlState;
+  const { view, origin, layout, selectedLens, trace } = urlState;
 
   // Canonical identity wins over anything carried in the URL.
   const awayAbv = context ? snapshotAbbr(context.game.away.teamAbv) : urlState.awayAbv;
