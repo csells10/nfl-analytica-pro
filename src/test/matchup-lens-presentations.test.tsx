@@ -137,11 +137,4 @@ describe("Matchup Dashboard focused views", () => {
     expect(screen.queryByText(/Momentum/)).toBeNull();
   });
 
-  it("renders the collision card at content height", async () => {
-    renderPage("/matchup-lens?view=collision");
-    await waitFor(() => expect(screen.getByTestId("matchup-collision")).toBeTruthy());
-    const card = screen.getByTestId("matchup-collision");
-    expect(card.className).not.toMatch(/\bh-full\b|min-h-\[/);
-    expect(document.body.textContent ?? "").toMatch(/Profile matchup, not a forecast/i);
-  });
 });
