@@ -159,8 +159,11 @@ describe("trace drawer integration", () => {
 
     await waitFor(() => expect(screen.getByTestId("trace-drawer")).toBeTruthy());
     expect(screen.getByTestId("tag-trace")).toBeTruthy();
-    // Network and packed views stay behind the secondary technical map.
-    expect(screen.getByTestId("technical-map")).toBeTruthy();
+    // The trace stays a readable list: no graphical technical map remains.
+    expect(screen.getByTestId("tag-trace-lenses")).toBeTruthy();
+    expect(screen.getByTestId("tag-trace-metrics")).toBeTruthy();
+    expect(screen.queryByTestId("technical-map")).toBeNull();
+    expect(screen.queryByTestId("open-technical-map")).toBeNull();
     expect(screen.queryByTestId("trace-network")).toBeNull();
     expect(screen.queryByTestId("trace-packed")).toBeNull();
   });

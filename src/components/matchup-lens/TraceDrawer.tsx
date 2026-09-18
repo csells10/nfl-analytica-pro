@@ -1,18 +1,10 @@
-import { Suspense, lazy, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { Trace, TraceTarget, TracedMetric, TeamMetricReading } from "@/lib/matchup-lens-trace";
-import type { LensSnapshot } from "@/lib/matchup-lens-types";
 import { useRankText } from "@/lib/matchup-lens-presentation";
 import { RoleBadge, TagChip } from "./TraceChips";
 
-const TraceGraphs = lazy(() => import("./TraceGraphs"));
-
-type TraceVisual = "list" | "network" | "packed";
-
 interface TraceDrawerProps {
   trace: Trace | null;
-  target: TraceTarget | null;
-  snapshot: LensSnapshot | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenTrace: (target: TraceTarget) => void;
@@ -86,71 +78,13 @@ function MetricRow({
   );
 }
 
-function VisualSwitch({
-  value,
-  onChange,
-}: {
-  value: TraceVisual;
-  onChange: (value: TraceVisual) => void;
-}) {
-  const options: { value: TraceVisual; label: string }[] = [
-    { value: "list", label: "List" },
-    { value: "network", label: "Network" },
-    { value: "packed", label: "Packed groups" },
-  ];
-  const [primary, ...technical] = options;
-  return (
-    <div className="mt-3 space-y-1.5">
-      <div role="group" aria-label="Trace view" className="flex gap-1 rounded-md border border-border p-0.5">
-        <button
-          type="button"
-          data-visual={primary.value}
-          aria-pressed={value === primary.value}
-          onClick={() => onChange(primary.value)}
-          className={`flex-1 rounded px-2 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-            value === primary.value ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {primary.label}
-        </button>
-      </div>
-      <details className="rounded-md border border-border bg-muted/10 p-1.5" data-testid="technical-map">
-        <summary className="cursor-pointer px-1 text-[11px] font-semibold text-muted-foreground">
-          Technical map
-        </summary>
-        <div role="group" aria-label="Technical trace view" className="mt-1.5 flex gap-1">
-      {technical.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          data-visual={option.value}
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-          className={`flex-1 rounded px-2 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-            value === option.value
-              ? "bg-secondary text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
-        </div>
-      </details>
-    </div>
-  );
-}
-
 /**
  * Shared reverse-trace surface. It answers which lens an item belongs to, which
  * signals connect it, which metrics support it, and where it lands in the
- * current matchup. The relationship graph and circle packing live here only —
- * never on the dashboard.
+ * current matchup. The relationships are read as lists only.
  */
 export function TraceDrawer({
   trace,
-  target,
-  snapshot,
   open,
   onOpenChange,
   onOpenTrace,
@@ -158,8 +92,6 @@ export function TraceDrawer({
   selectedLensName,
   matchupLabel,
 }: TraceDrawerProps) {
-  const [visual, setVisual] = useState<TraceVisual>("list");
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -185,23 +117,6 @@ export function TraceDrawer({
               In this matchup: {matchupLabel}
             </p>
 
-            <VisualSwitch value={visual} onChange={setVisual} />
-
-            {visual !== "list" && snapshot && target && (
-              <div className="mt-3">
-                <Suspense
-                  fallback={<p className="text-[11px] text-muted-foreground">Loading view…</p>}
-                >
-                  <TraceGraphs
-                    snapshot={snapshot}
-                    target={target}
-                    mode={visual}
-                    onOpenTrace={onOpenTrace}
-                    onSelectLens={onSelectLens}
-                  />
-                </Suspense>
-              </div>
-            )}
 
             {trace.type === "tag" ? (
               <div data-testid="tag-trace" data-trace-id={trace.tag}>

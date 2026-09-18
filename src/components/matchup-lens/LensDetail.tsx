@@ -205,14 +205,6 @@ export function LensDetail({
           </ul>
         </details>
 
-        <button
-          type="button"
-          data-testid="open-technical-map"
-          onClick={() => onOpenTrace({ type: "tag", id: lens.tags[0] })}
-          className="mt-2 inline-flex min-h-[44px] items-center rounded-md border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[32px]"
-        >
-          Open technical map
-        </button>
       </CardContent>
     </Card>
   );

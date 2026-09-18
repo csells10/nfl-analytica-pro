@@ -830,8 +830,6 @@ export default function MatchupLens() {
 
             <TraceDrawer
               trace={traceData}
-              target={trace}
-              snapshot={snapshot}
               open={trace !== null}
               onOpenChange={(open) => !open && closeTrace()}
               onOpenTrace={openTrace}
