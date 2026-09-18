@@ -109,7 +109,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
             </h1>
           )}
           <div className="flex min-w-0 items-center justify-end gap-2">
-            {showGuide && (
+            {showGuide && guideId && (
               <Button
                 variant="ghost"
                 size="icon"
