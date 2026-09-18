@@ -114,7 +114,7 @@ export function LensRadar({
           const labelPoint = radarPoint(index, count, 1.34);
           const anchor =
             Math.abs(labelPoint.x - CENTER) < 8 ? "middle" : labelPoint.x > CENTER ? "start" : "end";
-          const isSelected = axis.key === selectedKey;
+          const isSelected = axis.key === selectedKey || axis.key === activeKey;
           return (
             <g key={axis.key}>
               <circle cx={p.x} cy={p.y} r={3} className={dot} />
