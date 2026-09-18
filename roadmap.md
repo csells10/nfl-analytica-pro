@@ -23,4 +23,5 @@
 - [x] Pass 3C finishing correction: centered Overview-linked Lab header and status-aware Lab entry labels
 - [x] Pass 4: versioned guides and clearer empty states
 - [x] Matchup Lab: replace the pulsing skeleton with the quiet matchup reveal and verify both entry paths
+- [ ] Pass 4 finish: contextual Matchup Lab Help and Matchup Briefing Game Details transition
 - [ ] Pass 5: complete verification and bookmark unpublished release candidate
