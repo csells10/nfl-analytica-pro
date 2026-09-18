@@ -42,7 +42,11 @@ import SectionSpotlightTour, {
 } from "@/components/SectionSpotlightTour";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
-import { buildMatchupLensHref, matchupLabActionLabel } from "@/lib/matchup-lens-link";
+import {
+  buildMatchupLensHref,
+  isValidFromDate,
+  matchupLabActionLabel,
+} from "@/lib/matchup-lens-link";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
