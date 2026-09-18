@@ -1521,7 +1521,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           {showStatus && <Badge variant="accent">{header.game_status}</Badge>}
           <Badge variant="muted">ID {lensGameId}</Badge>
           <Button asChild variant="outline" size="sm" className="ml-auto h-8">
-            <Link to={buildMatchupLensHref(lensGameId, awayTeam.abbr, homeTeam.abbr)}>
+            <Link to={buildMatchupLensHref(lensGameId, awayTeam.abbr, homeTeam.abbr, returnDate)}>
               {matchupLabActionLabel(header.game_status)}
             </Link>
           </Button>

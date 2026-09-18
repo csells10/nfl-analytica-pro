@@ -81,7 +81,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
                 return (
                   <Link
                     key={item.path}
-                    to={item.path}
+                    to={item.path === "/" ? matchupsDestination : item.path}
                     className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-secondary text-foreground"
@@ -184,7 +184,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
             return (
               <Link
                 key={item.path}
-                to={item.path}
+                to={item.path === "/" ? matchupsDestination : item.path}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-xs font-medium transition-colors ${
                   isActive
