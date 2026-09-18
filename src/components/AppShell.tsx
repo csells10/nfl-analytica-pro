@@ -7,7 +7,7 @@ import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/lib/admin-api";
-import { buildMatchupLensHref } from "@/lib/matchup-lens-link";
+import { buildMatchupLensHref, matchupsHref } from "@/lib/matchup-lens-link";
 import { guideIdForPath, openGuide } from "@/lib/guides";
 import {
   DropdownMenu,
@@ -26,14 +26,16 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
   const { theme, toggle } = useTheme();
   const location = useLocation();
   const isMatchupLens = location.pathname === "/matchup-lens";
-  const labOverviewHref = (() => {
-    const params = new URLSearchParams(location.search);
-    return buildMatchupLensHref(
-      params.get("game") ?? "",
-      params.get("a") ?? "",
-      params.get("b") ?? "",
-    );
-  })();
+  const labParams = new URLSearchParams(location.search);
+  const labFromDate = isMatchupLens ? labParams.get("fromDate") : null;
+  const labOverviewHref = buildMatchupLensHref(
+    labParams.get("game") ?? "",
+    labParams.get("a") ?? "",
+    labParams.get("b") ?? "",
+    labFromDate,
+  );
+  // Navigation context only: returns to the Matchups date the user came from.
+  const matchupsDestination = matchupsHref(labFromDate);
   // Frontend-only UX gate. Backend remains source of truth for admin auth.
   const { data: me } = useMe(Boolean(user));
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
@@ -79,7 +81,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
                 return (
                   <Link
                     key={item.path}
-                    to={item.path}
+                    to={item.path === "/" ? matchupsDestination : item.path}
                     className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-secondary text-foreground"
@@ -182,7 +184,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
             return (
               <Link
                 key={item.path}
-                to={item.path}
+                to={item.path === "/" ? matchupsDestination : item.path}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-xs font-medium transition-colors ${
                   isActive

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { matchupsHref } from "@/lib/matchup-lens-link";
 import AppShell from "@/components/AppShell";
 import StepGuide, { type StepGuideStep } from "@/components/StepGuide";
 import { useGuide } from "@/lib/guides";
@@ -611,7 +612,10 @@ export default function MatchupLens() {
   const goOverview = useCallback(() => openView("overview"), [openView]);
 
   // Evidence is per game; Slate remains the recovery destination for empty states.
-  const goToSlate = useCallback(() => navigate("/"), [navigate]);
+  const goToSlate = useCallback(
+    () => navigate(matchupsHref(searchParams.get("fromDate"))),
+    [navigate, searchParams],
+  );
 
   /** Plain-language failure copy per typed error kind. Never raw error text. */
   const failure = useMemo(() => {

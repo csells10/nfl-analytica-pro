@@ -119,4 +119,12 @@ describe("Game Details route loading transition", () => {
     expect(screen.queryByText("Detroit Lions")).toBeNull();
     expect(screen.getByTestId("game-details-content").className).toContain("motion-reduce:animate-none");
   });
+
+  it("carries the originating Matchups date forward into the Matchup Lab action", () => {
+    mocks.details = canonicalDetails;
+    renderMatchup();
+
+    const labLink = screen.getByRole("link", { name: /Matchup Lab/i }) as HTMLAnchorElement;
+    expect(labLink.getAttribute("href")).toContain("fromDate=2026-09-20");
+  });
 });

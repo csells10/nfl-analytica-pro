@@ -42,7 +42,11 @@ import SectionSpotlightTour, {
 } from "@/components/SectionSpotlightTour";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
-import { buildMatchupLensHref, matchupLabActionLabel } from "@/lib/matchup-lens-link";
+import {
+  buildMatchupLensHref,
+  isValidFromDate,
+  matchupLabActionLabel,
+} from "@/lib/matchup-lens-link";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -1045,6 +1049,13 @@ export default function Matchup() {
   const isColdLoad = isLoading && !data;
 
   const navigationGame = (location.state as { game?: NflGame } | null)?.game;
+  // Navigation context only — the Matchups date this page was reached from.
+  const returnDate = (() => {
+    const search = new URLSearchParams(location.search);
+    const candidate =
+      search.get("date") ?? (location.state as { fromDate?: string } | null)?.fromDate ?? null;
+    return isValidFromDate(candidate) ? candidate : null;
+  })();
   const showAnalyzing = isColdLoad;
   const isBackgroundRefresh = isFetching && !!data;
   const showStaleWarning = isError && !!data;
@@ -1104,7 +1115,7 @@ export default function Matchup() {
                 )}
               </div>
             )}
-            <MatchupContent details={data} routeId={id} />
+            <MatchupContent details={data} routeId={id} returnDate={returnDate} />
           </div>
         )}
       </div>
@@ -1395,7 +1406,16 @@ function ProfileDrivers({
   );
 }
 
-function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: string }) {
+function MatchupContent({
+  details,
+  routeId,
+  returnDate,
+}: {
+  details: GameDetails;
+  routeId?: string;
+  /** Navigation context only: the Matchups date this page was opened from. */
+  returnDate?: string | null;
+}) {
   const { header, final_score, game_profile, matchup_lean, team_comparison } = details;
   const awayTeam = teamFromApi(header.away_team);
   const homeTeam = teamFromApi(header.home_team);
@@ -1521,7 +1541,7 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           {showStatus && <Badge variant="accent">{header.game_status}</Badge>}
           <Badge variant="muted">ID {lensGameId}</Badge>
           <Button asChild variant="outline" size="sm" className="ml-auto h-8">
-            <Link to={buildMatchupLensHref(lensGameId, awayTeam.abbr, homeTeam.abbr)}>
+            <Link to={buildMatchupLensHref(lensGameId, awayTeam.abbr, homeTeam.abbr, returnDate)}>
               {matchupLabActionLabel(header.game_status)}
             </Link>
           </Button>
