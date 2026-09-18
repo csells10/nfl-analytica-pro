@@ -386,11 +386,6 @@ export default function MatchupLens() {
     [commit],
   );
 
-  const openCollision = useCallback(
-    (key: string | null, from: LensOrigin = "overview") =>
-      commit({ collisionKey: key, origin: from, view: "collision" }),
-    [commit],
-  );
 
   const openView = useCallback(
     (next: LensView, from: LensOrigin = "overview") => commit({ view: next, origin: from }),
@@ -409,7 +404,6 @@ export default function MatchupLens() {
         origin: "overview",
         layout: "overlay",
         selectedLens: null,
-        collisionKey: null,
         trace: null,
         ...patch,
       });
@@ -434,7 +428,6 @@ export default function MatchupLens() {
       origin: "overview",
       layout: "overlay",
       selectedLens: null,
-      collisionKey: null,
       trace: null,
     });
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
