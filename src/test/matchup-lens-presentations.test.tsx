@@ -224,16 +224,10 @@ describe("interaction polish", () => {
   });
 
   it("marks the selected All Six Lenses tile as active rather than muted", async () => {
-    const user = userEvent.setup();
     renderPage(`/matchup-lens?view=lenses&lens=${LENSES[1].key}`);
-    await waitFor(() => expect(document.querySelector("button[data-lens-key]")).toBeTruthy());
+    const explorer = await screen.findByTestId("lens-explorer");
 
-    const tile = document.querySelector(
-      `button[data-lens-key="${LENSES[1].key}"]`,
-    ) as HTMLButtonElement;
-    await user.click(tile);
-
-    const selected = document.querySelector(
+    const selected = explorer.querySelector(
       `button[data-lens-key="${LENSES[1].key}"]`,
     ) as HTMLButtonElement;
     expect(selected.getAttribute("aria-pressed")).toBe("true");
