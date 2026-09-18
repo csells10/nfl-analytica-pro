@@ -42,6 +42,16 @@ import SectionSpotlightTour, {
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
 
+export function buildMatchupLensHref(gameId: string, awayAbbr: string, homeAbbr: string): string {
+  const search = new URLSearchParams({
+    a: awayAbbr,
+    b: homeAbbr,
+    view: "overview",
+    game: gameId,
+  });
+  return `/matchup-lens?${search.toString()}`;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
@@ -1408,12 +1418,6 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
   const homeTeam = teamFromApi(header.home_team);
   const showStatus = header.game_status && header.game_status !== "Scheduled";
   const lensGameId = routeId ?? header.game_id;
-  const lensSearch = new URLSearchParams({
-    a: awayTeam.abbr,
-    b: homeTeam.abbr,
-    view: "overview",
-    game: lensGameId,
-  });
   // Render final score whenever the API returns it — trust the backend.
   const hasFinalScore = !!final_score;
   const coreAreaContextText = getCoreAreaContextText(matchup_lean?.core_area_context);
@@ -1530,7 +1534,9 @@ function MatchupContent({ details, routeId }: { details: GameDetails; routeId?: 
           {showStatus && <Badge variant="accent">{header.game_status}</Badge>}
           <Badge variant="muted">ID {lensGameId}</Badge>
           <Button asChild variant="outline" size="sm" className="ml-auto h-8">
-            <Link to={`/matchup-lens?${lensSearch.toString()}`}>Open Matchup Lens</Link>
+            <Link to={buildMatchupLensHref(lensGameId, awayTeam.abbr, homeTeam.abbr)}>
+              Open Matchup Lens
+            </Link>
           </Button>
           {header.espn_link && (
             <a

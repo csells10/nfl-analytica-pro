@@ -88,9 +88,11 @@ describe("Matchup Dashboard focused views", () => {
       "turnover-balance",
     );
 
-    // Back returns to where the lens was opened from — all lenses, not Overview.
-    await user.click(screen.getByTestId("journey-back"));
-    await waitFor(() => expect(screen.getByTestId("lens-explorer")).toBeTruthy());
+    // The focused lens keeps stepping controls, while the single Back action returns to Overview.
+    expect(screen.getByTestId("journey-lens-select")).toBeTruthy();
+    await user.click(screen.getByTestId("context-back"));
+    await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
+    await user.click(screen.getByTestId("destination-open-constellation"));
     await user.click(screen.getByTestId("continue-constellation"));
     await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
 
