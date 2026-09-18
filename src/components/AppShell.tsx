@@ -52,9 +52,12 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
     }
   }, []);
 
+  // Route-aware Help: only the guide belonging to this route can respond.
+  const guideId = guideIdForPath(location.pathname);
+
   const handleGuideClick = () => {
     setPulseGuide(false);
-    openGuideTutorial();
+    if (guideId) openGuide(guideId);
   };
 
   return (
