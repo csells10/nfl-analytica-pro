@@ -472,23 +472,18 @@ export default function MatchupLens() {
       if (id === "constellation") openView("constellation");
       else if (id === "lenses") openView("lenses");
       else if (id === "biggest-edge" && largestGapKey) openLens(largestGapKey, "biggest-edge");
-      else if (id === "collision") openCollision(strongestCollision?.lane.key ?? null, "overview");
     },
-    [largestGapKey, openCollision, openLens, openView, strongestCollision],
+    [largestGapKey, openLens, openView],
   );
-
-
 
   const activeDestination: DestinationId | null =
     view === "constellation"
       ? "constellation"
       : view === "lenses"
         ? "lenses"
-        : view === "collision"
-          ? "collision"
-          : view === "lens" && selectedLens === largestGapKey
-            ? "biggest-edge"
-            : null;
+        : view === "lens" && selectedLens === largestGapKey
+          ? "biggest-edge"
+          : null;
 
   const viewingLabel = useMemo(() => {
     if (view === "overview") return "Overview";
@@ -496,14 +491,8 @@ export default function MatchupLens() {
     if (view === "lenses") return "All six lenses";
     if (view === "gaps") return "Top profile gaps";
     if (view === "momentum") return "Momentum";
-    if (view === "collision") {
-      const lane = directions
-        .flatMap((direction) => direction.lanes)
-        .find((entry) => entry.key === collisionKey);
-      return lane ? `${lane.definition.name} collision` : "Where profiles collide";
-    }
     return activeLens?.name ?? "Lens detail";
-  }, [view, directions, collisionKey, activeLens]);
+  }, [view, activeLens]);
 
   // Hover is view-only state: never carry it across a view or matchup change.
   useEffect(() => {
