@@ -49,7 +49,8 @@ describe("Matchup Dashboard overview", () => {
     expect(screen.getByTestId("insight-ticker")).toBeTruthy();
     expect(screen.getByTestId("game-brief")).toBeTruthy();
     expect(screen.getByTestId("destination-cards")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1, name: "Lab" })).toBeTruthy();
+    expect(screen.getByTestId("lab-context").tagName).toBe("H1");
+    expect(screen.getByRole("link", { name: "Return to Matchup Lab overview" })).toBeTruthy();
     expect(screen.queryByText("Matchup Dashboard")).toBeNull();
 
     // Deep analysis stays behind explicit choices.
