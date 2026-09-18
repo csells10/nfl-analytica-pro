@@ -23,13 +23,24 @@ interface LensRadarProps {
   tone: "a" | "b";
   selectedKey: string;
   onSelect: (key: string) => void;
+  /** Shared active axis: pointer hover, tap, or keyboard focus on a score tile. */
+  activeKey?: string | null;
+  onActiveAxisChange?: (key: string | null) => void;
 }
 
 /**
  * Single-team small-multiple radar. Fixed 0-100 scale, identical geometry and
  * axis order regardless of which team it renders, so shapes stay comparable.
  */
-export function LensRadar({ axes, title, tone, selectedKey, onSelect }: LensRadarProps) {
+export function LensRadar({
+  axes,
+  title,
+  tone,
+  selectedKey,
+  onSelect,
+  activeKey = null,
+  onActiveAxisChange,
+}: LensRadarProps) {
   const count = axes.length;
   const stroke = tone === "a" ? "stroke-accent-cool" : "stroke-primary";
   const fill = tone === "a" ? "fill-accent-cool/20" : "fill-primary/20";
