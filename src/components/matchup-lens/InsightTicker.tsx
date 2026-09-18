@@ -172,18 +172,23 @@ export function InsightTicker({ stories, onOpen }: InsightTickerProps) {
         </p>
 
         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-          <button
-            type="button"
-            data-testid="ticker-cta"
-            onClick={() => {
-              setPlaying(false);
-              onOpen(story);
-            }}
-            className="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[36px]"
-          >
-            {story.ctaLabel}
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
+          {/* Read-only stories carry no destination, so no dead action is shown. */}
+          {story.target && story.ctaLabel ? (
+            <button
+              type="button"
+              data-testid="ticker-cta"
+              onClick={() => {
+                setPlaying(false);
+                onOpen(story);
+              }}
+              className="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[36px]"
+            >
+              {story.ctaLabel}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          ) : (
+            <span />
+          )}
 
           <div className="flex items-center gap-1.5">
             <span className="font-mono text-[11px] text-muted-foreground" data-testid="ticker-count">

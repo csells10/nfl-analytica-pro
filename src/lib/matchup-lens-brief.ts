@@ -23,9 +23,9 @@ export interface BriefObservation {
   definition: string;
   /** Exact Lens Score / rank context, shown beneath the sentence. */
   detail: string;
-  /** Lens this observation opens. */
+  /** Lens this observation opens. Absent means a read-only insight. */
   lensKey?: string;
-  /** Collision lane this observation opens. */
+  /** Collision lane behind a read-only collision observation. */
   collisionKey?: string;
 }
 

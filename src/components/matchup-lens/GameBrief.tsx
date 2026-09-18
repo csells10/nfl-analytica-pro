@@ -6,14 +6,14 @@ import { InfoTip } from "./InfoTip";
 interface GameBriefProps {
   brief: GameBriefData;
   onSelectLens: (lensKey: string) => void;
-  onOpenCollision: (collisionKey: string) => void;
 }
 
 /**
  * "Start here": at most three supported observations, plain meaning first and
- * the lens label second. Each row is an explicit route into a focused view.
+ * the lens label second. Lens-backed rows route into a focused view; the
+ * collision-derived row is a read-only insight with no destination.
  */
-export function GameBrief({ brief, onSelectLens, onOpenCollision }: GameBriefProps) {
+export function GameBrief({ brief, onSelectLens }: GameBriefProps) {
   return (
     <Card className="border-border bg-card" data-testid="game-brief">
       <CardContent className="p-3 sm:p-4">
@@ -22,42 +22,63 @@ export function GameBrief({ brief, onSelectLens, onOpenCollision }: GameBriefPro
         </h2>
 
         <ul className="mt-2 space-y-1.5" data-testid="brief-observations">
-          {brief.observations.map((observation) => (
-            <li key={observation.id}>
-              <div
-                className="group flex items-start gap-2 rounded-md border border-border bg-muted/10 p-2 transition-colors hover:border-primary/50 hover:bg-secondary focus-within:border-primary/50"
-                data-observation-row={observation.id}
-              >
-                <button
-                  type="button"
-                  data-observation={observation.id}
-                  data-lens-key={observation.lensKey ?? ""}
-                  data-collision-key={observation.collisionKey ?? ""}
-                  onClick={() => {
-                    if (observation.collisionKey) onOpenCollision(observation.collisionKey);
-                    else if (observation.lensKey) onSelectLens(observation.lensKey);
-                  }}
-                  className="min-h-[44px] min-w-0 flex-1 cursor-pointer rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0"
-                >
-                  <span className="block text-xs leading-relaxed text-foreground">
-                    {observation.text}
+          {brief.observations.map((observation) => {
+            const interactive = Boolean(observation.lensKey);
+            const body = (
+              <>
+                <span className="block text-xs leading-relaxed text-foreground">
+                  {observation.text}
+                </span>
+                <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <span className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                    {observation.badge}
                   </span>
-                  <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                      {observation.badge}
-                    </span>
+                  {interactive && (
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
                       Explore
                       <ArrowRight className="h-3 w-3" aria-hidden="true" />
                     </span>
-                  </span>
-                </button>
-                <InfoTip label={observation.badge} align="right">
-                  {observation.definition}
-                </InfoTip>
-              </div>
-            </li>
-          ))}
+                  )}
+                </span>
+              </>
+            );
+
+            return (
+              <li key={observation.id}>
+                <div
+                  className={`group flex items-start gap-2 rounded-md border border-border bg-muted/10 p-2 transition-colors ${
+                    interactive
+                      ? "hover:border-primary/50 hover:bg-secondary focus-within:border-primary/50"
+                      : ""
+                  }`}
+                  data-observation-row={observation.id}
+                >
+                  {interactive ? (
+                    <button
+                      type="button"
+                      data-observation={observation.id}
+                      data-lens-key={observation.lensKey ?? ""}
+                      onClick={() => onSelectLens(observation.lensKey as string)}
+                      className="min-h-[44px] min-w-0 flex-1 cursor-pointer rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0"
+                    >
+                      {body}
+                    </button>
+                  ) : (
+                    <div
+                      data-observation={observation.id}
+                      data-readonly="true"
+                      className="min-w-0 flex-1"
+                    >
+                      {body}
+                    </div>
+                  )}
+                  <InfoTip label={observation.badge} align="right">
+                    {observation.definition}
+                  </InfoTip>
+                </div>
+              </li>
+            );
+          })}
         </ul>
 
         <details className="mt-2 rounded-md border border-border bg-muted/10 p-2">

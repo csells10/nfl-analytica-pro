@@ -30,8 +30,8 @@ export interface InsightStory {
   sentence: string;
   /** Compact rank / gap support beneath the sentence. */
   support: string;
-  /** Explicit call to action, e.g. "Explore Turnover Balance". */
-  ctaLabel: string;
+  /** Explicit call to action, omitted for read-only stories. */
+  ctaLabel?: string;
   target: StoryTarget;
   /** Contents of the "Why this appears" disclosure, when the story is derived. */
   why?: string;
@@ -155,8 +155,8 @@ export function buildInsightStories(input: StoryInput): InsightStory[] {
       category: "Profile collision",
       sentence: `With ${strongest.direction.offenseAbv} holding the ball, ${strongest.lane.definition.name.toLowerCase()} is the widest supported profile collision.`,
       support: `Leans ${winner} by ${Math.abs(strongest.lane.edge ?? 0).toFixed(1)} points · ${strongest.lane.definition.question}`,
-      ctaLabel: "See where profiles collide",
-      target: { kind: "collision", collisionKey: strongest.lane.key },
+      // Read-only insight: the dedicated collision view was retired.
+      target: null,
       why: "A collision pairs the team holding the ball against the opposing side of the same interaction. Only pairings the snapshot supports on both sides are shown.",
       note: "Profile matchup, not a forecast.",
     });
