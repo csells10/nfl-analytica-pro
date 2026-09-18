@@ -760,7 +760,8 @@ export default function MatchupLens() {
                         nameB={teamName(homeAbv)}
                         selectedKey={selectedLens}
                         onSelect={(key) => openLens(key, "constellation")}
-                        onHover={setHoveredLens}
+                        activeKey={activeAxis}
+                        onActiveAxisChange={setActiveAxis}
                         layout={layout}
                         onLayoutChange={(next) => commit({ layout: next })}
                       />
