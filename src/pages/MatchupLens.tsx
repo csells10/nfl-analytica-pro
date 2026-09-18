@@ -737,7 +737,6 @@ export default function MatchupLens() {
                   <GameBrief
                     brief={brief}
                     onSelectLens={(key) => openLens(key, "brief")}
-                    onOpenCollision={(key) => openCollision(key, "brief")}
                   />
 
                   <DestinationCards
