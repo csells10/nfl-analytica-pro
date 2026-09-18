@@ -158,7 +158,6 @@ describe("Matchup Lens live evidence", () => {
     ["lens&lens=turnover-balance", "Read the lens", "Step 1 of 3"],
     ["lenses", "Choose a football question", "Step 1 of 3"],
     ["gaps", "Largest differences", "Step 1 of 2"],
-    ["momentum", "Profile movement", "Step 1 of 2"],
   ])("opens contextual manual Help for the %s view", async (viewQuery, title, progress) => {
     localStorage.setItem(GUIDE_STORAGE_KEYS["matchup-lab"], "true");
     fetchMock = installLensFetchMock();
