@@ -14,3 +14,4 @@
 - [x] Return 21-item evidence packet; item 19 records adapter 42/42, live-page 13/13, full suite 160/160 (11 files),
       clean typecheck, build OK in 9.9s; nothing published or deployed
 - [x] Phase G3 CLOSED — pending independent Phase G4 verification (Christian's decision)
+- [x] Remove Run Visibility (nav, route, isolated files, tests); verify + no publish
