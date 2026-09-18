@@ -1,53 +1,67 @@
-# Combined Pass 3C — finishing correction
+# Pass 4 — Guides, route-aware Help, clearer states, seven-day lookup
 
-Baseline source: `d2ad12606363c9c6ac8bdebbfa599a941c803104` (the currently loaded tree is source-identical). Nothing will be published.
+Baseline: `5ec70e655849bea3afdde52a222a06640fdd16d0`. Frontend only. No backend, API base, auth, or retry changes. Nothing published.
 
-## Header layout and route scope
+## 1. Shared step-guide component
 
-- Update `src/components/AppShell.tsx` only for the exact `/matchup-lens` pathname.
-- On that route, use three balanced header regions: logo plus desktop Matchups navigation on the left, a mathematically centered `Lab` title in the middle, and the existing Help/theme/account controls on the right.
-- Make the centered title the route’s sole `h1` and an accessible link labelled `Return to Matchup Lab overview`.
-- Keep the compact header height and prevent wrapping, clipping, or overlap at desktop and approximately 390px.
-- On `/`, `/matchup/:id`, `/settings`, `/admin/claim-health`, `/login`, and unknown paths, render the existing standard header layout without a center slot or altered spacing.
+One small reusable dialog (`src/components/StepGuide.tsx`) used by both new guides: title, step body, step counter, Next / Finish, Close (X) and Skip, Escape to close, focus moved into the dialog and returned on close, animations suppressed under reduced motion. No remote state; each guide passes its own localStorage key.
 
-## Canonical Overview return
+## 2. Matchups first-visit guide
 
-- Reuse `buildMatchupLensHref` from `src/lib/matchup-lens-link.ts` with the current canonical `game`, `a`, and `b` query values.
-- The Lab link will produce only `a`, `b`, `view=overview`, and `game`, thereby dropping child-only or stale state including `lens`, `from`/origin, `layout`, `trace`, legacy `mode`, and `collision`.
-- Preserve the GameLens logo and Matchups destinations unchanged.
+Four steps: choose a game date, choose a matchup, open game details, open or review in Matchup Lab.
 
-## Entry-point naming and final-game access
+- Key `gamelens.guide.matchups.v1`, opens once per browser.
+- `hasSeenDateTutorial` is no longer read or written; no migration, so the new guide shows once for everyone.
+- Old `DateSelectionModal` spotlight is retired from Slate.
+- Help reopens it any time, including after completion.
 
-- In `src/pages/Slate.tsx`, replace the hand-built Matchup Lens URL with the existing canonical helper and label each action from its existing game status.
-- In `src/pages/Matchup.tsx`, keep the existing canonical link and change only its user-facing label.
-- Add one small shared status-label helper in `src/lib/matchup-lens-link.ts`: final statuses use `Review in Matchup Lab`; scheduled and live statuses use `Open in Matchup Lab`.
-- Both current entry points already render regardless of status. Keep that behavior so final games remain accessible; do not add preflight data checks or alter the destination page’s existing unavailable/error behavior.
+## 3. Matchup Lab first-visit guide
 
-## Expected files
+Four steps: matchup / evidence window / current view context; Start here and Biggest Edge; the three choices (compare teams, explore the biggest edge, browse all six lenses); supporting evidence and how signal or metric controls open trace details.
 
-Application:
-- `src/components/AppShell.tsx`
-- `src/lib/matchup-lens-link.ts`
-- `src/pages/Slate.tsx`
-- `src/pages/Matchup.tsx`
+- Key `gamelens.guide.matchup-lab.v1`.
+- Auto-opens only once live evidence has actually rendered (adapted available context present) — never on loading, unavailable, or error states.
+- Help reopens it while in Matchup Lab.
+- Uses the current post-Pass-3C layout; no removed features return.
 
-Directly affected tests:
-- `src/test/app-shell-navigation.test.tsx`
-- `src/test/matchup-page-navigation.test.ts`
-- Add focused entry-point rendering coverage only if needed to prove both scheduled/live and final labels remain linked.
+Game-detail guide and its existing key stay exactly as they are.
+
+## 4. Route-aware Help
+
+`gamelens:open-guide` stays the event, but now carries a guide id (`matchups`, `game-detail`, `matchup-lab`) derived in `AppShell` from the current route. Each page listens only for its own id, so one Help click opens exactly one guide. On routes with no guide (Settings, Admin, unknown), the Help button is hidden.
+
+## 5. Seven-day schedule lookup
+
+On a Matchups visit with no `?date=`:
+
+- Fire today plus the next six days in parallel through the existing `useNflSchedule` / `["nfl-schedule", date]` query convention, reusing cache.
+- While resolving: "Finding upcoming games…".
+- Select the earliest successfully loaded date that has games; apply it through the existing date-selection handler (URL update included). Today wins if today has games.
+- If all seven succeed with no games: keep today selected and show "No games found in the next seven days. Choose another date."
+- Failed dates are ignored for selection and highlighting and are never described as "no games".
+
+With `?date=` present: that date is respected and never auto-replaced; the scan still runs from that date for highlights only.
+
+Calendar highlights: only dates with a successful response containing games get a modifier dot/emphasis. When the selected date is empty but another scanned date has games, one action appears — "View games on Sunday, September 20" — reusing the existing date-selection path.
+
+No sequential probing, no window beyond seven days, no weekday guessing, no static schedule data.
+
+## 6. Clearer states
+
+- No date: "Choose a date to see scheduled matchups."
+- Empty selected date: "No NFL games are scheduled for this date."
+- Missing Lab game: "Choose a game to open Matchup Lab" with a "View Matchups" action.
+- Unavailable Lab evidence: "Matchup Lab isn't ready for this game yet", keeping the controlled backend reason when present, existing Try Again, plus "View Matchups".
+- Retryable Lab failure: "Matchup Lab didn't load", same retry callback.
+
+Real errors stay visible; raw backend bodies still never render.
+
+## Technical notes
+
+Files expected to change: `src/components/AppShell.tsx`, `src/pages/Slate.tsx`, `src/pages/MatchupLens.tsx`, `src/pages/Matchup.tsx` (event id only), `src/components/matchup-lens/DashboardStates.tsx`, new `src/components/StepGuide.tsx`, new `src/lib/guides.ts` (ids, keys, open helper), new `src/lib/use-schedule-scan.ts`. `DateSelectionModal.tsx` removed from use.
 
 ## Verification
 
-Focused tests will confirm:
-- `Lab` appears exactly once and only for exact `/matchup-lens` routes.
-- Matchups, game details, Settings, Admin, Login, and unrelated routes retain the standard header with no empty center region.
-- The Lab link is the sole `h1`, has the requested accessible label, and returns each child-view URL to the same game’s canonical Overview while removing child state.
-- The GameLens logo and Matchups links retain `/`.
-- Scheduled/live actions read `Open in Matchup Lab`; final and Final/OT actions read `Review in Matchup Lab`; all keep the same canonical game identity and remain actionable.
-- No old `Open in Matchup Lens` or `Open Matchup Lens` user-facing strings remain.
+New/updated tests covering: each guide auto-opens once for its own versioned key; Help opens the correct route's guide; Matchups and Lab guides never open together; game-detail guide unchanged; normal visit selects the earliest date with games in the window; a URL date is never auto-replaced; highlights come only from successful responses; a failed date is not treated as empty; retry actions still work; Collision and Technical Map remain absent.
 
-Then run the complete test suite with exact totals, TypeScript typecheck, production build, and desktop/mobile browser checks when authentication permits. The desktop check will confirm the title’s center against the full header width; the 390px check will confirm no collision, clipping, or wrapping.
-
-## Boundaries
-
-No changes to game-status calculations, formulas, scores, evidence, warnings, canonical data handling, URL contracts, authentication, API host, backend systems, retries, or no-static-fallback protections. Pass 4 will not begin. Nothing will be published or deployed.
+Then full suite, typecheck, production build. Report files changed, test counts, and behavior summary. No publish, no Pass 5.
