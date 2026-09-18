@@ -41,16 +41,7 @@ import SectionSpotlightTour, {
 } from "@/components/SectionSpotlightTour";
 import { useEffect, useState, forwardRef } from "react";
 import { perfMark } from "@/lib/perf";
-
-export function buildMatchupLensHref(gameId: string, awayAbbr: string, homeAbbr: string): string {
-  const search = new URLSearchParams({
-    a: awayAbbr,
-    b: homeAbbr,
-    view: "overview",
-    game: gameId,
-  });
-  return `/matchup-lens?${search.toString()}`;
-}
+import { buildMatchupLensHref } from "@/lib/matchup-lens-link";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers

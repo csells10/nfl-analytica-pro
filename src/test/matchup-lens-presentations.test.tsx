@@ -93,7 +93,6 @@ describe("Matchup Dashboard focused views", () => {
     await user.click(screen.getByTestId("context-back"));
     await waitFor(() => expect(screen.getByTestId("destination-cards")).toBeTruthy());
     await user.click(screen.getByTestId("destination-open-constellation"));
-    await user.click(screen.getByTestId("continue-constellation"));
     await waitFor(() => expect(screen.getByTestId("lens-constellation")).toBeTruthy());
 
     const tiles = Array.from(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMatchupLensHref } from "@/pages/Matchup";
+import { buildMatchupLensHref } from "@/lib/matchup-lens-link";
 
 describe("game details Matchup Lens link", () => {
   it("opens the selected game with its away and home teams in Overview", () => {
