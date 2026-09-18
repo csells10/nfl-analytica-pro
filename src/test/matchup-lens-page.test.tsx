@@ -100,22 +100,26 @@ describe("Matchup Dashboard overview", () => {
     expect(screen.queryByTestId("destination-cards")).toBeNull();
   });
 
-  it("opens a focused lens view from a brief observation and updates sticky context", async () => {
+  it("keeps the collision observation read-only on the Overview", async () => {
+    renderPage();
+    await overview();
+
+    const row = screen
+      .getByTestId("brief-observations")
+      .querySelector('[data-observation="collision"]');
+    expect(row).toBeTruthy();
+    expect(row?.getAttribute("data-readonly")).toBe("true");
+    expect((row as HTMLElement).tagName).not.toBe("BUTTON");
+    expect(row?.textContent ?? "").toMatch(/profile collision/i);
+  });
+
+  it("opens a focused view from a destination card and updates sticky context", async () => {
     const user = userEvent.setup();
     renderPage();
     await overview();
 
-    const rows = screen
-      .getByTestId("brief-observations")
-      .querySelectorAll("button[data-observation]");
-    expect(rows.length).toBeGreaterThan(0);
-    await user.click(rows[0] as HTMLButtonElement);
-
-    await waitFor(() =>
-      expect(
-        screen.queryByTestId("lens-evidence") ?? screen.queryByTestId("matchup-collision"),
-      ).toBeTruthy(),
-    );
+    await user.click(screen.getByTestId("destination-open-biggest-edge"));
+    await waitFor(() => expect(screen.getByTestId("lens-evidence")).toBeTruthy());
     // The overview content is replaced, not appended to.
     expect(screen.queryByTestId("game-brief")).toBeNull();
     expect(screen.getByTestId("context-viewing").textContent).not.toMatch(/Overview/);
