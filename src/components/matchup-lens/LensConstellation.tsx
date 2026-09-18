@@ -131,6 +131,8 @@ export function LensConstellation({
               tone="a"
               selectedKey={selectedKey ?? ""}
               onSelect={onSelect}
+              activeKey={activeKey}
+              onActiveAxisChange={onActiveAxisChange}
             />
           </div>
           <div className="min-w-0">
@@ -141,6 +143,8 @@ export function LensConstellation({
               tone="b"
               selectedKey={selectedKey ?? ""}
               onSelect={onSelect}
+              activeKey={activeKey}
+              onActiveAxisChange={onActiveAxisChange}
             />
           </div>
         </div>
