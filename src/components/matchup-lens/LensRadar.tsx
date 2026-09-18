@@ -137,12 +137,20 @@ export function LensRadar({
                   </tspan>
                 ))}
               </text>
+              {/* Pointer-only affordance: the score tiles remain the keyboard path. */}
               <circle
                 cx={hit.x}
                 cy={hit.y}
                 r={22}
+                data-axis-hit={axis.key}
+                focusable="false"
+                tabIndex={-1}
                 className="cursor-pointer fill-transparent"
                 onClick={() => onSelect(axis.key)}
+                onPointerDown={() => onActiveAxisChange?.(axis.key)}
+                onPointerEnter={() => onActiveAxisChange?.(axis.key)}
+                onMouseEnter={() => onActiveAxisChange?.(axis.key)}
+                onMouseLeave={() => onActiveAxisChange?.(null)}
               />
             </g>
           );
