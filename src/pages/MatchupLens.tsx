@@ -225,7 +225,8 @@ export default function MatchupLens() {
     [searchParams, setSearchParams, urlState],
   );
 
-  const [hoveredLens, setHoveredLens] = useState<string | null>(null);
+  /** Shared active axis for the constellation: pointer hover, tap, or tile focus. */
+  const [activeAxis, setActiveAxis] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
@@ -251,7 +252,7 @@ export default function MatchupLens() {
     scoreB: scoresB[index]?.score ?? null,
   }));
 
-  const activeKey = view === "constellation" ? (hoveredLens ?? selectedLens) : selectedLens;
+  const activeKey = view === "constellation" ? (activeAxis ?? selectedLens) : selectedLens;
   const activeLens = LENSES.find((lens) => lens.key === activeKey) ?? null;
   const activeA = activeLens ? scoresA.find((score) => score.lensKey === activeLens.key) : undefined;
   const activeB = activeLens ? scoresB.find((score) => score.lensKey === activeLens.key) : undefined;
