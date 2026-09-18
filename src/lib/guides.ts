@@ -48,6 +48,7 @@ function markSeen(id: GuideId) {
 
 interface GuideController {
   open: boolean;
+  opening: "automatic" | "manual" | null;
   /** Close and remember, used by Finish, Skip, Close and Escape alike. */
   dismiss: () => void;
 }
@@ -58,18 +59,25 @@ interface GuideController {
  */
 export function useGuide(id: GuideId, autoOpen = true): GuideController {
   const [open, setOpen] = useState(false);
+  const [opening, setOpening] = useState<"automatic" | "manual" | null>(null);
   const autoOpenedRef = useRef(false);
 
   useEffect(() => {
     if (!autoOpen || autoOpenedRef.current) return;
     autoOpenedRef.current = true;
-    if (!hasSeen(id)) setOpen(true);
+    if (!hasSeen(id)) {
+      setOpening("automatic");
+      setOpen(true);
+    }
   }, [id, autoOpen]);
 
   useEffect(() => {
     const onOpen = (event: Event) => {
       const detail = (event as CustomEvent<{ guide?: GuideId }>).detail;
-      if (detail?.guide === id) setOpen(true);
+      if (detail?.guide === id) {
+        setOpening("manual");
+        setOpen(true);
+      }
     };
     window.addEventListener(GUIDE_EVENT, onOpen);
     return () => window.removeEventListener(GUIDE_EVENT, onOpen);
@@ -78,7 +86,8 @@ export function useGuide(id: GuideId, autoOpen = true): GuideController {
   const dismiss = useCallback(() => {
     markSeen(id);
     setOpen(false);
+    setOpening(null);
   }, [id]);
 
-  return { open, dismiss };
+  return { open, opening, dismiss };
 }
