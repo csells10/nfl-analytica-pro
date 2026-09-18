@@ -1,18 +1,10 @@
-import { Suspense, lazy, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { Trace, TraceTarget, TracedMetric, TeamMetricReading } from "@/lib/matchup-lens-trace";
-import type { LensSnapshot } from "@/lib/matchup-lens-types";
 import { useRankText } from "@/lib/matchup-lens-presentation";
 import { RoleBadge, TagChip } from "./TraceChips";
 
-const TraceGraphs = lazy(() => import("./TraceGraphs"));
-
-type TraceVisual = "list" | "network" | "packed";
-
 interface TraceDrawerProps {
   trace: Trace | null;
-  target: TraceTarget | null;
-  snapshot: LensSnapshot | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenTrace: (target: TraceTarget) => void;
