@@ -1,65 +1,53 @@
-# Combined Pass 3C — UI cohesion correction
+# Combined Pass 3C — finishing correction
 
-Baseline: `3de0be7d19dc728404608f7c36edacced32f2839`. Nothing will be published.
+Baseline source: `d2ad12606363c9c6ac8bdebbfa599a941c803104` (the currently loaded tree is source-identical). Nothing will be published.
 
-## Header and page hierarchy
+## Header layout and route scope
 
-- Update `src/components/AppShell.tsx` to detect the Matchup Lens route and render one non-interactive `Lab` label beside the existing logo/navigation area, separated subtly so the header reads `GameLens | Lab`.
-- Make `Lab` the sole page-level `h1` on this route without turning it into a link, tab, or button.
-- Preserve the logo, Matchups navigation, Help, theme control, account-name menu, authorized Admin item, Settings and Sign out.
-- Keep the desktop and mobile header on one line without clipping; retain the current compact global-header height.
-- Remove the standalone `Matchup Dashboard` heading and purpose line from `src/pages/MatchupLens.tsx`.
-- Make the matchup context strip the first page content, with one shared gap between it and every view body.
-- Retune `src/components/matchup-lens/MatchupContextBar.tsx` to stick immediately beneath the actual global header: `top-14` on desktop and beneath the two-row mobile header at narrow widths. Preserve matchup identity, canonical teams, season/window, evidence date, current-view label, notices, refresh state and the single Overview action.
+- Update `src/components/AppShell.tsx` only for the exact `/matchup-lens` pathname.
+- On that route, use three balanced header regions: logo plus desktop Matchups navigation on the left, a mathematically centered `Lab` title in the middle, and the existing Help/theme/account controls on the right.
+- Make the centered title the route’s sole `h1` and an accessible link labelled `Return to Matchup Lab overview`.
+- Keep the compact header height and prevent wrapping, clipping, or overlap at desktop and approximately 390px.
+- On `/`, `/matchup/:id`, `/settings`, `/admin/claim-health`, `/login`, and unknown paths, render the existing standard header layout without a center slot or altered spacing.
 
-## Neutral navigation-choice surfaces
+## Canonical Overview return
 
-- In `src/pages/MatchupLens.tsx`, make Constellation visual activity derive only from local `activeAxis`; retain URL `selectedLens` for lens details, URLs, navigation and trace behavior.
-- In `src/components/matchup-lens/LensConstellation.tsx`, remove `selectedKey` from axis, label and tile styling; remove `aria-pressed`; highlight only `activeKey` from hover, focus or active pointer/tap.
-- In `src/components/matchup-lens/LensRadar.tsx`, highlight only `activeKey` and mechanically remove `selectedKey` when unused.
-- Keep score tiles as the sole keyboard tab stops, keep SVG targets pointer-only, and preserve chart geometry, scores, lens ordering and click destinations.
-- `src/components/matchup-lens/LensExplorer.tsx` remains neutral at rest; it requires no change unless a directly affected test confirms otherwise.
+- Reuse `buildMatchupLensHref` from `src/lib/matchup-lens-link.ts` with the current canonical `game`, `a`, and `b` query values.
+- The Lab link will produce only `a`, `b`, `view=overview`, and `game`, thereby dropping child-only or stale state including `lens`, `from`/origin, `layout`, `trace`, legacy `mode`, and `collision`.
+- Preserve the GameLens logo and Matchups destinations unchanged.
 
-## Three-card Overview row
+## Entry-point naming and final-game access
 
-- In `src/components/matchup-lens/DestinationCards.tsx`, replace the obsolete two/four-column desktop rules with three equal desktop columns.
-- Make each card a full-height flex column and keep its Open action consistently aligned at the bottom.
-- Preserve the existing narrow-screen carousel behavior, wording, icons, destinations and disabled state.
+- In `src/pages/Slate.tsx`, replace the hand-built Matchup Lens URL with the existing canonical helper and label each action from its existing game status.
+- In `src/pages/Matchup.tsx`, keep the existing canonical link and change only its user-facing label.
+- Add one small shared status-label helper in `src/lib/matchup-lens-link.ts`: final statuses use `Review in Matchup Lab`; scheduled and live statuses use `Open in Matchup Lab`.
+- Both current entry points already render regardless of status. Keep that behavior so final games remain accessible; do not add preflight data checks or alter the destination page’s existing unavailable/error behavior.
 
 ## Expected files
 
 Application:
 - `src/components/AppShell.tsx`
-- `src/pages/MatchupLens.tsx`
-- `src/components/matchup-lens/MatchupContextBar.tsx`
-- `src/components/matchup-lens/LensConstellation.tsx`
-- `src/components/matchup-lens/LensRadar.tsx`
-- `src/components/matchup-lens/DestinationCards.tsx`
+- `src/lib/matchup-lens-link.ts`
+- `src/pages/Slate.tsx`
+- `src/pages/Matchup.tsx`
 
-Tests, only where directly affected:
+Directly affected tests:
 - `src/test/app-shell-navigation.test.tsx`
-- `src/test/matchup-lens-page.test.tsx`
-- `src/test/matchup-lens-presentations.test.tsx`
-- `src/test/matchup-lens.test.tsx` only if its component prop contract changes
+- `src/test/matchup-page-navigation.test.ts`
+- Add focused entry-point rendering coverage only if needed to prove both scheduled/live and final labels remain linked.
 
 ## Verification
 
 Focused tests will confirm:
-- `Lab` appears exactly once in the global header on Matchup Lens routes, is the single `h1`, and is not interactive.
-- Other routes retain the existing header without `Lab`.
-- `Matchup Dashboard` and its purpose line no longer appear in the page body.
-- The context strip remains the first Matchup Lens content and retains every field/control.
-- A retained `lens=` parameter creates no visual selection at rest in overlay or side-by-side Constellation.
-- Hover/focus activates exactly one matching axis; leave/blur returns to neutral; SVG targets add no keyboard stop; click still opens the correct lens.
-- All Six Lenses remains neutral at rest and navigates normally.
-- Exactly three destination cards retain their content/actions and use a three-column desktop row.
+- `Lab` appears exactly once and only for exact `/matchup-lens` routes.
+- Matchups, game details, Settings, Admin, Login, and unrelated routes retain the standard header with no empty center region.
+- The Lab link is the sole `h1`, has the requested accessible label, and returns each child-view URL to the same game’s canonical Overview while removing child state.
+- The GameLens logo and Matchups links retain `/`.
+- Scheduled/live actions read `Open in Matchup Lab`; final and Final/OT actions read `Review in Matchup Lab`; all keep the same canonical game identity and remain actionable.
+- No old `Open in Matchup Lens` or `Open Matchup Lens` user-facing strings remain.
 
-Then run:
-- complete test suite with exact totals;
-- TypeScript typecheck;
-- production build;
-- desktop (~1280px) and narrow mobile (~390px) browser checks for header/context alignment, spacing, three-card layout and interaction states when authentication permits.
+Then run the complete test suite with exact totals, TypeScript typecheck, production build, and desktop/mobile browser checks when authentication permits. The desktop check will confirm the title’s center against the full header width; the 390px check will confirm no collision, clipping, or wrapping.
 
 ## Boundaries
 
-No changes to formulas, scores, weights, evidence, warnings, canonical teams, dates, URL contracts, authentication, API host, backend systems, retries or no-static-fallback protections. Collision, Technical Map and removed navigation controls stay removed. Pass 4 will not begin, and nothing will be published or deployed.
+No changes to game-status calculations, formulas, scores, evidence, warnings, canonical data handling, URL contracts, authentication, API host, backend systems, retries, or no-static-fallback protections. Pass 4 will not begin. Nothing will be published or deployed.
