@@ -263,10 +263,6 @@ export default function MatchupLens() {
 
   const momentum = useMemo(() => momentumReadiness(snapshot ? [snapshot] : []), [snapshot]);
 
-  const laneKeys = useMemo(
-    () => new Set(directions.flatMap((direction) => direction.lanes.map((lane) => lane.key))),
-    [directions],
-  );
 
   const traceData = useMemo(
     () =>
