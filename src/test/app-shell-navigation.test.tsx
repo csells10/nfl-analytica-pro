@@ -59,6 +59,7 @@ describe("AppShell navigation and account menu", () => {
     const view = renderShell("/matchup-lens?view=overview");
     const lab = screen.getByTestId("lab-context");
     expect(lab.tagName).toBe("H1");
+    expect(screen.getByRole("heading", { level: 1, name: "Lab" })).toBe(lab);
     expect(lab.closest("header")).toBeTruthy();
     expect(lab.parentElement?.className).toContain("grid-cols-[1fr_auto_1fr]");
     expect(screen.getAllByText("Lab")).toHaveLength(1);
@@ -73,18 +74,24 @@ describe("AppShell navigation and account menu", () => {
     }
   });
 
-  it("returns a child view to the same matchup Overview without child state", async () => {
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter initialEntries={["/matchup-lens?a=DET&b=BUF&view=lens&game=20260917_DET%40BUF&lens=drive-control&from=constellation&layout=side&trace=tag%3Aearly_down&mode=collision&collision=run"]}>
-        <AppShell><CurrentLocation /></AppShell>
-      </MemoryRouter>,
-    );
-    await user.click(screen.getByRole("link", { name: "Return to Matchup Lab overview" }));
-    expect(screen.getByTestId("current-location").textContent).toBe(
-      "/matchup-lens?a=DET&b=BUF&view=overview&game=20260917_DET%40BUF",
-    );
-  });
+  it.each(["constellation", "gaps", "lenses", "lens"])(
+    "returns the %s view to the same matchup Overview without child state",
+    async (viewName) => {
+      const user = userEvent.setup();
+      const rendered = render(
+        <MemoryRouter initialEntries={[`/matchup-lens?a=DET&b=BUF&view=${viewName}&game=20260917_DET%40BUF&lens=drive-control&from=constellation&layout=side&trace=tag%3Aearly_down&mode=collision&collision=run`]}>
+          <AppShell><CurrentLocation /></AppShell>
+        </MemoryRouter>,
+      );
+      expect(screen.getByRole("link", { name: "GameLens GameLens" })).toHaveAttribute("href", "/");
+      expect(screen.getAllByRole("link", { name: "Matchups" })[0]).toHaveAttribute("href", "/");
+      await user.click(screen.getByRole("link", { name: "Return to Matchup Lab overview" }));
+      expect(screen.getByTestId("current-location").textContent).toBe(
+        "/matchup-lens?a=DET&b=BUF&view=overview&game=20260917_DET%40BUF",
+      );
+      rendered.unmount();
+    },
+  );
 
   it("opens the non-admin account menu from the keyboard and signs out", async () => {
     const user = userEvent.setup();

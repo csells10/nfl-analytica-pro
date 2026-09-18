@@ -95,7 +95,11 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
             </nav>
           </div>
           {isMatchupLens && (
-            <h1 className="justify-self-center text-sm font-semibold text-muted-foreground" data-testid="lab-context">
+            <h1
+              aria-label="Lab"
+              className="justify-self-center text-sm font-semibold text-muted-foreground"
+              data-testid="lab-context"
+            >
               <Link
                 to={labOverviewHref}
                 aria-label="Return to Matchup Lab overview"
