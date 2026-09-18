@@ -19,9 +19,8 @@ import { lensStanding } from "./matchup-lens-rank";
 import { lensDefinition, lensStrengthPhrase } from "./matchup-lens-glossary";
 import { ordinal } from "./matchup-lens-language";
 
-export type StoryTarget =
-  | { kind: "lens"; lensKey: string }
-  | { kind: "collision"; collisionKey: string };
+/** A story either opens a lens or, for read-only insights, goes nowhere. */
+export type StoryTarget = { kind: "lens"; lensKey: string } | null;
 
 export interface InsightStory {
   id: string;
