@@ -17,6 +17,7 @@ vi.mock("@/lib/firebase", () => ({
 vi.mock("firebase/auth", () => ({ signOut: vi.fn(async () => undefined) }));
 
 import MatchupLens from "@/pages/MatchupLens";
+import { GUIDE_STORAGE_KEYS } from "@/lib/guides";
 import { installLensFetchMock, withGame, type LensFetchMock } from "./matchup-lens-live-harness";
 
 let fetchMock: LensFetchMock | null = null;
@@ -149,6 +150,33 @@ describe("Matchup Lens live evidence", () => {
     expect(label).not.toContain("DET");
     expect(screen.getByTestId("matchup-lab-content").className).toContain("animate-matchup-reveal");
     expect(screen.getByTestId("matchup-lab-content").className).toContain("motion-reduce:animate-none");
+  });
+
+  it.each([
+    ["overview", "Matchup context", "Step 1 of 3"],
+    ["constellation", "One shared shape", "Step 1 of 3"],
+    ["lens&lens=turnover-balance", "Read the lens", "Step 1 of 3"],
+    ["lenses", "Choose a football question", "Step 1 of 3"],
+    ["gaps", "Largest differences", "Step 1 of 2"],
+  ])("opens contextual manual Help for the %s view", async (viewQuery, title, progress) => {
+    localStorage.setItem(GUIDE_STORAGE_KEYS["matchup-lab"], "true");
+    fetchMock = installLensFetchMock();
+    renderPage(withGame(`/matchup-lens?view=${viewQuery}`));
+    await waitFor(() => expect(screen.getByTestId("matchup-context-bar")).toBeTruthy());
+
+    await userEvent.click(screen.getByRole("button", { name: "Open guide" }));
+    expect(await screen.findByRole("heading", { name: title })).toBeTruthy();
+    expect(screen.getByTestId("matchup-lab-guide-progress").textContent).toBe(progress);
+  });
+
+  it("keeps the automatic first-visit Lab guide on the Overview orientation copy", async () => {
+    localStorage.removeItem(GUIDE_STORAGE_KEYS["matchup-lab"]);
+    fetchMock = installLensFetchMock();
+    renderPage(withGame("/matchup-lens?view=constellation"));
+
+    expect(await screen.findByRole("heading", { name: "Where you are" })).toBeTruthy();
+    expect(screen.getByTestId("matchup-lab-guide-progress").textContent).toBe("Step 1 of 4");
+    expect(screen.queryByText("One shared shape")).toBeNull();
   });
 
   it("hides league standings and 'out of' text when league context is suppressed", async () => {

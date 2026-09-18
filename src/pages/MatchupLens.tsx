@@ -22,6 +22,85 @@ const MATCHUP_LAB_GUIDE_STEPS: StepGuideStep[] = [
     body: "Each read lists the evidence behind it. Select a signal or metric to open its trace details.",
   },
 ];
+
+const MATCHUP_LAB_CONTEXT_GUIDES: Record<LensView, StepGuideStep[]> = {
+  overview: [
+    {
+      title: "Matchup context",
+      body: "The top of the Lab shows the teams, evidence window, as-of date, and the view you are reading.",
+    },
+    {
+      title: "Start with the edge",
+      body: "Start Here summarizes the matchup, while Biggest Edge identifies the clearest separation in this evidence window.",
+    },
+    {
+      title: "Choose a path",
+      body: "Compare the teams on one shared shape, open the biggest edge, or browse all six lenses.",
+    },
+  ],
+  constellation: [
+    {
+      title: "One shared shape",
+      body: "Both teams are plotted on the same six-axis profile so you can compare their shapes at a glance.",
+    },
+    {
+      title: "Inspect a lens",
+      body: "Select a lens score or its axis to open that lens and review the supporting evidence.",
+    },
+    {
+      title: "Return to the summary",
+      body: "Use Back to Overview to return to Start Here, Biggest Edge, and the three exploration paths.",
+    },
+  ],
+  lens: [
+    {
+      title: "Read the lens",
+      body: "The two lens scores summarize how each team grades for this football question in the current evidence window.",
+    },
+    {
+      title: "Check the support",
+      body: "Supporting evidence shows the signals and metrics behind the lens read, including readiness notes when evidence is limited.",
+    },
+    {
+      title: "Open a trace",
+      body: "Select a signal or metric to inspect its trace details, or use the lens controls to continue through the other lenses.",
+    },
+  ],
+  lenses: [
+    {
+      title: "Choose a football question",
+      body: "Each tile represents one of the six matchup lenses. Select any tile to open its focused view.",
+    },
+    {
+      title: "Check readiness",
+      body: "Readiness notes explain when a lens has complete, partial, uneven, or unavailable evidence.",
+    },
+    {
+      title: "Go deeper",
+      body: "Opening a lens reveals its team scores, supporting evidence, signals, and trace access.",
+    },
+  ],
+  gaps: [
+    {
+      title: "Largest differences",
+      body: "This view brings the strongest profile differences for the current evidence window into one list.",
+    },
+    {
+      title: "Open the related lens",
+      body: "Select a gap to open its focused lens and review the supporting evidence, or return to Overview for the matchup summary.",
+    },
+  ],
+  momentum: [
+    {
+      title: "Profile movement",
+      body: "Momentum shows how the available matchup profile changes across evidence snapshots.",
+    },
+    {
+      title: "Keep the current context",
+      body: "Use the view as supporting context, then return to Overview for Start Here and the main exploration paths.",
+    },
+  ],
+};
 import { Card, CardContent } from "@/components/ui/card";
 import { LensConstellation } from "@/components/matchup-lens/LensConstellation";
 import { LensDetail } from "@/components/matchup-lens/LensDetail";
@@ -652,13 +731,16 @@ export default function MatchupLens() {
   // Orientation guide opens only once valid live evidence is on screen.
   const hasLiveEvidence = !isLoading && !isError && result?.kind !== "unavailable" && !!snapshot && !!away && !!home;
   const labGuide = useGuide("matchup-lab", hasLiveEvidence);
+  const labGuideSteps = labGuide.opening === "manual"
+    ? MATCHUP_LAB_CONTEXT_GUIDES[view]
+    : MATCHUP_LAB_GUIDE_STEPS;
 
   return (
     <AppShell>
       <StepGuide
         open={labGuide.open}
         eyebrow="Matchup Lab"
-        steps={MATCHUP_LAB_GUIDE_STEPS}
+        steps={labGuideSteps}
         onDismiss={labGuide.dismiss}
         testId="matchup-lab-guide"
       />

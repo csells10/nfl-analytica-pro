@@ -25,7 +25,7 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react";
-import { useGameDetails, userMessageForError, type GameDetails } from "@/lib/nfl-api";
+import { useGameDetails, userMessageForError, type GameDetails, type NflGame } from "@/lib/nfl-api";
 import { getTeam, teamLogoUrl, type TeamMeta } from "@/lib/nfl-teams";
 import { MatchupAnalyzing } from "@/components/MatchupAnalyzing";
 import { MatchupSupportBadge } from "@/components/MatchupSupportBadge";
@@ -1044,20 +1044,8 @@ export default function Matchup() {
   // refresh. The analyzing animation is reserved for true cold loads.
   const isColdLoad = isLoading && !data;
 
-  // Minimum display time so the analyzing UI doesn't flash on fast cold
-  // loads. Only armed when we actually start a cold load.
-  const [minTimeElapsed, setMinTimeElapsed] = useState(true);
-  useEffect(() => {
-    if (!isColdLoad) {
-      setMinTimeElapsed(true);
-      return;
-    }
-    setMinTimeElapsed(false);
-    const t = window.setTimeout(() => setMinTimeElapsed(true), 1000);
-    return () => window.clearTimeout(t);
-  }, [id, isColdLoad]);
-
-  const showAnalyzing = isColdLoad || (!data && !isError && !minTimeElapsed);
+  const navigationGame = (location.state as { game?: NflGame } | null)?.game;
+  const showAnalyzing = isColdLoad;
   const isBackgroundRefresh = isFetching && !!data;
   const showStaleWarning = isError && !!data;
 
@@ -1081,7 +1069,14 @@ export default function Matchup() {
           Back to games
         </Button>
 
-        {showAnalyzing && <MatchupAnalyzing />}
+        {showAnalyzing && (
+          <MatchupAnalyzing
+            awayTeam={navigationGame?.awayTeam}
+            homeTeam={navigationGame?.homeTeam}
+            date={navigationGame?.date}
+            week={navigationGame?.week}
+          />
+        )}
 
         {isError && !data && (
           <Card className="border-destructive/40 bg-destructive/5">
@@ -1093,7 +1088,7 @@ export default function Matchup() {
         )}
 
         {data && !showAnalyzing && (
-          <>
+          <div className="animate-matchup-reveal motion-reduce:animate-none" data-testid="game-details-content">
             {(isBackgroundRefresh || showStaleWarning) && (
               <div className="mb-3 flex justify-end">
                 {isBackgroundRefresh && (
@@ -1110,7 +1105,7 @@ export default function Matchup() {
               </div>
             )}
             <MatchupContent details={data} routeId={id} />
-          </>
+          </div>
         )}
       </div>
     </AppShell>
