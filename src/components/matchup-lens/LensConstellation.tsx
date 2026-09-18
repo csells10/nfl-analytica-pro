@@ -289,7 +289,7 @@ export function LensConstellation({
               onBlur={() => onActiveAxisChange(null)}
               aria-pressed={isSelected}
               className={`min-h-[44px] cursor-pointer rounded-md border px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                isSelected
+                isSelected || isActive
                   ? "border-foreground/30 bg-secondary"
                   : "border-border bg-card hover:border-muted-foreground/40"
               }`}
