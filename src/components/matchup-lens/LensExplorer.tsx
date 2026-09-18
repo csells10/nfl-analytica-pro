@@ -15,7 +15,6 @@ interface LensExplorerProps {
   teamAbvB: string;
   labelA: string;
   labelB: string;
-  selectedKey: string | null;
   onSelect: (lensKey: string) => void;
   /** Backend readiness rows, keyed by lens. Disclosure only — never a score. */
   readiness?: Record<string, MatchupLensLensReadiness>;
@@ -32,7 +31,6 @@ export function LensExplorer({
   teamAbvB,
   labelA,
   labelB,
-  selectedKey,
   onSelect,
   readiness,
 }: LensExplorerProps) {
@@ -48,7 +46,6 @@ export function LensExplorer({
         <ul className="mt-3 grid gap-2 lg:grid-cols-2">
           {gaps.map((gap) => {
             const entry = LENS_GLOSSARY[gap.key];
-            const isSelected = gap.key === selectedKey;
             const standingA = lensStanding(snapshot, gap.key, teamAbvA);
             const standingB = lensStanding(snapshot, gap.key, teamAbvB);
             return (
@@ -56,13 +53,8 @@ export function LensExplorer({
                 <button
                   type="button"
                   data-lens-key={gap.key}
-                  aria-pressed={isSelected}
                   onClick={() => onSelect(gap.key)}
-                  className={`flex min-h-[44px] w-full cursor-pointer flex-col rounded-md border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    isSelected
-                      ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/40 hover:border-primary"
-                      : "border-border bg-muted/10 hover:border-primary/40"
-                  }`}
+                  className="flex min-h-[44px] w-full cursor-pointer flex-col rounded-md border border-border bg-muted/10 p-3 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-foreground">{gap.name}</span>

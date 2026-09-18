@@ -223,15 +223,28 @@ describe("interaction polish", () => {
     expect(screen.getByTestId("toggle-all-evidence").textContent).toBe("Show key evidence only");
   });
 
-  it("marks the selected All Six Lenses tile as active rather than muted", async () => {
+  it("keeps all All Six Lenses tiles neutral while click still opens the lens", async () => {
+    const user = userEvent.setup();
     renderPage(`/matchup-lens?view=lenses&lens=${LENSES[1].key}`);
     const explorer = await screen.findByTestId("lens-explorer");
 
-    const selected = explorer.querySelector(
-      `button[data-lens-key="${LENSES[1].key}"]`,
-    ) as HTMLButtonElement;
-    expect(selected.getAttribute("aria-pressed")).toBe("true");
-    expect(selected.className).toContain("border-primary");
-    expect(selected.className).toContain("bg-primary/10");
+    for (const tile of Array.from(
+      explorer.querySelectorAll("button[data-lens-key]"),
+    ) as HTMLButtonElement[]) {
+      const tokens = tile.className.split(/\s+/);
+      expect(tile.getAttribute("aria-pressed")).toBeNull();
+      expect(tokens).not.toContain("border-primary");
+      expect(tokens).not.toContain("bg-primary/10");
+      expect(tokens).toContain("hover:border-primary/40");
+    }
+
+    await user.click(
+      explorer.querySelector(`button[data-lens-key="${LENSES[1].key}"]`) as HTMLButtonElement,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("lens-evidence").getAttribute("data-lens-key")).toBe(
+        LENSES[1].key,
+      ),
+    );
   });
 });
