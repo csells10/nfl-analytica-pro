@@ -817,7 +817,7 @@ export default function MatchupLens() {
               {announcement}
             </p>
 
-            <div ref={canvasRef} className="space-y-3 scroll-mt-32">
+            <div ref={canvasRef} className="mt-3 space-y-3 scroll-mt-32 md:mt-4">
               {view === "overview" && brief && (
                 <>
                   <Card className="border-border bg-card" ref={selectorRef}>
