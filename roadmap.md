@@ -27,3 +27,4 @@
 - [x] Pass 5: preserve the Matchups date context (fromDate navigation parameter)
 - [ ] Pass 5: complete verification and bookmark unpublished release candidate
 - [x] Refine the Matchups-to-Game-Details transition with the restrained handoff, progress rail, reduced-motion treatment, and dated return reveal
+- [x] Stabilize the Matchup Briefing chevron, connected rail, stage icons, and sub-420px layout

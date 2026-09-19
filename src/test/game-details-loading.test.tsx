@@ -32,7 +32,17 @@ describe("Game Details Matchup Briefing", () => {
     expect(loading.querySelector(".animate-handoff-drop")).toBeTruthy();
     expect(loading.querySelector(".animate-handoff-ripple")).toBeTruthy();
     expect(loading.querySelectorAll(".animate-analysis-signal")).toHaveLength(1);
-    expect(screen.getAllByTestId("analysis-handoff-chevron")).toHaveLength(1);
+    const chevron = screen.getByTestId("analysis-handoff-chevron");
+    expect(chevron.tagName.toLowerCase()).toBe("svg");
+    expect(chevron.classList.contains("h-[18px]")).toBe(true);
+    expect(chevron.classList.contains("text-motion-rail")).toBe(true);
+    expect(chevron.classList.contains("motion-reduce:animate-none")).toBe(true);
+    expect(screen.getByTestId("analysis-progress-rail").children).toHaveLength(5);
+    expect(loading.querySelectorAll("svg")).toHaveLength(4);
+    expect(loading.querySelector(".animate-stage-profile")).toBeNull();
+    expect(loading.querySelector(".animate-stage-core")).toBeNull();
+    expect(loading.querySelector(".animate-stage-team")).toBeNull();
+    expect(loading.querySelector(".motion-reduce\\:border-motion-analysis")).toBeTruthy();
     expect(loading.querySelectorAll(".motion-reduce\\:animate-none").length).toBeGreaterThan(0);
   });
 
@@ -56,5 +66,6 @@ describe("Game Details Matchup Briefing", () => {
     expect(container.textContent).not.toMatch(/score|evidence|advantage|lean|readiness|warning/i);
     expect(container.innerHTML).not.toMatch(/shimmer|skeleton|animate-pulse|animate-spin|animate-bounce/);
     expect(container.querySelectorAll(".animate-analysis-signal")).toHaveLength(1);
+    expect(container.innerHTML).not.toMatch(/animate-stage-(profile|core|team)/);
   });
 });
