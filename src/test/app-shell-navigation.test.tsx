@@ -93,6 +93,26 @@ describe("AppShell navigation and account menu", () => {
     },
   );
 
+  it("returns to the original Matchups date from a game page header link", () => {
+    const view = renderShell("/matchup/20260924_BUF%40DET?date=2026-09-24");
+    const links = screen.getAllByRole("link", { name: "Matchups" });
+    expect(links).toHaveLength(2);
+    for (const link of links) expect(link).toHaveAttribute("href", "/?date=2026-09-24");
+    view.unmount();
+
+    const invalid = renderShell("/matchup/20260924_BUF%40DET?date=2026-13-40");
+    for (const link of screen.getAllByRole("link", { name: "Matchups" })) {
+      expect(link).toHaveAttribute("href", "/");
+    }
+    invalid.unmount();
+
+    const missing = renderShell("/matchup/20260924_BUF%40DET");
+    for (const link of screen.getAllByRole("link", { name: "Matchups" })) {
+      expect(link).toHaveAttribute("href", "/");
+    }
+    missing.unmount();
+  });
+
   it("opens the non-admin account menu from the keyboard and signs out", async () => {
     const user = userEvent.setup();
     renderShell();
