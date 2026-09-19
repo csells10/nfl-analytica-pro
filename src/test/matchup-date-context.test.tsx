@@ -115,6 +115,31 @@ describe("Matchups carries its selected date into the Lab", () => {
       ),
     );
   });
+
+  it("keeps the selected date and quietly marks the game returned from", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter
+          initialEntries={[{
+            pathname: "/",
+            search: `?date=${SELECTED_DATE}`,
+            state: { returningFromGame: "20260924_DET@BUF" },
+          }]}
+        >
+          <Routes>
+            <Route path="/" element={<Slate />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(document.querySelector('[data-returned-game="true"]')).toBeTruthy());
+    const returned = document.querySelector('[data-returned-game="true"]');
+    expect(returned?.className).toContain("animate-returned-game");
+    expect(returned?.className).toContain("motion-reduce:animate-none");
+    expect(screen.getByText("September 24, 2026")).toBeTruthy();
+  });
 });
 
 // ---------------------------------------------------------------------------

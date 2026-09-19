@@ -26,9 +26,14 @@ describe("Game Details Matchup Briefing", () => {
     expect(screen.getByText("Team Comparison")).toBeTruthy();
     expect(loading.getAttribute("role")).toBe("status");
     expect(loading.getAttribute("aria-live")).toBe("polite");
-    expect(loading.className).toContain("animate-matchup-reveal");
+    expect(loading.className).toContain("animate-briefing-enter");
     expect(loading.className).toContain("motion-reduce:animate-none");
     expect(loading.className).not.toMatch(/pulse|shimmer|bounce|spin/);
+    expect(loading.querySelector(".animate-handoff-drop")).toBeTruthy();
+    expect(loading.querySelector(".animate-handoff-ripple")).toBeTruthy();
+    expect(loading.querySelectorAll(".animate-analysis-signal")).toHaveLength(1);
+    expect(screen.getAllByTestId("analysis-handoff-chevron")).toHaveLength(1);
+    expect(loading.querySelectorAll(".motion-reduce\\:animate-none").length).toBeGreaterThan(0);
   });
 
   it.each([
@@ -50,5 +55,6 @@ describe("Game Details Matchup Briefing", () => {
     const { container } = render(<MatchupAnalyzing awayTeam="NYG" homeTeam="DET" />);
     expect(container.textContent).not.toMatch(/score|evidence|advantage|lean|readiness|warning/i);
     expect(container.innerHTML).not.toMatch(/shimmer|skeleton|animate-pulse|animate-spin|animate-bounce/);
+    expect(container.querySelectorAll(".animate-analysis-signal")).toHaveLength(1);
   });
 });

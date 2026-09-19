@@ -1,6 +1,6 @@
 import { forwardRef, useState, useMemo, useEffect, useRef } from "react";
 import { format, parse } from "date-fns";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarIcon, ChevronRight } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -48,12 +48,18 @@ function parseDateParam(raw: string | null): Date | null {
   return isNaN(parsed.getTime()) ? null : parsed;
 }
 
-const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: string }>(
-  function MatchupCard({ game, dateParam }, ref) {
+const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: string; wasJustViewed?: boolean }>(
+  function MatchupCard({ game, dateParam, wasJustViewed = false }, ref) {
     const navigate = useNavigate();
 
     return (
-      <div className="group w-full rounded-lg border border-border bg-card transition-all duration-150 hover:border-primary/30 hover:bg-secondary/30">
+      <div
+        className={cn(
+          "group w-full rounded-lg border border-border bg-card transition-all duration-150 hover:border-primary/30 hover:bg-secondary/30",
+          wasJustViewed && "animate-returned-game motion-reduce:animate-none",
+        )}
+        data-returned-game={wasJustViewed ? "true" : undefined}
+      >
         <button
           ref={ref}
           className="w-full text-left"
@@ -119,6 +125,8 @@ MatchupCard.displayName = "MatchupCard";
 
 export default function Slate() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const returningFromGame = (location.state as { returningFromGame?: string } | null)?.returningFromGame;
 
   // Resolve the initial date once on mount:
   //   1. `?date=YYYY-MM-DD` URL param (deep links / back-nav) wins and is
@@ -222,7 +230,7 @@ export default function Slate() {
         testId="matchups-guide"
       />
 
-      <div className="mx-auto max-w-2xl py-8">
+      <div className="mx-auto max-w-2xl animate-return-reveal py-8 motion-reduce:animate-none">
         {/* Header + date picker */}
         <div className="mb-10 space-y-5">
           <div>
@@ -347,7 +355,12 @@ export default function Slate() {
 
                 <div className="space-y-2">
                   {games.map((game) => (
-                    <MatchupCard key={game.id} game={game} dateParam={dateParam} />
+                    <MatchupCard
+                      key={game.id}
+                      game={game}
+                      dateParam={dateParam}
+                      wasJustViewed={game.id === returningFromGame}
+                    />
                   ))}
                 </div>
               </div>
