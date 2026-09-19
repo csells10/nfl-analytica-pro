@@ -1,94 +1,86 @@
-# Refine the Matchups → Matchup transition
+# Stabilize the Matchup Briefing animation
 
 ## Outcome
 
-Keep the existing Matchup Briefing card and data flow, while adding the selected restrained motion language:
+Keep the existing Matchup Briefing, request-driven lifecycle, return behavior, and exact motion palette while making the handoff and three-stage sequence clearer and visually anchored.
 
-- one central downward handoff from matchup identity into analysis;
-- one calm horizontal signal moving across Game Profile, Core Areas, and Team Comparison;
-- a short content reveal when authenticated matchup data arrives;
-- a restrained return reveal on the original dated Matchups slate.
+- One plainly visible central chevron.
+- One continuous muted rail with three fixed station nodes.
+- One traveling signal on the rail.
+- Three restrained, fixed-size stage icons.
+- No animated card geometry, borders, gaps, or layout.
 
-No backend, request, cache, canonical-team, error, navigation, or date-preservation behavior changes.
+## Current presentation to correct
+
+The briefing currently uses an 8px CSS-border chevron, a rail shown at 45% opacity, and three independently animated stage underlines. The rail sits above a stage layout that changes from three columns to a vertical stack on mobile, so the visual relationship is less direct there.
 
 ## Implementation
 
-### 1. Theme-aware motion palette
+### 1. Central handoff
 
-Add semantic motion tokens for analysis teal, signal blue, lens violet, and the muted rail in both light and dark themes. Expose them through the existing Tailwind color configuration.
+Update `MatchupAnalyzing` to use the existing Lucide `ChevronDown` icon at 18px.
 
-- Components will use token classes rather than hard-coded surface colors.
-- Existing `background`, `card`, `foreground`, and `border` tokens continue to provide the light/dark surfaces.
-- Bright accents remain decorative only; labels retain existing accessible foreground colors.
+- Keep one fixed-height handoff region between the date and “Preparing game analysis.”
+- Keep the thin central line, one downward teal signal, and the existing small one-shot landing ripple.
+- Give the chevron a muted-rail resting color and a brief one-shot color transition to analysis teal when the downward signal reaches it.
+- Reserve fixed space for the line, signal, ripple, and chevron so the area never shifts.
+- Keep the chevron visible in both themes and under reduced motion.
+- Do not add any directional cue above the individual stages.
 
-### 2. Matchup Briefing motion
+### 2. Stable connected progress rail
 
-Update `MatchupAnalyzing` without changing its card width, matchup structure, labels, or internal card padding.
+Replace the faint/disconnected treatment with one continuously visible muted-rail track.
 
-- Entrance: opacity `0 → 1` plus an approximately 8px upward settle over about 200ms.
-- Team logos: optional single 8px inward settle, kept subtle and non-repeating.
-- Central handoff: one thin line beneath the date with a small teal signal traveling downward, followed by one quick low-opacity ripple at the analysis boundary.
-- Progress rail: one thin rail visually spanning the three existing stage items. A small signal travels calmly from teal to blue to violet; the reached stage receives a temporary 1px border or underline treatment.
-- The rail is explicitly indeterminate and decorative. The three labels remain scope labels, not claims that three backend jobs completed.
-- No arrows, particles, sweeping gradients, glow fields, bouncing, layout animation, or additional dependency.
-- The neutral loader used when safe matchup identity is unavailable remains neutral and does not invent teams or stages.
+- Use a fixed three-column geometry for the rail stations and stage cards so each node aligns with its card.
+- Keep the three fixed nodes visible at all times; use the existing teal, blue, and violet motion tokens for their restrained station identity.
+- Animate only one small signal across the fixed rail using transform and opacity.
+- Remove the three independently animated stage underlines and their keyframes.
+- Keep every card at a constant 1px border width and fixed reserved internal slots; normal animation will not resize or reposition cards, labels, icons, nodes, or borders.
+- On narrow screens, use equal-width compact columns with wrapping labels and fixed minimum geometry so the row remains aligned without horizontal overflow or uneven compression.
 
-The repeating rail exists only while the real cold request is pending. It stops because the loading component unmounts when real data arrives; it does not control request completion.
+### 3. Stage icons
 
-### 3. Real loading lifecycle and content handoff
+Add existing Lucide icons without a dependency change:
 
-Keep `isColdLoad = isLoading && !data` as the sole trigger for the Matchup Briefing.
+- Game Profile: `FileText`, analysis teal.
+- Core Areas: `Radar`, signal blue.
+- Team Comparison: `Scale`, lens violet.
 
-- Fast response: render canonical content immediately; never wait for a cycle, final stage, ripple, or exit timer.
-- Slow response: the indeterminate signal loops calmly until the request resolves.
-- On resolution: remove the loader immediately and reveal canonical content with a one-shot 180ms opacity transition.
-- If the signal naturally reaches Team Comparison before resolution, it may settle there briefly as part of its loop; no artificial hold will be introduced.
-- Existing errors, cached data, quiet background refresh, canonical backend identity, and temporary navigation-only identity remain unchanged.
+Each icon will be 16px in a fixed-width slot. Existing stage numbers and labels remain, labels continue using accessible foreground tokens, and icons never move, rotate, bounce, or resize.
 
-Because “do not delay real data” takes priority, there will be no JavaScript exit timer. The loader’s removal is immediate; the incoming content provides the visible crossfade. This avoids holding fast responses for a cosmetic fade-out.
+### 4. Reduced motion
 
-### 4. Return to the dated Matchups slate
+Under `prefers-reduced-motion: reduce`:
 
-Preserve all existing `?date=YYYY-MM-DD` return destinations.
+- Disable the downward signal, ripple, rail signal, entrance settle, logo settle, and chevron color animation.
+- Keep the muted central line, muted chevron, complete rail, all three nodes, and all three icons visible immediately.
+- Apply one static active treatment to Game Profile without changing border width or geometry.
 
-- Apply a short one-shot fade to the Matchups content when it is mounted again; never replay the analysis loader.
-- For the in-page “Back to games” action, pass the departed game ID as temporary router navigation state and briefly soften that matching card’s border when practical.
-- The emphasis is one subtle border fade only—no flash, pulse, scrolling, storage, or change to card dimensions.
-- Header/footer Matchups links and native browser Back continue to preserve the date under their current rules; they do not require the optional card emphasis to work.
+### 5. Lifecycle boundaries
 
-## Reduced motion and accessibility
+No changes to `Matchup.tsx`, `Slate.tsx`, navigation, or data code are expected.
 
-- Under `prefers-reduced-motion: reduce`, disable the entrance movement, traveling dots, ripple, rail loop, stage accents, and return emphasis animation.
-- Show the card and content immediately.
-- Keep a static muted rail and a restrained static active treatment so the loading state remains understandable.
-- Preserve the existing polite `role="status"`, `aria-live`, and `aria-busy` behavior.
-- Decorative line, dots, rail, and ripple are hidden from assistive technology.
+The existing `isColdLoad = isLoading && !data` branch remains the only trigger. Authenticated data still replaces the briefing immediately, canonical backend identity still wins, and neutral/error/cached/return/date behavior remains unchanged. No artificial delay will be introduced.
 
-## Files
+## Expected files
 
-Expected focused changes:
+- `src/components/MatchupAnalyzing.tsx` — visible Lucide chevron, fixed rail/stations, stable cards, and stage icons.
+- `tailwind.config.ts` — chevron color timing, transform-based rail motion, and removal of obsolete stage-underline animations.
+- `src/test/game-details-loading.test.tsx` — fixed structure, one rail signal, icons, reduced-motion hooks, and prohibited-motion assertions.
 
-- `src/components/MatchupAnalyzing.tsx` — handoff and progress-rail presentation.
-- `src/pages/Matchup.tsx` — immediate canonical reveal and optional return navigation state.
-- `src/pages/Slate.tsx` — short return reveal and optional matching-card border fade.
-- `src/index.css` — semantic motion palette and reduced-motion-safe animation classes.
-- `tailwind.config.ts` — named keyframes/animation and semantic palette mappings.
-- `src/test/game-details-loading.test.tsx` — structure, indeterminate semantics, prohibited-motion, and reduced-motion hooks.
-- `src/test/game-details-transition-page.test.tsx` — request-driven replacement, canonical identity, and no artificial delay.
-- Relevant Slate/date-navigation tests — dated return and optional departed-card treatment.
-
-No new animation package, route, storage, service, or architecture layer.
+Other files will change only if verification identifies a directly related test expectation.
 
 ## Verification
 
-1. Focused tests for the loader, route lifecycle, Slate return, and selected-date preservation.
-2. Full test suite, TypeScript check, and production build.
-3. Browser checks at desktop and mobile widths for:
-   - light mode: Matchups → slow loader → matchup;
-   - dark mode: Matchups → slow loader → matchup;
-   - fast response: canonical content appears without waiting;
-   - slow response: calm continuous rail with no overflow or layout shift;
-   - reduced motion: static, immediate, understandable state;
-   - matchup → original dated Matchups slate;
-   - neutral loading when trusted temporary matchup identity is unavailable.
-4. Confirm no publication or deployment.
+1. Run focused briefing, route-loading, navigation, and date-preservation tests.
+2. Run the full test suite, TypeScript check, and production build.
+3. Use browser checks at desktop and mobile widths in light and dark themes to confirm:
+   - the 18px chevron is plainly visible;
+   - the track reads as one connected rail with three aligned nodes;
+   - exactly one signal travels along the rail;
+   - cards, icons, labels, nodes, borders, and reserved spaces do not shift or resize;
+   - icons remain legible without competing with labels;
+   - no mobile overflow or uneven compression;
+   - reduced-motion mode is fully static, with the chevron, rail, nodes, icons, and one active treatment visible;
+   - fast responses remain immediate and slow responses keep the calm rail signal.
+4. Confirm nothing is published or deployed.
