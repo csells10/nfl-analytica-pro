@@ -31,5 +31,5 @@
 
 ## Matchup Briefing rail alignment
 - [x] Separate the stationary vertical-centering wrapper from the horizontally animated signal carrier.
-- [ ] Verify rail/node/signal alignment through the animation at desktop, 375px, and 320px.
-- [ ] Run focused and full verification.
+- [x] Verify rail/node/signal alignment through the animation at desktop, 375px, and 320px.
+- [x] Run focused and full verification.
