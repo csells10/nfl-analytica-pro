@@ -35,6 +35,7 @@ describe("Game Details Matchup Briefing", () => {
     const signalTrack = screen.getByTestId("analysis-signal-track");
     expect(signalTrack.classList.contains("top-1/2")).toBe(true);
     expect(signalTrack.classList.contains("-translate-y-1/2")).toBe(true);
+    expect(signalTrack.classList.contains("overflow-hidden")).toBe(true);
     expect(signalTrack.classList.contains("animate-analysis-signal")).toBe(false);
     expect(signalTrack.firstElementChild?.classList.contains("animate-analysis-signal")).toBe(true);
     const chevron = screen.getByTestId("analysis-handoff-chevron");

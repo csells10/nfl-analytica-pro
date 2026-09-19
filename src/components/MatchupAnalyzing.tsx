@@ -80,11 +80,11 @@ export const MatchupAnalyzing = forwardRef<HTMLDivElement, MatchupLoadingContext
                 <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-signal bg-card" /></span>
                 <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-lens bg-card" /></span>
                 <span
-                  className="absolute left-[calc((100%-1rem)/6)] top-1/2 h-2 w-[calc((200%+1rem)/3)] -translate-y-1/2 motion-reduce:hidden"
+                  className="absolute left-[calc((100%-1rem)/6-0.25rem)] top-1/2 h-2 w-[calc((200%+1rem)/3+0.5rem)] -translate-y-1/2 overflow-hidden motion-reduce:hidden"
                   data-testid="analysis-signal-track"
                 >
-                  <span className="block h-2 w-full animate-analysis-signal">
-                    <span className="block h-2 w-2 -translate-x-1/2 rounded-full bg-current" />
+                  <span className="block h-2 w-[calc(100%-0.5rem)] animate-analysis-signal">
+                    <span className="block h-2 w-2 rounded-full bg-current" />
                   </span>
                 </span>
               </div>
