@@ -141,11 +141,11 @@ export default {
           "78%, 88%": { color: "var(--motion-analysis)" },
         },
         "analysis-signal": {
-          "0%": { opacity: "0", transform: "translateX(0%)" },
+          "0%": { color: "var(--motion-analysis)", opacity: "0", transform: "translateX(0%)" },
           "8%": { opacity: "1" },
-          "42%": { opacity: "1", transform: "translateX(50%)" },
-          "76%": { opacity: "1", transform: "translateX(100%)" },
-          "92%, 100%": { opacity: "0", transform: "translateX(100%)" },
+          "42%": { color: "var(--motion-signal)", opacity: "1", transform: "translateX(50%)" },
+          "76%": { color: "var(--motion-lens)", opacity: "1", transform: "translateX(100%)" },
+          "92%, 100%": { color: "var(--motion-lens)", opacity: "0", transform: "translateX(100%)" },
         },
         "return-reveal": {
           from: { opacity: "0" },

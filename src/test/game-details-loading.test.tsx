@@ -42,7 +42,7 @@ describe("Game Details Matchup Briefing", () => {
     expect(loading.querySelector(".animate-stage-profile")).toBeNull();
     expect(loading.querySelector(".animate-stage-core")).toBeNull();
     expect(loading.querySelector(".animate-stage-team")).toBeNull();
-    expect(loading.querySelector(".motion-reduce\:border-motion-analysis")).toBeTruthy();
+    expect(loading.querySelector(".motion-reduce\\:border-motion-analysis")).toBeTruthy();
     expect(loading.querySelectorAll(".motion-reduce\\:animate-none").length).toBeGreaterThan(0);
   });
 
