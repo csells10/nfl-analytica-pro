@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { ChevronDown, FileText, Radar, Scale } from "lucide-react";
 import { getKnownTeam, teamLogoUrl } from "@/lib/nfl-teams";
 
 
@@ -27,9 +28,9 @@ export const MatchupAnalyzing = forwardRef<HTMLDivElement, MatchupLoadingContext
   const home = getKnownTeam(homeTeam);
   const context = [date, typeof week === "number" ? `Week ${week}` : null].filter(Boolean).join(" · ");
   const stages = [
-    { label: "Game Profile", color: "text-motion-analysis", accent: "bg-motion-analysis", animation: "animate-stage-profile" },
-    { label: "Core Areas", color: "text-motion-signal", accent: "bg-motion-signal", animation: "animate-stage-core" },
-    { label: "Team Comparison", color: "text-motion-lens", accent: "bg-motion-lens", animation: "animate-stage-team" },
+    { label: "Game Profile", color: "text-motion-analysis", Icon: FileText },
+    { label: "Core Areas", color: "text-motion-signal", Icon: Radar },
+    { label: "Team Comparison", color: "text-motion-lens", Icon: Scale },
   ] as const;
 
   return (
@@ -56,13 +57,14 @@ export const MatchupAnalyzing = forwardRef<HTMLDivElement, MatchupLoadingContext
               </div>
             </div>
             {context && <p className="mt-4 text-center font-mono text-[11px] text-muted-foreground">{context}</p>}
-            <div className="relative mx-auto h-10 w-5" aria-hidden="true">
-              <span className="absolute left-1/2 top-1 h-7 w-px -translate-x-1/2 bg-motion-rail/45" />
-              <span className="absolute left-1/2 top-1 h-1.5 w-1.5 -translate-x-1/2 animate-handoff-drop rounded-full bg-motion-analysis motion-reduce:animate-none motion-reduce:translate-y-7" />
-              <span className="absolute bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 animate-handoff-ripple rounded-full border border-motion-analysis/70 motion-reduce:hidden" />
-              <span
+            <div className="relative mx-auto h-12 w-6" aria-hidden="true">
+              <span className="absolute left-1/2 top-1 h-7 w-px -translate-x-1/2 bg-motion-rail" />
+              <span className="absolute left-1/2 top-1 h-1.5 w-1.5 -translate-x-1/2 animate-handoff-drop rounded-full bg-motion-analysis motion-reduce:hidden" />
+              <span className="absolute bottom-2 left-1/2 h-2 w-2 -translate-x-1/2 animate-handoff-ripple rounded-full border border-motion-analysis/70 motion-reduce:hidden" />
+              <ChevronDown
                 data-testid="analysis-handoff-chevron"
-                className="absolute bottom-0 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-motion-analysis/70"
+                className="absolute bottom-0 left-1/2 h-[18px] w-[18px] -translate-x-1/2 animate-handoff-chevron text-motion-rail motion-reduce:animate-none"
+                strokeWidth={2}
               />
             </div>
           </>
@@ -72,22 +74,26 @@ export const MatchupAnalyzing = forwardRef<HTMLDivElement, MatchupLoadingContext
           <h1 className="text-lg font-bold text-foreground sm:text-xl">Preparing game analysis</h1>
           {away && home && (
             <div className="mt-5" aria-label="Analysis scope">
-              <div className="relative mx-4 mb-3 h-2" aria-hidden="true">
-                <span className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-motion-rail/45" />
-                <span className="absolute left-0 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-motion-analysis bg-card" />
-                <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-motion-signal bg-card" />
-                <span className="absolute right-0 top-1/2 h-2 w-2 translate-x-1/2 -translate-y-1/2 rounded-full border border-motion-lens bg-card" />
-                <span className="absolute left-0 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 animate-analysis-signal rounded-full bg-motion-analysis motion-reduce:animate-none" />
+              <div className="relative mb-3 grid h-3 grid-cols-3" aria-hidden="true" data-testid="analysis-progress-rail">
+                <span className="absolute left-[16.6667%] right-[16.6667%] top-1/2 h-px -translate-y-1/2 bg-motion-rail" />
+                <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-analysis bg-card" /></span>
+                <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-signal bg-card" /></span>
+                <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-lens bg-card" /></span>
+                <span className="absolute left-[16.6667%] top-1/2 h-2 w-[66.6666%] -translate-y-1/2 animate-analysis-signal motion-reduce:hidden">
+                  <span className="block h-2 w-2 -translate-x-1/2 rounded-full bg-motion-analysis" />
+                </span>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-3 gap-2">
                 {stages.map((stage, index) => (
-                  <div key={stage.label} className="relative flex items-center gap-3 overflow-hidden rounded-md border border-border/70 bg-muted/10 px-3 py-2.5">
-                    <span className={`font-mono text-[10px] ${stage.color}`}>0{index + 1}</span>
-                    <span className="text-xs font-medium text-foreground/80">{stage.label}</span>
-                    <span
-                      aria-hidden="true"
-                      className={`absolute inset-x-0 bottom-0 h-px opacity-0 ${stage.accent} ${stage.animation} motion-reduce:animate-none ${index === 0 ? "motion-reduce:opacity-100" : "motion-reduce:opacity-0"}`}
-                    />
+                  <div
+                    key={stage.label}
+                    className={`flex h-14 min-w-0 items-center gap-2 rounded-md border bg-muted/10 px-2.5 py-2 max-[419px]:h-20 max-[419px]:flex-col max-[419px]:justify-center max-[419px]:gap-1.5 max-[419px]:px-1 ${index === 0 ? "border-border/70 motion-reduce:border-motion-analysis" : "border-border/70"}`}
+                  >
+                    <span className="flex h-5 shrink-0 items-center gap-1.5" aria-hidden="true">
+                      <stage.Icon className={`h-4 w-4 shrink-0 ${stage.color}`} strokeWidth={1.75} />
+                      <span className={`w-4 font-mono text-[10px] ${stage.color}`}>0{index + 1}</span>
+                    </span>
+                    <span className="min-w-0 text-center text-[11px] font-medium leading-tight text-foreground/80 sm:text-left sm:text-xs">{stage.label}</span>
                   </div>
                 ))}
               </div>
