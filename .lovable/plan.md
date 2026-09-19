@@ -36,7 +36,7 @@ Replace the faint/disconnected treatment with one continuously visible muted-rai
 - Animate only one small signal across the fixed rail using transform and opacity.
 - Remove the three independently animated stage underlines and their keyframes.
 - Keep every card at a constant 1px border width and fixed reserved internal slots; normal animation will not resize or reposition cards, labels, icons, nodes, or borders.
-- On narrow screens, use equal-width compact columns with wrapping labels and fixed minimum geometry so the row remains aligned without horizontal overflow or uneven compression.
+- Keep three equal-width columns at every viewport. Below 420px, stack each card’s icon/number group above its label and give all three cards the same fixed height, preserving alignment without horizontal scrolling or uneven compression.
 
 ### 3. Stage icons
 
@@ -80,7 +80,8 @@ Other files will change only if verification identifies a directly related test 
    - exactly one signal travels along the rail;
    - cards, icons, labels, nodes, borders, and reserved spaces do not shift or resize;
    - icons remain legible without competing with labels;
-   - no mobile overflow or uneven compression;
+   - no mobile overflow, uneven compression, or horizontal scrolling;
+   - at 320px and 375px specifically, the three equal columns remain visible and each equal-height card stacks its icon/number group above its label;
    - reduced-motion mode is fully static, with the chevron, rail, nodes, icons, and one active treatment visible;
    - fast responses remain immediate and slow responses keep the calm rail signal.
 4. Confirm nothing is published or deployed.
