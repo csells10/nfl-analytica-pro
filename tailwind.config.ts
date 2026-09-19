@@ -74,6 +74,12 @@ export default {
           moderate: "hsl(var(--level-moderate))",
           low: "hsl(var(--level-low))",
         },
+        motion: {
+          analysis: "var(--motion-analysis)",
+          signal: "var(--motion-signal)",
+          lens: "var(--motion-lens)",
+          rail: "var(--motion-rail)",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -107,6 +113,55 @@ export default {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        "briefing-enter": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "logo-settle-away": {
+          from: { opacity: "0.85", transform: "translateX(-8px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "logo-settle-home": {
+          from: { opacity: "0.85", transform: "translateX(8px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "handoff-drop": {
+          "0%": { opacity: "0", transform: "translateY(0)" },
+          "18%": { opacity: "1" },
+          "78%": { opacity: "1" },
+          "100%": { opacity: "0", transform: "translateY(28px)" },
+        },
+        "handoff-ripple": {
+          "0%, 72%": { opacity: "0", transform: "scale(0.45)" },
+          "78%": { opacity: "0.35" },
+          "100%": { opacity: "0", transform: "scale(1.7)" },
+        },
+        "analysis-signal": {
+          "0%": { left: "0%", backgroundColor: "var(--motion-analysis)" },
+          "42%": { left: "50%", backgroundColor: "var(--motion-signal)" },
+          "76%, 100%": { left: "100%", backgroundColor: "var(--motion-lens)" },
+        },
+        "stage-profile": {
+          "0%, 25%": { opacity: "1" },
+          "34%, 100%": { opacity: "0" },
+        },
+        "stage-core": {
+          "0%, 30%": { opacity: "0" },
+          "38%, 58%": { opacity: "1" },
+          "66%, 100%": { opacity: "0" },
+        },
+        "stage-team": {
+          "0%, 60%": { opacity: "0" },
+          "70%, 100%": { opacity: "1" },
+        },
+        "return-reveal": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "returned-game": {
+          "0%": { borderColor: "var(--motion-analysis)" },
+          "100%": { borderColor: "hsl(var(--border))" },
+        },
         "shimmer-slide": {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" },
@@ -117,6 +172,17 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.4s ease-out",
         "matchup-reveal": "matchup-reveal 0.24s ease-out both",
+        "briefing-enter": "briefing-enter 0.2s ease-out both",
+        "logo-settle-away": "logo-settle-away 0.2s ease-out both",
+        "logo-settle-home": "logo-settle-home 0.2s ease-out both",
+        "handoff-drop": "handoff-drop 0.7s ease-out both",
+        "handoff-ripple": "handoff-ripple 0.7s ease-out both",
+        "analysis-signal": "analysis-signal 3.6s ease-in-out infinite",
+        "stage-profile": "stage-profile 3.6s ease-in-out infinite",
+        "stage-core": "stage-core 3.6s ease-in-out infinite",
+        "stage-team": "stage-team 3.6s ease-in-out infinite",
+        "return-reveal": "return-reveal 0.16s ease-out both",
+        "returned-game": "returned-game 0.8s ease-out both",
         "shimmer-slide": "shimmer-slide 1.6s ease-in-out infinite",
       },
     },

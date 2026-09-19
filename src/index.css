@@ -8,6 +8,10 @@
   :root {
     font-family: 'Manrope', system-ui, -apple-system, sans-serif;
     --radius: 0.5rem;
+    --motion-analysis: #22B8A7;
+    --motion-signal: #3D7CFA;
+    --motion-lens: #7C5CE5;
+    --motion-rail: #738096;
   }
 
   .light {

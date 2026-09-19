@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { GameDetails } from "@/lib/nfl-api";
 
 const mocks = vi.hoisted(() => ({
@@ -90,6 +90,11 @@ function renderMatchup() {
   );
 }
 
+function CurrentLocation() {
+  const location = useLocation();
+  return <output data-testid="current-location">{`${location.pathname}${location.search}`}</output>;
+}
+
 beforeEach(() => {
   mocks.details = undefined;
   mocks.gameId = "";
@@ -126,5 +131,28 @@ describe("Game Details route loading transition", () => {
 
     const labLink = screen.getByRole("link", { name: /Matchup Lab/i }) as HTMLAnchorElement;
     expect(labLink.getAttribute("href")).toContain("fromDate=2026-09-20");
+  });
+
+  it("returns to the same dated slate with optional game-card emphasis context", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    render(
+      <MemoryRouter
+        initialEntries={[{
+          pathname: "/matchup/20260920_NO%40BAL",
+          search: "?date=2026-09-20",
+          state: { fromDate: "2026-09-20", game: { id: "20260920_NO@BAL", awayTeam: "NO", homeTeam: "BAL" } },
+        }]}
+      >
+        <CurrentLocation />
+        <Routes>
+          <Route path="/matchup/:id" element={<Matchup />} />
+          <Route path="/" element={<p>Matchups slate</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Back to games" }));
+    expect(screen.getByTestId("current-location").textContent).toBe("/?date=2026-09-20");
+    expect(screen.getByText("Matchups slate")).toBeTruthy();
   });
 });

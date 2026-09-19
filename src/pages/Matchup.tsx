@@ -1073,7 +1073,7 @@ export default function Matchup() {
             const search = new URLSearchParams(location.search);
             const stateDate = (location.state as { fromDate?: string } | null)?.fromDate;
             const date = search.get("date") || stateDate;
-            navigate(date ? `/?date=${date}` : "/");
+            navigate(date ? `/?date=${date}` : "/", { state: { returningFromGame: id } });
           }}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -1099,7 +1099,7 @@ export default function Matchup() {
         )}
 
         {data && !showAnalyzing && (
-          <div className="animate-matchup-reveal motion-reduce:animate-none" data-testid="game-details-content">
+          <div className="animate-[matchup-reveal_0.18s_ease-out_both] motion-reduce:animate-none" data-testid="game-details-content">
             {(isBackgroundRefresh || showStaleWarning) && (
               <div className="mb-3 flex justify-end">
                 {isBackgroundRefresh && (

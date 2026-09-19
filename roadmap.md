@@ -26,3 +26,4 @@
 - [x] Pass 4 finish: contextual Matchup Lab Help and Matchup Briefing Game Details transition
 - [x] Pass 5: preserve the Matchups date context (fromDate navigation parameter)
 - [ ] Pass 5: complete verification and bookmark unpublished release candidate
+- [x] Refine the Matchups-to-Game-Details transition with the restrained handoff, progress rail, reduced-motion treatment, and dated return reveal
