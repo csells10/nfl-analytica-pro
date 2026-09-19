@@ -74,13 +74,13 @@ export const MatchupAnalyzing = forwardRef<HTMLDivElement, MatchupLoadingContext
           <h1 className="text-lg font-bold text-foreground sm:text-xl">Preparing game analysis</h1>
           {away && home && (
             <div className="mt-5" aria-label="Analysis scope">
-              <div className="relative mb-3 grid h-3 grid-cols-3" aria-hidden="true" data-testid="analysis-progress-rail">
-                <span className="absolute left-[16.6667%] right-[16.6667%] top-1/2 h-px -translate-y-1/2 bg-motion-rail" />
+              <div className="relative mb-3 grid h-3 grid-cols-3 gap-2" aria-hidden="true" data-testid="analysis-progress-rail">
+                <span className="absolute left-[calc((100%-1rem)/6)] right-[calc((100%-1rem)/6)] top-1/2 h-px -translate-y-1/2 bg-motion-rail" />
                 <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-analysis bg-card" /></span>
                 <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-signal bg-card" /></span>
                 <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-lens bg-card" /></span>
                 <span
-                  className="absolute left-[16.6667%] top-1/2 h-2 w-[66.6666%] -translate-y-1/2 motion-reduce:hidden"
+                  className="absolute left-[calc((100%-1rem)/6)] top-1/2 h-2 w-[calc((200%+1rem)/3)] -translate-y-1/2 motion-reduce:hidden"
                   data-testid="analysis-signal-track"
                 >
                   <span className="block h-2 w-full animate-analysis-signal">

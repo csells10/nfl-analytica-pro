@@ -43,6 +43,7 @@ describe("Game Details Matchup Briefing", () => {
     expect(chevron.classList.contains("text-motion-rail")).toBe(true);
     expect(chevron.classList.contains("motion-reduce:animate-none")).toBe(true);
     expect(screen.getByTestId("analysis-progress-rail").children).toHaveLength(5);
+    expect(screen.getByTestId("analysis-progress-rail").classList.contains("gap-2")).toBe(true);
     expect(loading.querySelectorAll("svg")).toHaveLength(4);
     expect(loading.querySelector(".animate-stage-profile")).toBeNull();
     expect(loading.querySelector(".animate-stage-core")).toBeNull();
