@@ -1,67 +1,94 @@
-# Pass 5 — Preserve the Matchups date on return
+# Refine the Matchups → Matchup transition
 
-When someone picks a date on Matchups, opens a game or the Matchup Lab, and then taps
-Matchups again, they come back to the same date instead of the default one.
+## Outcome
 
-## What changes for the user
+Keep the existing Matchup Briefing card and data flow, while adding the selected restrained motion language:
 
-- Opening the Lab from a date on Matchups remembers that date.
-- Matchups → game details → Lab remembers the same date.
-- Moving between Lab views keeps the date.
-- The Matchups link in the header (desktop and mobile tab row) returns to that date.
-- Refreshing a Lab page keeps the return date, because it lives in the address.
-- An old or shared Lab link with no date still works exactly as today.
+- one central downward handoff from matchup identity into analysis;
+- one calm horizontal signal moving across Game Profile, Core Areas, and Team Comparison;
+- a short content reveal when authenticated matchup data arrives;
+- a restrained return reveal on the original dated Matchups slate.
 
-## How it works
+No backend, request, cache, canonical-team, error, navigation, or date-preservation behavior changes.
 
-The date travels as one extra, optional piece of the Lab address: `fromDate=YYYY-MM-DD`.
-It is navigation context only — nothing about the request, the game identity, the teams,
-the evidence, scores, availability or retries reads it.
+## Implementation
 
-### Files to change
+### 1. Theme-aware motion palette
 
-1. `src/lib/matchup-lens-link.ts`
-   - Add `isValidFromDate(raw)`: strict `YYYY-MM-DD` shape plus a real-calendar round-trip
-     check (rejects `2026-02-30`, `2026-13-01`, `26-9-1`, empty, junk).
-   - `buildMatchupLensHref(gameId, awayAbbr, homeAbbr, fromDate?)` appends `fromDate`
-     only when valid; otherwise omits it. Existing three-argument calls are unaffected.
-   - Add `matchupsHref(fromDate?)` returning `/?date=<fromDate>` when valid, else `/`.
+Add semantic motion tokens for analysis teal, signal blue, lens violet, and the muted rail in both light and dark themes. Expose them through the existing Tailwind color configuration.
 
-2. `src/pages/Slate.tsx`
-   - Pass the currently selected `dateParam` into `buildMatchupLensHref`.
-   - Game-details navigation keeps its current `?date=` + `state.fromDate` behavior.
+- Components will use token classes rather than hard-coded surface colors.
+- Existing `background`, `card`, `foreground`, and `border` tokens continue to provide the light/dark surfaces.
+- Bright accents remain decorative only; labels retain existing accessible foreground colors.
 
-3. `src/pages/Matchup.tsx`
-   - Derive the known return date from `?date=` or `location.state.fromDate` (validated,
-     reusing the same helper) and pass it into `buildMatchupLensHref` for the Lab action.
-   - "Back to games" logic stays as it is.
+### 2. Matchup Briefing motion
 
-4. `src/components/AppShell.tsx`
-   - On `/matchup-lens` only, the Matchups nav destination (desktop nav and mobile tab row)
-     becomes `matchupsHref(params.get("fromDate"))`. Invalid or missing → `/`.
-   - Header logo, Lab link, Help, theme, and account menu are untouched.
+Update `MatchupAnalyzing` without changing its card width, matchup structure, labels, or internal card padding.
 
-5. `src/pages/MatchupLens.tsx`
-   - `fromDate` is already carried across view changes because the URL writer copies the
-     existing query string and only touches its own keys — a test will lock this in.
-   - `goToSlate` (empty/unavailable recovery) uses `matchupsHref(fromDate)`.
+- Entrance: opacity `0 → 1` plus an approximately 8px upward settle over about 200ms.
+- Team logos: optional single 8px inward settle, kept subtle and non-repeating.
+- Central handoff: one thin line beneath the date with a small teal signal traveling downward, followed by one quick low-opacity ripple at the analysis boundary.
+- Progress rail: one thin rail visually spanning the three existing stage items. A small signal travels calmly from teal to blue to violet; the reached stage receives a temporary 1px border or underline treatment.
+- The rail is explicitly indeterminate and decorative. The three labels remain scope labels, not claims that three backend jobs completed.
+- No arrows, particles, sweeping gradients, glow fields, bouncing, layout animation, or additional dependency.
+- The neutral loader used when safe matchup identity is unavailable remains neutral and does not invent teams or stages.
 
-Nothing else changes: no storage, no new route, no new state layer, no backend, API base,
-auth, query keys, validation, retry, guides, loaders, transitions or empty-state changes.
+The repeating rail exists only while the real cold request is pending. It stops because the loading component unmounts when real data arrives; it does not control request completion.
 
-### Tests
+### 3. Real loading lifecycle and content handoff
 
-Extend `src/test/matchup-page-navigation.test.ts` and the existing Lab route-level suite with:
+Keep `isColdLoad = isLoading && !data` as the sole trigger for the Matchup Briefing.
 
-- Matchups → Lab carries the selected date.
-- Matchups → game details → Lab carries the same date.
-- Changing Lab views preserves `fromDate`.
-- Lab header Matchups link resolves to `/?date=<fromDate>`.
-- A fresh render of a Lab URL with a valid `fromDate` keeps the return destination.
-- Missing, malformed and impossible dates (`""`, `2026-9-4`, `2026-13-01`, `2026-02-30`,
-  `banana`) fall back to `/`.
-- Returning with an explicit date does not trigger the seven-day auto-selection.
-- Request key, API call, canonical teams, guides, loading states and retry behavior unchanged.
+- Fast response: render canonical content immediately; never wait for a cycle, final stage, ripple, or exit timer.
+- Slow response: the indeterminate signal loops calmly until the request resolves.
+- On resolution: remove the loader immediately and reveal canonical content with a one-shot 180ms opacity transition.
+- If the signal naturally reaches Team Comparison before resolution, it may settle there briefly as part of its loop; no artificial hold will be introduced.
+- Existing errors, cached data, quiet background refresh, canonical backend identity, and temporary navigation-only identity remain unchanged.
 
-Then run the focused tests, the full suite, typecheck and the production build, and report
-files changed, counts and behavior. Nothing published or deployed.
+Because “do not delay real data” takes priority, there will be no JavaScript exit timer. The loader’s removal is immediate; the incoming content provides the visible crossfade. This avoids holding fast responses for a cosmetic fade-out.
+
+### 4. Return to the dated Matchups slate
+
+Preserve all existing `?date=YYYY-MM-DD` return destinations.
+
+- Apply a short one-shot fade to the Matchups content when it is mounted again; never replay the analysis loader.
+- For the in-page “Back to games” action, pass the departed game ID as temporary router navigation state and briefly soften that matching card’s border when practical.
+- The emphasis is one subtle border fade only—no flash, pulse, scrolling, storage, or change to card dimensions.
+- Header/footer Matchups links and native browser Back continue to preserve the date under their current rules; they do not require the optional card emphasis to work.
+
+## Reduced motion and accessibility
+
+- Under `prefers-reduced-motion: reduce`, disable the entrance movement, traveling dots, ripple, rail loop, stage accents, and return emphasis animation.
+- Show the card and content immediately.
+- Keep a static muted rail and a restrained static active treatment so the loading state remains understandable.
+- Preserve the existing polite `role="status"`, `aria-live`, and `aria-busy` behavior.
+- Decorative line, dots, rail, and ripple are hidden from assistive technology.
+
+## Files
+
+Expected focused changes:
+
+- `src/components/MatchupAnalyzing.tsx` — handoff and progress-rail presentation.
+- `src/pages/Matchup.tsx` — immediate canonical reveal and optional return navigation state.
+- `src/pages/Slate.tsx` — short return reveal and optional matching-card border fade.
+- `src/index.css` — semantic motion palette and reduced-motion-safe animation classes.
+- `tailwind.config.ts` — named keyframes/animation and semantic palette mappings.
+- `src/test/game-details-loading.test.tsx` — structure, indeterminate semantics, prohibited-motion, and reduced-motion hooks.
+- `src/test/game-details-transition-page.test.tsx` — request-driven replacement, canonical identity, and no artificial delay.
+- Relevant Slate/date-navigation tests — dated return and optional departed-card treatment.
+
+No new animation package, route, storage, service, or architecture layer.
+
+## Verification
+
+1. Focused tests for the loader, route lifecycle, Slate return, and selected-date preservation.
+2. Full test suite, TypeScript check, and production build.
+3. Browser checks at desktop and mobile widths for:
+   - light mode: Matchups → slow loader → matchup;
+   - dark mode: Matchups → slow loader → matchup;
+   - fast response: canonical content appears without waiting;
+   - slow response: calm continuous rail with no overflow or layout shift;
+   - reduced motion: static, immediate, understandable state;
+   - matchup → original dated Matchups slate;
+   - neutral loading when trusted temporary matchup identity is unavailable.
+4. Confirm no publication or deployment.
