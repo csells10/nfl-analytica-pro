@@ -35,7 +35,9 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
     labFromDate,
   );
   // Navigation context only: returns to the Matchups date the user came from.
-  const matchupsDestination = matchupsHref(labFromDate);
+  // Matchup Lab carries `fromDate`; game pages carry the existing `date` param.
+  const returnDate = labFromDate ?? labParams.get("date");
+  const matchupsDestination = matchupsHref(returnDate);
   // Frontend-only UX gate. Backend remains source of truth for admin auth.
   const { data: me } = useMe(Boolean(user));
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
