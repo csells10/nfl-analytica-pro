@@ -39,15 +39,16 @@ describe("Game Details Matchup Briefing", () => {
     expect(signalTrack.classList.contains("overflow-hidden")).toBe(true);
     expect(signalTrack.className).not.toMatch(/animate-analysis-signal-(position|dot)/);
     expect(signalTrack.firstElementChild?.classList.contains("animate-analysis-signal-position")).toBe(true);
+    expect(signalTrack.firstElementChild?.classList.contains("motion-reduce:animate-none")).toBe(true);
     expect(screen.getByTestId("analysis-signal").classList.contains("animate-analysis-signal-dot")).toBe(true);
     expect(screen.getByTestId("analysis-signal").classList.contains("motion-reduce:animate-none")).toBe(true);
-    expect(screen.getByTestId("analysis-signal-reduced").classList.contains("bg-motion-analysis")).toBe(true);
+    expect(screen.getByTestId("analysis-signal").classList.contains("text-motion-analysis")).toBe(true);
     const chevron = screen.getByTestId("analysis-handoff-chevron");
     expect(chevron.tagName.toLowerCase()).toBe("svg");
     expect(chevron.classList.contains("h-[18px]")).toBe(true);
     expect(chevron.classList.contains("text-motion-rail")).toBe(true);
     expect(chevron.classList.contains("motion-reduce:animate-none")).toBe(true);
-    expect(screen.getByTestId("analysis-progress-rail").children).toHaveLength(3);
+    expect(screen.getByTestId("analysis-progress-rail").children).toHaveLength(2);
     expect(screen.getByTestId("analysis-progress-rail").classList.contains("gap-2")).toBe(true);
     expect(loading.querySelectorAll("svg")).toHaveLength(4);
     expect(loading.querySelector(".animate-stage-profile")).toBeNull();

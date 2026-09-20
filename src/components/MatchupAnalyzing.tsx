@@ -77,21 +77,15 @@ export const MatchupAnalyzing = forwardRef<HTMLDivElement, MatchupLoadingContext
               <div className="relative mb-3 grid h-3 grid-cols-3 gap-2" aria-hidden="true" data-testid="analysis-progress-rail">
                 <span className="absolute left-[calc((100%-1rem)/6)] right-[calc((100%-1rem)/6)] top-1/2 h-px -translate-y-1/2 bg-motion-rail" />
                 <span
-                  className="absolute left-[calc((100%-1rem)/6-0.25rem)] top-1/2 h-2 w-[calc((200%+1rem)/3+0.5rem)] -translate-y-1/2 overflow-hidden motion-reduce:hidden"
+                  className="absolute left-[calc((100%-1rem)/6-0.25rem)] top-1/2 h-2 w-[calc((200%+1rem)/3+0.5rem)] -translate-y-1/2 overflow-hidden"
                   data-testid="analysis-signal-track"
                 >
-                  <span className="relative ml-1 block h-2 w-[calc(100%-0.5rem)] animate-analysis-signal-position">
+                  <span className="relative ml-1 block h-2 w-[calc(100%-0.5rem)] animate-analysis-signal-position motion-reduce:animate-none">
                     <span
-                      className="absolute left-[-3px] top-px h-1.5 w-1.5 origin-center animate-analysis-signal-dot rounded-full bg-current motion-reduce:animate-none"
+                      className="absolute left-[-3px] top-px h-1.5 w-1.5 origin-center animate-analysis-signal-dot rounded-full bg-current text-motion-analysis motion-reduce:animate-none"
                       data-testid="analysis-signal"
                     />
                   </span>
-                </span>
-                <span
-                  className="absolute left-[calc((100%-1rem)/6-0.25rem)] top-1/2 hidden h-2 w-2 -translate-y-1/2 items-center justify-center motion-reduce:flex"
-                  aria-hidden="true"
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-motion-analysis" data-testid="analysis-signal-reduced" />
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2">
