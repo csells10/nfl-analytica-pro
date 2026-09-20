@@ -33,3 +33,8 @@
 - [x] Separate the stationary vertical-centering wrapper from the horizontally animated signal carrier.
 - [x] Verify rail/node/signal alignment through the animation at desktop, 375px, and 320px.
 - [x] Run focused and full verification.
+
+## Simplify Matchup Briefing progress rail
+- [ ] Remove permanent station nodes and keep one continuous rail with one signal.
+- [ ] Separate vertical centering, horizontal travel, and dot scale/color animation.
+- [ ] Verify desktop, 375px, 320px, themes, reduced motion, tests, types, and build.
