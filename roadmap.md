@@ -35,6 +35,6 @@
 - [x] Run focused and full verification.
 
 ## Simplify Matchup Briefing progress rail
-- [ ] Remove permanent station nodes and keep one continuous rail with one signal.
-- [ ] Separate vertical centering, horizontal travel, and dot scale/color animation.
-- [ ] Verify desktop, 375px, 320px, themes, reduced motion, tests, types, and build.
+- [x] Remove permanent station nodes and keep one continuous rail with one signal.
+- [x] Separate vertical centering, horizontal travel, and dot scale/color animation.
+- [x] Verify desktop, 375px, 320px, themes, reduced motion, tests, types, and build.
