@@ -76,15 +76,15 @@ export const MatchupAnalyzing = forwardRef<HTMLDivElement, MatchupLoadingContext
             <div className="mt-5" aria-label="Analysis scope">
               <div className="relative mb-3 grid h-3 grid-cols-3 gap-2" aria-hidden="true" data-testid="analysis-progress-rail">
                 <span className="absolute left-[calc((100%-1rem)/6)] right-[calc((100%-1rem)/6)] top-1/2 h-px -translate-y-1/2 bg-motion-rail" />
-                <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-analysis bg-card" /></span>
-                <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-signal bg-card" /></span>
-                <span className="relative flex items-center justify-center"><span className="h-2 w-2 rounded-full border border-motion-lens bg-card" /></span>
                 <span
-                  className="absolute left-[calc((100%-1rem)/6-0.25rem)] top-1/2 h-2 w-[calc((200%+1rem)/3+0.5rem)] -translate-y-1/2 overflow-hidden motion-reduce:hidden"
+                  className="absolute left-[calc((100%-1rem)/6-0.25rem)] top-1/2 h-2 w-[calc((200%+1rem)/3+0.5rem)] -translate-y-1/2 overflow-hidden"
                   data-testid="analysis-signal-track"
                 >
-                  <span className="block h-2 w-[calc(100%-0.5rem)] animate-analysis-signal">
-                    <span className="block h-2 w-2 rounded-full bg-current" />
+                  <span className="relative ml-1 block h-2 w-[calc(100%-0.5rem)] animate-analysis-signal-position motion-reduce:animate-none">
+                    <span
+                      className="absolute left-[-3px] top-px h-1.5 w-1.5 origin-center animate-analysis-signal-dot rounded-full bg-current text-motion-analysis motion-reduce:animate-none"
+                      data-testid="analysis-signal"
+                    />
                   </span>
                 </span>
               </div>
