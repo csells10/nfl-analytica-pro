@@ -3,9 +3,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
+const mocks = vi.hoisted(() => ({ signedIn: false }));
+
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
-    user: { name: "Christian", email: "christian@gamelens.io" },
+    // Signed out by default: a signed-in user is redirected away from Login.
+    user: mocks.signedIn ? { name: "Christian", email: "christian@gamelens.io" } : null,
     signOut: vi.fn(async () => undefined),
     signInWithGoogle: vi.fn(async () => undefined),
     signInWithGoogleCredential: vi.fn(async () => undefined),
