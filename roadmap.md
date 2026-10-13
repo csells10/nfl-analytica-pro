@@ -39,4 +39,4 @@
 - [x] Separate vertical centering, horizontal travel, and dot scale/color animation.
 - [x] Verify desktop, 375px, 320px, themes, reduced motion, tests, types, and build.
 
-- [ ] Matchups initialization: neutral picker label during discovery, manual-pick race fix, partial-failure notices, updated help copy
+- [x] Matchups initialization: neutral picker label during discovery, manual-pick race fix, partial-failure notices, updated help copy
