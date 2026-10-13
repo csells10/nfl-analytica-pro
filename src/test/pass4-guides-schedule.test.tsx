@@ -236,4 +236,43 @@ describe("seven-day schedule lookup", () => {
     await screen.findByText("2 games");
     expect(screen.queryByTestId("slate-earlier-unchecked")).toBeNull();
   }, 10000);
+
+  it("keeps a manual pick made while discovery is pending", async () => {
+    const manual = addDays(TODAY, 5);
+    const manualStr = day(5);
+    const plan: Record<string, number> = { [day(2)]: 2, [manualStr]: 1 };
+    const pending: Array<() => void> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const date = new URL(String(input)).searchParams.get("date") ?? "";
+        return new Promise<Response>((resolve) => {
+          pending.push(() => resolve(new Response(gamesBody(date, plan[date] ?? 0), { status: 200 })));
+        });
+      }),
+    );
+    localStorage.setItem(GUIDE_STORAGE_KEYS.matchups, "true");
+    renderSlate();
+    await waitFor(() => expect(pending.length).toBeGreaterThanOrEqual(7));
+    expect(screen.getByText("Finding next game date…")).toBeTruthy();
+
+    await userEvent.click(screen.getByRole("button", { name: /Finding next game date/ }));
+    if (manual.getMonth() !== TODAY.getMonth()) {
+      await userEvent.click(screen.getByRole("button", { name: /next month/i }));
+    }
+    const dayButton = screen
+      .getAllByRole("gridcell", { name: String(manual.getDate()) })
+      .find((el) => !el.className.includes("day-outside"));
+    await userEvent.click(dayButton!);
+
+    // Complete every held discovery request (suggests day 2).
+    pending.splice(0).forEach((release) => release());
+    await screen.findByText("1 game");
+    pending.splice(0).forEach((release) => release());
+
+    await waitFor(() => expect(screen.getByText("1 game")).toBeTruthy());
+    expect(screen.getByTestId("current-location").textContent).toBe(`/?date=${manualStr}`);
+    expect(screen.getByText(format(manual, "EEEE, MMM d, yyyy"))).toBeTruthy();
+    expect(screen.queryByText("2 games")).toBeNull();
+  });
 });
