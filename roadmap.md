@@ -38,3 +38,5 @@
 - [x] Remove permanent station nodes and keep one continuous rail with one signal.
 - [x] Separate vertical centering, horizontal travel, and dot scale/color animation.
 - [x] Verify desktop, 375px, 320px, themes, reduced motion, tests, types, and build.
+
+- [x] Matchups initialization: neutral picker label during discovery, manual-pick race fix, partial-failure notices, updated help copy

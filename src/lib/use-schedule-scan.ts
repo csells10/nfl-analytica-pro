@@ -12,6 +12,8 @@ export interface ScheduleScanResult {
   datesWithGames: string[];
   /** True if at least one of the seven requests failed. */
   hasFailures: boolean;
+  /** Dates (yyyy-MM-dd) whose request failed and could not be checked. */
+  failedDates: string[];
   /** True when all seven requests succeeded. */
   allSucceeded: boolean;
 }
@@ -41,16 +43,17 @@ export function useScheduleScan(start: Date | undefined, enabled = true): Schedu
 
   return useMemo(() => {
     if (!enabled || dates.length === 0) {
-      return { isResolving: false, datesWithGames: [], hasFailures: false, allSucceeded: false };
+      return { isResolving: false, datesWithGames: [], hasFailures: false, failedDates: [], allSucceeded: false };
     }
     const isResolving = queries.some((q) => q.isLoading);
     const datesWithGames = dates.filter((dateStr, i) => {
       const data = queries[i]?.data as NflGame[] | undefined;
       return queries[i]?.isSuccess && Array.isArray(data) && data.length > 0;
     });
-    const hasFailures = queries.some((q) => q.isError);
+    const failedDates = dates.filter((_, i) => queries[i]?.isError);
+    const hasFailures = failedDates.length > 0;
     const allSucceeded = queries.every((q) => q.isSuccess);
-    return { isResolving, datesWithGames, hasFailures, allSucceeded };
+    return { isResolving, datesWithGames, hasFailures, failedDates, allSucceeded };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, dates, queries.map((q) => `${q.status}:${(q.data as NflGame[] | undefined)?.length ?? ""}`).join("|")]);
 }

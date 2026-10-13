@@ -24,7 +24,7 @@ perfMark("Slate module evaluated");
 const MATCHUPS_GUIDE_STEPS: StepGuideStep[] = [
   {
     title: "Choose a game date",
-    body: "Pick a date to see the NFL games scheduled that day. GameLens opens on the next date with games.",
+    body: "When you open Matchups, we look for the next date with games within seven days, including today, and select it automatically. You can always choose another date using the date picker.",
   },
   {
     title: "Choose a matchup",
@@ -161,6 +161,8 @@ export default function Slate() {
   // Seven-day lookup anchored on the mount date so it never re-scans in a loop.
   const scan = useScheduleScan(initialDate, true);
   const autoSelectedRef = useRef(false);
+  // Auto-selected date that has earlier, unchecked (failed) dates before it.
+  const [uncheckedBefore, setUncheckedBefore] = useState<string | null>(null);
 
   // Render-time mount marker (fires on the first render, before effects).
   const renderLoggedRef = useRef(false);
@@ -189,6 +191,9 @@ export default function Slate() {
   };
 
   const handleSelectDate = (date: Date | undefined) => {
+    // A manual pick always wins over a still-pending automatic selection.
+    autoSelectedRef.current = true;
+    setUncheckedBefore(null);
     selectDate(date);
     if (date) setDatePickerOpen(false);
   };
@@ -198,10 +203,12 @@ export default function Slate() {
     if (dateFromUrl || autoSelectedRef.current || scan.isResolving) return;
     autoSelectedRef.current = true;
     const earliest = scan.datesWithGames[0];
-    if (!earliest || earliest === todayParam) return;
+    if (!earliest) return;
+    if (scan.failedDates.some((d) => d < earliest)) setUncheckedBefore(earliest);
+    if (earliest === todayParam) return;
     selectDate(parse(earliest, "yyyy-MM-dd", new Date()));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFromUrl, scan.isResolving, scan.datesWithGames, todayParam]);
+  }, [dateFromUrl, scan.isResolving, scan.datesWithGames, scan.failedDates, todayParam]);
 
   const isFindingUpcoming = !dateFromUrl && !autoSelectedRef.current && scan.isResolving;
 
@@ -257,7 +264,9 @@ export default function Slate() {
                   )}
                 >
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  {selectedDate
+                  {isFindingUpcoming
+                    ? "Finding next game date…"
+                    : selectedDate
                     ? format(selectedDate, "EEEE, MMM d, yyyy")
                     : "Pick a date"}
                 </Button>
@@ -319,6 +328,11 @@ export default function Slate() {
                     ? "No games found in the next seven days. Choose another date."
                     : "No NFL games are scheduled for this date."}
                 </p>
+                {!wholeWindowEmpty && !scan.isResolving && scan.hasFailures && (
+                  <p className="mt-1 text-xs text-muted-foreground" data-testid="slate-unchecked-notice">
+                    Some dates in the next seven days couldn't be checked. Choose a date to try again.
+                  </p>
+                )}
                 {suggestion && (
                   <button
                     type="button"
@@ -353,6 +367,11 @@ export default function Slate() {
                   </span>
                 </div>
 
+                {uncheckedBefore === dateParam && (
+                  <p className="text-xs text-muted-foreground" data-testid="slate-earlier-unchecked">
+                    Some earlier dates couldn't be checked, so there may be games before this date.
+                  </p>
+                )}
                 <div className="space-y-2">
                   {games.map((game) => (
                     <MatchupCard
