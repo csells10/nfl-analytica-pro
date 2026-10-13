@@ -40,4 +40,4 @@
 - [x] Verify desktop, 375px, 320px, themes, reduced motion, tests, types, and build.
 
 - [x] Matchups initialization: neutral picker label during discovery, manual-pick race fix, partial-failure notices, updated help copy
-- [ ] Branded email contact points: request-access mailto on sign-in screen, Help & feedback mailto in account menu
+- [x] Branded email contact points: request-access mailto on sign-in screen, Help & feedback mailto in account menu
