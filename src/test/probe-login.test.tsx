@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
-    user: null,
+    user: { name: "Christian", email: "christian@gamelens.io" },
     signOut: vi.fn(),
     signInWithGoogle: vi.fn(async () => undefined),
     signInWithGoogleCredential: vi.fn(async () => undefined),
