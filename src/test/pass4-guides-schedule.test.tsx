@@ -195,4 +195,45 @@ describe("seven-day schedule lookup", () => {
     );
     expect(screen.queryByTestId("slate-suggestion")).toBeNull();
   });
+
+  it("shows a neutral picker label while discovery is pending, then the resolved date with its games", async () => {
+    restoreFetch = installScheduleMock({ [day(2)]: 2 }).restore;
+    renderSlate();
+    expect(screen.getByText("Finding next game date…")).toBeTruthy();
+    expect(screen.queryByText(format(TODAY, "EEEE, MMM d, yyyy"))).toBeNull();
+    await screen.findByText("2 games");
+    expect(screen.getByText(format(addDays(TODAY, 2), "EEEE, MMM d, yyyy"))).toBeTruthy();
+  });
+
+  it("requests each scanned date only once", async () => {
+    const mock = installScheduleMock({ [day(0)]: 1 });
+    restoreFetch = mock.restore;
+    renderSlate();
+    await screen.findByText("1 game");
+    const dates = mock.fetchMock.mock.calls.map((c) => new URL(String(c[0])).searchParams.get("date"));
+    expect(new Set(dates).size).toBe(dates.length);
+    expect(dates.length).toBe(7);
+  });
+
+  it("selects the earliest successful date but notes that earlier dates couldn't be checked", async () => {
+    restoreFetch = installScheduleMock({ [day(0)]: 0, [day(1)]: "fail", [day(4)]: 2 }).restore;
+    renderSlate();
+    await waitFor(
+      () => expect(screen.getByTestId("current-location").textContent).toBe(`/?date=${day(4)}`),
+      { timeout: 8000 },
+    );
+    const notice = await screen.findByTestId("slate-earlier-unchecked");
+    expect(notice.textContent).toContain("Some earlier dates couldn't be checked");
+  }, 10000);
+
+  it("does not show the earlier-dates notice when no earlier date failed", async () => {
+    restoreFetch = installScheduleMock({ [day(0)]: 0, [day(3)]: 2, [day(5)]: "fail" }).restore;
+    renderSlate();
+    await waitFor(
+      () => expect(screen.getByTestId("current-location").textContent).toBe(`/?date=${day(3)}`),
+      { timeout: 8000 },
+    );
+    await screen.findByText("2 games");
+    expect(screen.queryByTestId("slate-earlier-unchecked")).toBeNull();
+  }, 10000);
 });
