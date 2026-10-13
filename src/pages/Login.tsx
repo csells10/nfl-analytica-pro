@@ -175,7 +175,7 @@ export default function Login() {
               Want to try GameLens?{" "}
               <a
                 href="mailto:hello@gamelens.io?subject=GameLens%20Access%20Request"
-                className="inline-block py-1 font-medium text-foreground underline decoration-primary decoration-1 underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-block py-3 font-medium text-foreground underline decoration-primary decoration-1 underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Request access
               </a>
