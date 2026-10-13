@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
-import { CalendarDays, ChevronDown, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck } from "lucide-react";
+import { CalendarDays, ChevronDown, Settings, LogOut, Sun, Moon, HelpCircle, ShieldCheck, Mail } from "lucide-react";
 import gamelensHorizontalLight from "@/assets/gamelens-horizontal-light.png";
 import gamelensHorizontalDark from "@/assets/gamelens-horizontal-dark.png";
 import { Button } from "@/components/ui/button";
@@ -155,7 +155,7 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
                   <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem asChild>
                   <Link to="/settings" className="gap-2">
                     <Settings className="h-4 w-4" aria-hidden="true" />
@@ -170,6 +170,18 @@ const AppShell = forwardRef<HTMLDivElement, { children: React.ReactNode; showGui
                     </Link>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem asChild>
+                  <a
+                    href="mailto:hello@gamelens.io?subject=GameLens%20Help%20%26%20Feedback"
+                    className="gap-2"
+                  >
+                    <Mail className="h-4 w-4" aria-hidden="true" />
+                    Help &amp; feedback
+                  </a>
+                </DropdownMenuItem>
+                <p className="select-text px-2 pb-1 pt-0.5 text-[11px] text-muted-foreground">
+                  hello@gamelens.io
+                </p>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => { void signOut(); }} className="gap-2">
                   <LogOut className="h-4 w-4" aria-hidden="true" />
