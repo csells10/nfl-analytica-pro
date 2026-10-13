@@ -41,3 +41,4 @@
 
 - [x] Matchups initialization: neutral picker label during discovery, manual-pick race fix, partial-failure notices, updated help copy
 - [x] Branded email contact points: request-access mailto on sign-in screen, Help & feedback mailto in account menu
+- [x] Login card: consolidate contact block into "Access by invitation. Request access" plus copyable address

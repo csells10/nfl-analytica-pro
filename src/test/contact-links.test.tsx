@@ -52,7 +52,13 @@ describe("Branded email contact points", () => {
       "mailto:hello@gamelens.io?subject=GameLens%20Access%20Request",
     );
     expect(link).not.toHaveAttribute("target");
-    expect(screen.getByText("Opens your email app. Access requests are reviewed manually.")).toBeTruthy();
+    expect(screen.getByText("Access by invitation.")).toBeTruthy();
+    // Consolidated block: the earlier helper and restricted-access notes are gone.
+    expect(
+      screen.queryByText("Opens your email app. Access requests are reviewed manually."),
+    ).toBeNull();
+    expect(screen.queryByText("Access is restricted to authorized accounts.")).toBeNull();
+    expect(screen.queryByText(/Want to try GameLens/)).toBeNull();
     const address = screen.getByText("hello@gamelens.io");
     expect(address.className).toContain("select-text");
     // Plain anchor: no click handler added, so no GameLens API request can fire.

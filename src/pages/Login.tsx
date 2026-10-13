@@ -171,24 +171,20 @@ export default function Login() {
             {authError && (
               <p className="mt-3 text-center text-sm text-destructive">{authError}</p>
             )}
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              Want to try GameLens?{" "}
-              <a
-                href="mailto:hello@gamelens.io?subject=GameLens%20Access%20Request"
-                className="inline-block py-3 font-medium text-foreground underline decoration-primary decoration-1 underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Request access
-              </a>
-            </p>
-            <p className="mt-1 text-center text-xs text-muted-foreground">
-              Opens your email app. Access requests are reviewed manually.
-            </p>
-            <p className="mt-1 select-text text-center text-xs text-muted-foreground">
-              hello@gamelens.io
-            </p>
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              Access is restricted to authorized accounts.
-            </p>
+            <div className="mt-2 text-center">
+              <p className="text-sm text-muted-foreground">
+                Access by invitation.{" "}
+                <a
+                  href="mailto:hello@gamelens.io?subject=GameLens%20Access%20Request"
+                  className="inline-block py-3 font-medium text-foreground underline decoration-primary decoration-1 underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  Request access
+                </a>
+              </p>
+              <p className="select-text text-xs text-muted-foreground">
+                hello@gamelens.io
+              </p>
+            </div>
           </CardContent>
         </Card>
         <AuthDebugPanel />
