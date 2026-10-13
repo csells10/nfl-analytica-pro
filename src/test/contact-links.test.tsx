@@ -60,6 +60,7 @@ describe("Branded email contact points", () => {
   });
 
   it("shows the Help & feedback mailto in the account menu with a copyable address", async () => {
+    mocks.signedIn = true;
     const user = userEvent.setup();
     render(
       <MemoryRouter>
