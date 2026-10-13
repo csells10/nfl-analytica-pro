@@ -161,6 +161,8 @@ export default function Slate() {
   // Seven-day lookup anchored on the mount date so it never re-scans in a loop.
   const scan = useScheduleScan(initialDate, true);
   const autoSelectedRef = useRef(false);
+  // State mirror of autoSelectedRef so the pending label clears in the same render as the resolved date.
+  const [autoSelectionDone, setAutoSelectionDone] = useState(false);
   // Auto-selected date that has earlier, unchecked (failed) dates before it.
   const [uncheckedBefore, setUncheckedBefore] = useState<string | null>(null);
 
@@ -193,6 +195,7 @@ export default function Slate() {
   const handleSelectDate = (date: Date | undefined) => {
     // A manual pick always wins over a still-pending automatic selection.
     autoSelectedRef.current = true;
+    setAutoSelectionDone(true);
     setUncheckedBefore(null);
     selectDate(date);
     if (date) setDatePickerOpen(false);
@@ -202,6 +205,7 @@ export default function Slate() {
   useEffect(() => {
     if (dateFromUrl || autoSelectedRef.current || scan.isResolving) return;
     autoSelectedRef.current = true;
+    setAutoSelectionDone(true);
     const earliest = scan.datesWithGames[0];
     if (!earliest) return;
     if (scan.failedDates.some((d) => d < earliest)) setUncheckedBefore(earliest);
@@ -210,7 +214,7 @@ export default function Slate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFromUrl, scan.isResolving, scan.datesWithGames, scan.failedDates, todayParam]);
 
-  const isFindingUpcoming = !dateFromUrl && !autoSelectedRef.current && scan.isResolving;
+  const isFindingUpcoming = !dateFromUrl && !autoSelectionDone;
 
   const highlightedDates = useMemo(
     () => scan.datesWithGames.map((d) => parse(d, "yyyy-MM-dd", new Date())),
