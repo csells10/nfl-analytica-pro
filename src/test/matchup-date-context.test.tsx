@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -112,6 +112,47 @@ describe("Matchups carries its selected date into the Lab", () => {
     await waitFor(() =>
       expect(screen.getByTestId("current-location").textContent).toContain(
         `fromDate=${SELECTED_DATE}`,
+      ),
+    );
+  });
+
+  it("renders both game controls as real links so the browser can open new tabs", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/?date=${SELECTED_DATE}`]}>
+          <CurrentLocation />
+          <Routes>
+            <Route path="/" element={<Slate />} />
+            <Route path="/matchup/:id" element={<span>details</span>} />
+            <Route path="/matchup-lens" element={<span>lab</span>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const lab = await screen.findByTestId("open-in-matchup-lens");
+    expect(lab.tagName).toBe("A");
+    const labHref = new URL(lab.getAttribute("href") ?? "", "http://x");
+    expect(labHref.pathname).toBe("/matchup-lens");
+    expect(labHref.searchParams.get("view")).toBe("overview");
+    expect(labHref.searchParams.get("fromDate")).toBe(SELECTED_DATE);
+    const gameId = labHref.searchParams.get("game");
+
+    const row = document.querySelector(`a[href^="/matchup/"]`);
+    expect(row?.getAttribute("href")).toBe(`/matchup/${gameId}?date=${SELECTED_DATE}`);
+
+    // Modified clicks are left to the browser: the current page stays put.
+    fireEvent.click(row as Element, { ctrlKey: true });
+    fireEvent.click(lab, { metaKey: true });
+    fireEvent.click(row as Element, { button: 1 });
+    expect(screen.getByTestId("current-location").textContent).toBe(`/?date=${SELECTED_DATE}`);
+
+    // An ordinary click still navigates in place.
+    await userEvent.click(row as Element);
+    await waitFor(() =>
+      expect(screen.getByTestId("current-location").textContent).toBe(
+        `/matchup/${gameId}?date=${SELECTED_DATE}`,
       ),
     );
   });
