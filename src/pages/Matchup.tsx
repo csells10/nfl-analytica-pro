@@ -47,6 +47,11 @@ import {
   isValidFromDate,
   matchupLabActionLabel,
 } from "@/lib/matchup-lens-link";
+import {
+  matchupDocumentTitle,
+  parseGameIdContext,
+  useDocumentTitle,
+} from "@/lib/game-display";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
