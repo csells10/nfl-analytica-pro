@@ -116,6 +116,48 @@ describe("Matchups carries its selected date into the Lab", () => {
     );
   });
 
+  it("renders both game controls as real links so the browser can open new tabs", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/?date=${SELECTED_DATE}`]}>
+          <CurrentLocation />
+          <Routes>
+            <Route path="/" element={<Slate />} />
+            <Route path="/matchup/:id" element={<span>details</span>} />
+            <Route path="/matchup-lens" element={<span>lab</span>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const lab = await screen.findByTestId("open-in-matchup-lens");
+    expect(lab.tagName).toBe("A");
+    const labHref = new URL(lab.getAttribute("href") ?? "", "http://x");
+    expect(labHref.pathname).toBe("/matchup-lens");
+    expect(labHref.searchParams.get("view")).toBe("overview");
+    expect(labHref.searchParams.get("fromDate")).toBe(SELECTED_DATE);
+    const gameId = labHref.searchParams.get("game");
+
+    const row = document.querySelector(`a[href^="/matchup/"]`);
+    expect(row?.getAttribute("href")).toBe(`/matchup/${gameId}?date=${SELECTED_DATE}`);
+
+    // Modified clicks are left to the browser: the current page stays put.
+    await userEvent.keyboard("{Control>}");
+    await userEvent.click(row as Element);
+    await userEvent.click(lab);
+    await userEvent.keyboard("{/Control}");
+    expect(screen.getByTestId("current-location").textContent).toBe(`/?date=${SELECTED_DATE}`);
+
+    // An ordinary click still navigates in place.
+    await userEvent.click(row as Element);
+    await waitFor(() =>
+      expect(screen.getByTestId("current-location").textContent).toBe(
+        `/matchup/${gameId}?date=${SELECTED_DATE}`,
+      ),
+    );
+  });
+
   it("keeps the selected date and quietly marks the game returned from", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
