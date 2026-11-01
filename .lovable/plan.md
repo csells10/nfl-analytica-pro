@@ -1,37 +1,45 @@
-# DraftKings event link: findings and plan
+# DraftKings game-page link: feasibility check first
 
-## Product conflict to resolve first
-GameLens rules say it is "not a betting product," and the Matchups list is meant to show "no betting data." A sportsbook link goes against both. If you still want it, confirm the exception, and I'll record it so the two rules don't contradict each other. Suggested scope: game details page only, not the Matchups list or Matchup Lab.
+## Proposed product-rule exception (wording)
+> GameLens may show one optional link to an outside sportsbook's page for a specific game, labeled "View on DraftKings ↗". The link opens in a new tab. It is not tied to any wager or betslip and does not pass any analysis. GameLens itself never shows odds, lines, or prices. It does not recommend wagers and never preselects a bet. The link appears only when the backend supplies a verified game match. If there is no match, GameLens shows nothing.
 
-## What I found
-- **Our data has no DraftKings links or IDs.** The app only uses team abbreviations, ESPN logo IDs, and our own game IDs (for example `20261101_PHI@WSH`). There is no field linking a game to an outside event, and the backend tables listed in our project notes don't include one either.
-- **I could not confirm the dates of the four examples.** DraftKings blocked every request with "Access Denied." The links don't include a date, so I can't say which week they belong to. None of the four games is marked as verified.
-- **The event numbers can't be worked out from patterns.** 34118130, 34118131, 34118214 and 34118246 don't follow kickoff order or our game IDs. That rules out guessing, as you required.
-- **DraftKings has no public API for this.** Its internal endpoints block automated access, and scraping them would be fragile and likely break its terms of use.
+When this is approved, I'll update the project rules and the "no betting data" note for the Matchups list so they agree. The link would appear on game details only.
 
-## Outside service needed
-Getting these links reliably requires a licensed odds-data provider that returns DraftKings event links. For example:
-- The Odds API (paid plans; `includeLinks=true` returns bookmaker event links)
-- OpticOdds or SportsDataIO (commercial, more expensive)
+## Correction
+You're right: The Odds API's free Starter plan (500 credits a month) includes DraftKings, so no paid plan is needed to test it. According to its documentation:
+- `GET /v4/sports/americanfootball_nfl/events` lists games with teams and kickoff times and uses **no credits**. It doesn't include bookmaker links, though.
+- `GET /v4/sports/americanfootball_nfl/odds?bookmakers=draftkings&markets=h2h&includeLinks=true&includeSids=true` costs **1 credit per call** (1 market × 1 bookmaker group). `includeLinks` adds "bookmaker links to events, markets, and betslips if available." `includeSids` adds DraftKings' own event IDs.
+- We would keep only the event-level link and the DraftKings event ID. Betslip and market links, and all prices, would be thrown away and never stored or shown.
 
-You would need to choose a provider and add an API key before any building starts. I haven't checked current pricing or whether each provider's links go to the specific game page or only the league page. That needs a trial key.
+The documentation says links are included only "if available." Coverage on the free plan is therefore not confirmed until we test it.
 
-## Smallest reliable approach (backend work, done outside Lovable)
-1. A scheduled backend job fetches upcoming NFL events and their DraftKings links from the provider.
-2. It matches each event to a game in `League.schedule` on three things: exact home team, exact away team, and game date in US Eastern time. It translates abbreviations through one shared alias table (for example WSH/WAS, JAC/JAX, LA/LAR) and never by name similarity.
-3. It saves the link only if exactly one game matches. Results are recorded as `matched`, `missing` or `ambiguous` (for example a doubleheader or a duplicate listing). Ambiguous results are never saved as links.
-4. `GET /game/<id>` adds an optional `external_links.draftkings = { url, verified_at }`. The backend only accepts links that start with `https://sportsbook.draftkings.com/event/`.
-5. Links expire: the job refreshes them, and the backend stops returning a link once the game is Final or the provider drops the event.
+## Step 1: Secure setup (you do this; no key in chat)
+1. Sign up for the free Starter plan at the-odds-api.com. The key arrives by email.
+2. I'll open a secure form to save the key as a protected project secret named `ODDS_API_KEY`. Please don't paste it into chat. The key is used only for this test and is never added to the app or shown in the browser.
+3. Keep it on the free plan. Don't add a card or upgrade.
 
-## Frontend (small, after the backend is ready)
-- On game details, show "View on DraftKings ↗" only if the backend provides a link. It opens in a new tab, so GameLens stays open, and it is a plain link with no wager selected.
-- If there is no link, or it is ambiguous or expired, nothing is shown. There is no search page fallback and no link is built from our IDs.
-- Tests: the link shows when the backend provides one, is hidden otherwise, and uses the exact link and new-tab settings.
+## Step 2: One-time test (read-only, about 2–4 credits)
+- 1 call to `/events` (free) gets the NFL game list.
+- 1 call to `/odds` with DraftKings, `h2h`, `includeLinks=true` and `includeSids=true` (1 credit) gets the links and IDs. One retry is allowed if needed.
+- From each response I record only: event ID, teams, kickoff time, DraftKings event link and DraftKings event ID. Prices are removed before anything is saved. The key never appears in logs or reports.
+- I'll read the remaining-credit counts the API sends back (`x-requests-used` and `x-requests-remaining`) to check the actual cost.
 
-## Validating with the four examples
-Once the provider is connected, check that the job independently produces these four exact links and the matching games and dates: BAL@BUF 34118214, IND@JAX 34118246, TEN@CIN 34118130, ARI@DAL 34118131. Then check a full week for coverage and for missing or ambiguous results. These four are test cases only and are not stored in the app.
+## Step 3: Check against your four examples
+For BAL@BUF (34118214), IND@JAX (34118246), TEN@CIN (34118130) and ARI@DAL (34118131), I'll compare:
+- both teams, after translating abbreviations through one alias table (for example WSH/WAS and JAC/JAX)
+- the game date in US Eastern time from the kickoff time. This also settles the dates I couldn't confirm earlier, because DraftKings blocked those lookups.
+- the DraftKings event ID against the number in your link. Links that point to the same page count as a match even if the wording in the address differs.
 
-## Decisions needed from you
-1. Approve the betting-link exception and where it appears.
-2. Choose a provider and whether you'll pay for it.
-3. Backend changes happen outside Lovable, so you (or whoever runs the backend) build steps 1–5 first.
+Games that have already been played may not be listed anymore. Those are marked "no longer available" and are not counted as failures.
+
+## Step 4: Report
+- How many upcoming NFL games include a DraftKings event link, how many include an ID only, and how many have neither.
+- Which games are missing or ambiguous (for example duplicate listings or two games on the same date).
+- Whether links go to the specific game or to a general page.
+- Estimated monthly use if we refresh once a day plus an extra refresh on game days: about 30–45 credits a month on the free events list plus 1-credit link calls. That fits comfortably within 500. I'll confirm this against the counts from Step 2.
+
+## Decision point
+If coverage and accuracy hold up, I'll write a separate plan for the scheduled backend job and the small game-details link. That plan will include rules for missing, ambiguous and expired links: in each case nothing is shown. If they don't hold up, we stop, and nothing in the app has changed.
+
+## Out of scope for this step
+No purchases. No changes to the app or the backend, no scheduled job, and no publishing. The four example links are used only as test cases and never stored in the app.
