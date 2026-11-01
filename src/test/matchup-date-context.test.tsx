@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -143,10 +143,9 @@ describe("Matchups carries its selected date into the Lab", () => {
     expect(row?.getAttribute("href")).toBe(`/matchup/${gameId}?date=${SELECTED_DATE}`);
 
     // Modified clicks are left to the browser: the current page stays put.
-    await userEvent.keyboard("{Control>}");
-    await userEvent.click(row as Element);
-    await userEvent.click(lab);
-    await userEvent.keyboard("{/Control}");
+    fireEvent.click(row as Element, { ctrlKey: true });
+    fireEvent.click(lab, { metaKey: true });
+    fireEvent.click(row as Element, { button: 1 });
     expect(screen.getByTestId("current-location").textContent).toBe(`/?date=${SELECTED_DATE}`);
 
     // An ordinary click still navigates in place.
