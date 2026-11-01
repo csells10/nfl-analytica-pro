@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { GameDetails } from "@/lib/nfl-api";
+import { getKnownTeam, getTeam, teamLogoUrl } from "@/lib/nfl-teams";
 import {
   DEFAULT_DOCUMENT_TITLE,
   formatGameDate,
@@ -27,6 +28,19 @@ describe("parseGameIdContext", () => {
     "20260230_NYG@LAR", // Feb 30 does not exist
   ])("returns null for unsafe input %s", (raw) => {
     expect(parseGameIdContext(raw)).toBeNull();
+  });
+});
+
+describe("display team aliases", () => {
+  it.each(["WSH", "wsh", "WAS", "was"])("resolves %s to Washington's registry name and logo", (abbr) => {
+    expect(getKnownTeam(abbr)).toBe(getKnownTeam("WAS"));
+    expect(getTeam(abbr).fullName).toBe("Washington Commanders");
+    expect(teamLogoUrl(abbr)).toBe("https://a.espncdn.com/i/teamlogos/nfl/500/was.png");
+  });
+
+  it("leaves unknown teams unrecognized", () => {
+    expect(getKnownTeam("ZZZ")).toBeNull();
+    expect(getTeam("ZZZ").abbr).toBe("ZZZ");
   });
 });
 
@@ -68,6 +82,7 @@ describe("matchupDocumentTitle", () => {
 
 const mocks = vi.hoisted(() => ({
   details: undefined as GameDetails | undefined,
+  requestedGame: vi.fn(),
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -83,13 +98,16 @@ vi.mock("@/lib/nfl-api", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/nfl-api")>();
   return {
     ...original,
-    useGameDetails: () => ({
+    useGameDetails: (gameId: string) => {
+      mocks.requestedGame(gameId);
+      return ({
       data: mocks.details,
       isLoading: !mocks.details,
       isFetching: !mocks.details,
       isError: false,
       error: null,
-    }),
+      });
+    },
   };
 });
 
@@ -130,12 +148,50 @@ function renderMatchup(entry: { pathname: string; search?: string; state?: unkno
 
 beforeEach(() => {
   mocks.details = undefined;
+  mocks.requestedGame.mockClear();
   document.title = DEFAULT_DOCUMENT_TITLE;
   localStorage.setItem("hasSeenMatchupSectionSpotlightTour", "true");
   vi.stubGlobal("scrollTo", vi.fn());
 });
 
 describe("Game Details fresh-tab briefing and tab title", () => {
+  it.each(["@", "%40"])("renders the PHI%sWSH fresh-tab briefing while the request is pending", (separator) => {
+    renderMatchup({
+      pathname: `/matchup/20261101_PHI${separator}WSH`,
+      search: "?date=2026-11-01",
+    });
+
+    expect(screen.getByText("Philadelphia Eagles")).toBeTruthy();
+    expect(screen.getByText("Washington Commanders")).toBeTruthy();
+    expect(screen.getByAltText("Philadelphia Eagles logo").getAttribute("src")).toBe(
+      "https://a.espncdn.com/i/teamlogos/nfl/500/phi.png",
+    );
+    expect(screen.getByAltText("Washington Commanders logo").getAttribute("src")).toBe(
+      "https://a.espncdn.com/i/teamlogos/nfl/500/was.png",
+    );
+    expect(screen.getByText("Game Profile")).toBeTruthy();
+    expect(screen.getByText("Core Areas")).toBeTruthy();
+    expect(screen.getByText("Team Comparison")).toBeTruthy();
+    expect(screen.getByTestId("analysis-handoff-chevron")).toBeTruthy();
+    expect(screen.getByTestId("analysis-progress-rail")).toBeTruthy();
+    expect(screen.getByTestId("analysis-signal").classList.contains("animate-analysis-signal-dot")).toBe(true);
+    expect(screen.getByTestId("analysis-signal-track").firstElementChild?.classList.contains("animate-analysis-signal-position")).toBe(true);
+    expect(document.title).toBe("PHI @ WSH · Nov 1, 2026 | GameLens");
+    expect(mocks.requestedGame).toHaveBeenCalledWith("20261101_PHI@WSH");
+    expect(mocks.requestedGame).not.toHaveBeenCalledWith("20261101_PHI@WAS");
+  });
+
+  it("retains neutral loading for a genuinely unknown team in a fresh tab", () => {
+    renderMatchup({ pathname: "/matchup/20261101_PHI%40ZZZ", search: "?date=2026-11-01" });
+
+    const loading = screen.getByTestId("game-details-loading");
+    expect(loading.textContent).toBe("Preparing game analysis");
+    expect(loading.querySelector("img")).toBeNull();
+    expect(screen.queryByText("Game Profile")).toBeNull();
+    expect(screen.queryByTestId("analysis-signal")).toBeNull();
+    expect(mocks.requestedGame).toHaveBeenCalledWith("20261101_PHI@ZZZ");
+  });
+
   it("recovers the full briefing from the game ID when router state is absent", () => {
     renderMatchup({ pathname: "/matchup/20260920_NO%40BAL" });
 

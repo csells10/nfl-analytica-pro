@@ -46,7 +46,7 @@ const TEAMS: Record<string, TeamMeta> = {
 export function getTeam(abbr: string | undefined | null): TeamMeta {
   const key = (abbr ?? "").toUpperCase();
   return (
-    TEAMS[key] ?? {
+    getKnownTeam(abbr) ?? {
       abbr: key || "—",
       shortName: key || "Team",
       location: "",
@@ -59,7 +59,9 @@ export function getTeam(abbr: string | undefined | null): TeamMeta {
 /** Registry-only lookup for UI that must not invent identity for unknown teams. */
 export function getKnownTeam(abbr: string | undefined | null): TeamMeta | null {
   const key = (abbr ?? "").toUpperCase();
-  return TEAMS[key] ?? null;
+  // Display aliases only: never normalize game IDs, request URLs or cache keys.
+  const displayKey = key === "WSH" ? "WAS" : key;
+  return TEAMS[displayKey] ?? null;
 }
 
 export function teamLogoUrl(abbr: string | undefined | null, size = 500): string {
