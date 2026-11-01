@@ -47,6 +47,11 @@ import {
   isValidFromDate,
   matchupLabActionLabel,
 } from "@/lib/matchup-lens-link";
+import {
+  matchupDocumentTitle,
+  parseGameIdContext,
+  useDocumentTitle,
+} from "@/lib/game-display";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -1049,6 +1054,24 @@ export default function Matchup() {
   const isColdLoad = isLoading && !data;
 
   const navigationGame = (location.state as { game?: NflGame } | null)?.game;
+  // Router state only counts when it describes the game currently routed.
+  const stateGame = navigationGame && navigationGame.id === id ? navigationGame : null;
+  // Fresh tabs have no router state: recover display context from the game ID
+  // itself. Display only — the API response stays authoritative.
+  const idContext = parseGameIdContext(id);
+  const briefingAway = stateGame?.awayTeam ?? idContext?.awayAbbr;
+  const briefingHome = stateGame?.homeTeam ?? idContext?.homeAbbr;
+  const briefingDate = stateGame?.date ?? idContext?.date;
+  const briefingWeek = stateGame?.week;
+
+  // Tab title: authoritative game data once loaded, ID-derived context before.
+  const header = data?.header;
+  useDocumentTitle(
+    header
+      ? matchupDocumentTitle(header.away_team.abbreviation, header.home_team.abbreviation, header.game_date)
+      : matchupDocumentTitle(briefingAway, briefingHome, briefingDate),
+  );
+
   // Navigation context only — the Matchups date this page was reached from.
   const returnDate = (() => {
     const search = new URLSearchParams(location.search);
@@ -1082,10 +1105,10 @@ export default function Matchup() {
 
         {showAnalyzing && (
           <MatchupAnalyzing
-            awayTeam={navigationGame?.awayTeam}
-            homeTeam={navigationGame?.homeTeam}
-            date={navigationGame?.date}
-            week={navigationGame?.week}
+            awayTeam={briefingAway}
+            homeTeam={briefingHome}
+            date={briefingDate}
+            week={briefingWeek}
           />
         )}
 

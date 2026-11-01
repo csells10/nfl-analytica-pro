@@ -43,3 +43,4 @@
 - [x] Branded email contact points: request-access mailto on sign-in screen, Help & feedback mailto in account menu
 - [x] Login card: consolidate contact block into "Access by invitation. Request access" plus copyable address
 - [x] Matchups: game row and Matchup Lab action as real links (new-tab support)
+- [x] Descriptive tab titles (Game Details + Lab) and fresh-tab Matchup Briefing context recovered from the game ID
