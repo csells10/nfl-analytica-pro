@@ -37,9 +37,10 @@ export function parseGameIdContext(gameId: string | null | undefined): GameIdDis
  * A preformatted backend display string is trusted and passed through as-is.
  */
 export function formatGameDate(date: string | null | undefined): string | null {
-  if (!date) return null;
-  if (isValidFromDate(date)) {
-    const [y, m, d] = date.split("-").map(Number);
+  const trimmed = date?.trim() ?? "";
+  if (!trimmed) return null;
+  if (isValidFromDate(trimmed)) {
+    const [y, m, d] = trimmed.split("-").map(Number);
     return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -47,8 +48,7 @@ export function formatGameDate(date: string | null | undefined): string | null {
       timeZone: "UTC",
     });
   }
-  const trimmed = date.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  return trimmed;
 }
 
 /** Build the browser tab title for a matchup surface. */
