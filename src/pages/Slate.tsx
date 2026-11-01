@@ -1,6 +1,6 @@
 import { forwardRef, useState, useMemo, useEffect, useRef } from "react";
 import { format, parse } from "date-fns";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarIcon, ChevronRight } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -48,10 +48,8 @@ function parseDateParam(raw: string | null): Date | null {
   return isNaN(parsed.getTime()) ? null : parsed;
 }
 
-const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: string; wasJustViewed?: boolean }>(
+const MatchupCard = forwardRef<HTMLAnchorElement, { game: NflGame; dateParam?: string; wasJustViewed?: boolean }>(
   function MatchupCard({ game, dateParam, wasJustViewed = false }, ref) {
-    const navigate = useNavigate();
-
     return (
       <div
         className={cn(
@@ -60,14 +58,11 @@ const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: s
         )}
         data-returned-game={wasJustViewed ? "true" : undefined}
       >
-        <button
+        <Link
           ref={ref}
-          className="w-full text-left"
-          onClick={() =>
-            navigate(`/matchup/${game.id}${dateParam ? `?date=${dateParam}` : ""}`, {
-              state: { game, fromDate: dateParam },
-            })
-          }
+          to={`/matchup/${game.id}${dateParam ? `?date=${dateParam}` : ""}`}
+          state={{ game, fromDate: dateParam }}
+          className="block w-full text-left"
         >
           <div className="flex items-center justify-between px-5 py-3.5">
             {/* Teams */}
@@ -103,19 +98,16 @@ const MatchupCard = forwardRef<HTMLButtonElement, { game: NflGame; dateParam?: s
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-all duration-150 group-hover:text-primary group-hover:translate-x-0.5" />
             </div>
           </div>
-        </button>
+        </Link>
 
         <div className="flex justify-end border-t border-border/60 px-5 py-2">
-          <button
-            type="button"
+          <Link
             data-testid="open-in-matchup-lens"
-            onClick={() =>
-              navigate(buildMatchupLensHref(game.id, game.awayTeam, game.homeTeam, dateParam))
-            }
+            to={buildMatchupLensHref(game.id, game.awayTeam, game.homeTeam, dateParam)}
             className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
           >
             {matchupLabActionLabel(game.status)}
-          </button>
+          </Link>
         </div>
       </div>
     );
