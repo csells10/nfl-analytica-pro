@@ -1,6 +1,6 @@
 import { forwardRef, useState, useMemo, useEffect, useRef } from "react";
 import { format, parse } from "date-fns";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { CalendarIcon, ChevronRight } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
