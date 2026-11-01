@@ -1,48 +1,72 @@
-# Add two branded email contact points (hello@gamelens.io)
+# Matchups Ctrl+click investigation and proposed fix
 
-Two plain `mailto:` links, no new endpoints, forms, dependencies, or API calls. No access behavior changes.
+Read-only findings. Nothing has been changed.
 
-## 1. Public sign-in screen (`src/pages/Login.tsx`)
+## 1. What controls the clicks (confirmed)
 
-Beneath the existing sign-in controls (after the `authError` block), add:
+`src/pages/Slate.tsx`, `MatchupCard` (around lines 51–120):
 
-- Line 1: `Want to try GameLens? Request access` — "Request access" is a link to
-  `mailto:hello@gamelens.io?subject=GameLens%20Access%20Request`
-- Line 2 (helper): `Opens your email app. Access requests are reviewed manually.`
-- Line 3: `hello@gamelens.io` rendered as selectable text (`select-text`) so it can be copied.
+- The game row is a `<button>`. Its `onClick` calls `navigate("/matchup/<id>?date=<d>", { state: { game, fromDate } })`.
+- "Open/Review in Matchup Lab" is a separate `<button>`. Its `onClick` calls `navigate(buildMatchupLensHref(id, away, home, dateParam))`.
+- The outer `<div>` has no handlers. The two buttons are siblings, not nested. Neither handler has side effects besides navigating.
 
-The existing "Access is restricted to authorized accounts." note stays. The block renders in all sign-in variants (GIS and fallback button).
+Why Ctrl+click stays in the same tab: a `<button>` has no URL, so the browser can't open it in a new tab. The handler doesn't check for modifier keys, so Ctrl, Cmd, Shift and middle-click all just run `navigate()`. For the same reason, there's no "Open link in new tab" in the right-click menu, and hovering shows no URL.
 
-## 2. Authenticated app (`src/components/AppShell.tsx`)
+## 2. What each page needs, and what happens on a fresh tab or refresh
 
-The account dropdown already exists on desktop and mobile, so no footer is needed. Inside `DropdownMenuContent`:
+**Game Details (`/matchup/:id`, `src/pages/Matchup.tsx`)**
+- In the URL: the game ID (path) and `?date=`.
+- In router state: `game` (teams, date and week for the loading briefing) and `fromDate`.
+- Without router state:
+  - The data still loads. `useGameDetails(id)` fetches `/game/<encodeURIComponent(id)>` using only the path ID.
+  - The loading briefing gets `navigationGame` = undefined. Per earlier work, it falls back to a neutral briefing without teams.
+  - The return date reads `search.get("date") ?? state.fromDate`. The URL already includes `?date=`, so it survives.
+- Conclusion: the page fully works in a fresh tab. The only thing lost is the team names in the loading briefing.
 
-- Add a `Help & feedback` item (`Mail` icon from lucide) as an anchor to
-  `mailto:hello@gamelens.io?subject=GameLens%20Help%20%26%20Feedback`, placed with the Settings/Admin group.
-- Add a small non-interactive row beneath it showing `hello@gamelens.io` as selectable text (muted, ~11px, `select-text`), so the address can be copied without opening mail.
+**Matchup Lab (`/matchup-lens?a&b&view=overview&game&fromDate`, `src/pages/MatchupLens.tsx`)**
+- Everything is in the URL: game, team abbreviations (display only), view and fromDate. It uses no router state.
+- It works in a fresh tab or after refresh.
 
-Menu width is widened slightly (`w-44` → `w-56` if needed) so the address is not clipped.
+**Return to Matchups**
+- "Back to games" sends `state: { returningFromGame: id }`, which drives the highlight on the card you just viewed.
+- In a new tab, Back still goes to `/?date=<d>` with that state. In the original tab, nothing changes: you never left it.
 
-## Styling (both placements)
+## 3. Sign-in, protected pages and deep links
 
-- Reuse existing tokens only: `text-foreground` link text with `underline` (non-color cue) and `decoration-primary`, `hover:decoration-primary` strengthen, `focus-visible:ring-2 focus-visible:ring-ring`, `underline-offset-2`.
-- Brand accent appears via the underline color and the `Mail` icon, not body text: light-mode `text-primary` measures ~4.2:1 on the white card, below 4.5:1, so body text stays `text-foreground` (passes everywhere); in dark mode the accent text would pass, but the same treatment is used for consistency.
-- Link gets `inline-block py-1` (or equivalent padding) so the mobile tap target is comfortably large.
-- No new palette, no layout redesign; surrounding spacing follows the card/menu rhythm.
+Confirmed in code:
+- Firebase sign-in is stored in IndexedDB first, then localStorage, then sessionStorage (`src/lib/firebase.ts`). A new tab on the same site should restore the session.
+- `ProtectedRoute` shows a blank screen until Firebase reports ready. It never redirects early. If no user is found, it sends you to `/login` and remembers the page you were on. After sign-in, `Login.tsx` returns you there.
+- Each tab runs its own access check (`useMe`, `["me"]`) against the backend.
 
-## Tests (`src/test/contact-links.test.tsx`, new, reusing existing auth mocks)
+Needs live verification:
+- That the hosting serves the app for direct links to `/matchup/...` and `/matchup-lens?...` on gamelens.io. The project has no redirect files. Direct links are expected to work, since refresh deep links have been used throughout earlier passes, but I haven't re-checked.
+- That a session restores in a new tab in each browser, especially Safari.
 
-1. Login renders the exact `mailto:hello@gamelens.io?subject=GameLens%20Access%20Request` href and helper text; address is selectable text.
-2. AppShell dropdown renders the exact `mailto:hello@gamelens.io?subject=GameLens%20Help%20%26%20Feedback` href for a signed-in user; address row present.
-3. Neither link element triggers API calls (plain anchors, no onClick handlers beyond default).
+## 4. Behavior that depends on these controls
 
-## Verification
+- **Date selection and seven-day scan:** these run on the Matchups page only. The original tab stays put, so they aren't affected. Each new Game Details or Lab tab skips the scan.
+- **Return highlight:** depends on `returningFromGame` from the Back button. It's not affected.
+- **Scroll:** Game Details scrolls to the top on mount. That's harmless in new tabs.
+- **Data requests:** each tab has its own in-memory React Query client, so each tab makes its own requests: `/me`, `/game/<id>` and, for the Lab, `/lens-context`.
+  - Game Details and schedule results are saved to shared localStorage for 24 hours (`src/App.tsx`). A new tab may show cached game data at once, refresh it quietly, and skip the cold-load briefing.
+  - Several tabs write to the same saved cache. The last one to write wins. Since the content is the same, that's harmless.
+  - Lab evidence opts out of saving (`meta: { persist: false }`), so every Lab tab always fetches live.
+- **Guides:** the "seen" flags are stored in localStorage. A guide marked seen in one tab may still auto-open in another tab that was already open. That's minor.
 
-- Focused tests + full suite, type check, production build.
-- Playwright visual check: login page and opened account menu at desktop and mobile widths, light and dark; keyboard Tab reaches both links with a visible focus ring; no horizontal overflow.
-- Contrast confirmed via computed colors against the real card/menu backgrounds in both themes.
-- Confirm no network requests fire from the links (anchors only).
+## 5. Smallest safe change (recommended, not implemented)
 
-## Not changed
+In `src/pages/Slate.tsx` only, turn both buttons into React Router `<Link>` elements:
 
-Authentication, allowlist, admin logic, API/backend, guides, loaders, navigation, date behavior. Nothing published or deployed.
+- **Game row:** `<Link to={"/matchup/<id>?date=<d>"} state={{ game, fromDate }} className="block w-full text-left">`. Keep the same inner markup and the `ref`. Change the `forwardRef` type to `HTMLAnchorElement`, and check where the ref is used for focus.
+- **Lab action:** `<Link to={buildMatchupLensHref(...)}>` with the same classes.
+
+`<Link>` already lets the browser handle Ctrl, Cmd, Shift and middle-click, and handles plain clicks inside the app with the same state. That keeps ordinary clicks identical and adds URL previews and "Open in new tab". Use the URL formats that already exist and encode the game ID in the path. No API, sign-in or data changes.
+
+Checks:
+- Update `src/test` tests that look up these as buttons by role (Slate, journey, continuity, date-context and navigation tests). They should look up links and check the exact `href`.
+- Add one test showing a modified click doesn't trigger in-app navigation.
+- Confirm keyboard focus styles still look the same and nothing shifts visually.
+- In a signed-in browser, confirm Ctrl+click opens a new tab with both destinations loading, and plain click still shows the briefing, return date and highlight.
+- Run the full test suite, type check and build. No publishing.
+
+Open question: is the game ID safe to put in the path as-is? IDs like `20260921_NYG@LAR` already work in the current navigate call. Encoding the ID with `encodeURIComponent` is optional hardening.
