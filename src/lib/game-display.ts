@@ -32,18 +32,23 @@ export function parseGameIdContext(gameId: string | null | undefined): GameIdDis
 }
 
 /**
- * Format a strict YYYY-MM-DD date as "Nov 1, 2026" without timezone-related
- * day shifts: the date is parsed and rendered in UTC, never local time.
+ * Format a game date as "Nov 1, 2026" without timezone-related day shifts.
+ * Strict YYYY-MM-DD input is parsed and rendered in UTC, never local time.
+ * A preformatted backend display string is trusted and passed through as-is.
  */
 export function formatGameDate(date: string | null | undefined): string | null {
-  if (!isValidFromDate(date)) return null;
-  const [y, m, d] = date.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  if (!date) return null;
+  if (isValidFromDate(date)) {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  }
+  const trimmed = date.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 /** Build the browser tab title for a matchup surface. */
