@@ -1105,10 +1105,10 @@ export default function Matchup() {
 
         {showAnalyzing && (
           <MatchupAnalyzing
-            awayTeam={navigationGame?.awayTeam}
-            homeTeam={navigationGame?.homeTeam}
-            date={navigationGame?.date}
-            week={navigationGame?.week}
+            awayTeam={briefingAway}
+            homeTeam={briefingHome}
+            date={briefingDate}
+            week={briefingWeek}
           />
         )}
 

@@ -312,6 +312,18 @@ export default function MatchupLens() {
   const awayAbv = context ? snapshotAbbr(context.game.away.teamAbv) : urlState.awayAbv;
   const homeAbv = context ? snapshotAbbr(context.game.home.teamAbv) : urlState.homeAbv;
 
+  // Tab title: canonical game data once loaded, otherwise context recovered
+  // from the validated game ID (display only, never request identity).
+  const idContext = useMemo(() => parseGameIdContext(gameId), [gameId]);
+  useDocumentTitle(
+    matchupDocumentTitle(
+      awayAbv || idContext?.awayAbbr,
+      homeAbv || idContext?.homeAbbr,
+      context?.game.gameDate ?? idContext?.date,
+      "lab",
+    ),
+  );
+
   /**
    * User-initiated transitions push a history entry; internal normalization
    * replaces so invalid deep links never create history spam.
